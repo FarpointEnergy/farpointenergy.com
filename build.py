@@ -111,13 +111,14 @@ form.q textarea{min-height:120px;resize:vertical}form.q input:focus,form.q selec
 """
 
 def page(title, body, current, desc):
+    VER = __import__("hashlib").md5(CSS.encode()).hexdigest()[:8]
     nav = "".join('<li><a class="l" href="%s"%s>%s</a></li>' % (h, ' aria-current="page"' if h == current else '', t) for t, h in NAV)
     return f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title><meta name="description" content="{desc}">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v={VER}">
 </head><body>
 <nav class="nav"><div class="wrap"><a class="brand" href="index.html">{MARK}FARPOINT&nbsp;<span>ENERGY</span></a>
 <input type="checkbox" id="navtoggle" class="navtoggle" aria-hidden="true"><label for="navtoggle" class="navbtn" aria-label="Menu"><i></i>Menu</label>
