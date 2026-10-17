@@ -1,259 +1,210 @@
 #!/usr/bin/env python3
-"""Farpoint Energy website generator. Content lives in content.py; run `python3 build.py` to regenerate all pages."""
-import pathlib, html as H
+"""Build the Farpoint static website: python3 build.py."""
+import hashlib
+import html as H
+import json
+import pathlib
+from urllib.parse import urlencode
 from content import *
+from inquiry import render_form, thanks_content
+
 OUT = pathlib.Path(__file__).parent
 E = H.escape
 MARK = '<svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="1" width="38" height="38" fill="none" stroke="#C4732C" stroke-width="3"/><line x1="7" y1="28" x2="33" y2="28" stroke="currentColor" stroke-width="3"/><circle cx="29" cy="13" r="4" fill="#C4732C"/></svg>'
-NAV = [("Products", "products.html"), ("Applications", "applications.html"), ("Manufacturing base", "manufacturing.html"),
-       ("Quality", "quality.html"), ("Delivery & warranty", "delivery.html"), ("About", "about.html")]
+NAV = [("Products", "products.html"), ("Applications", "applications.html"), ("Quality and delivery", "quality.html"), ("About", "about.html")]
 
-# Single-line diagram: generation → inverter → transformer → breaker → POI bus. Copper on navy.
-DIAGRAM = """<svg class="sld" viewBox="0 0 560 300" aria-label="Single-line diagram: generation, inverter, main power transformer, breaker, point of interconnection" role="img">
-<defs><pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#2A3D53" stroke-width=".6"/></pattern></defs>
-<rect width="560" height="300" fill="url(#g)"/>
-<g fill="none" stroke="#C4732C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-<rect x="22" y="112" width="60" height="42" rx="2"/><path d="M32 112v42M42 112v42M52 112v42M62 112v42M72 112v42M22 126h60M22 140h60"/>
-<path d="M82 133h40"/>
-<rect x="122" y="106" width="56" height="54" rx="2"/><path d="M122 160l56-54"/><path d="M130 122h18"/><path d="M148 148c4-8 10-8 14 0"/>
-<path d="M178 133h44"/>
-<circle cx="247" cy="133" r="24"/><circle cx="279" cy="133" r="24"/>
-<path d="M303 133h40"/>
-<rect x="343" y="118" width="30" height="30"/><path d="M373 133h40"/>
-<path d="M413 60v146" stroke-width="4"/>
-<path d="M413 100h70M413 166h70"/><path d="M483 100l12-8v16zM483 166l12-8v16z" fill="#C4732C"/>
-<path d="M263 157v28" stroke-dasharray="3 4"/><path d="M251 185h24M255 191h16M259 197h8"/>
-</g>
-<g font-family="IBM Plex Mono,ui-monospace,monospace" font-size="11" fill="#DCE2E8" letter-spacing=".08em">
-<text x="22" y="176">GENERATION</text><text x="122" y="182">INVERTER</text><text x="222" y="216">MAIN POWER</text><text x="222" y="230">TRANSFORMER</text>
-<text x="337" y="170">BREAKER</text><text x="548" y="52" text-anchor="end">POINT OF INTERCONNECTION</text>
-<text x="190" y="98" fill="#C4732C">34.5 kV</text><text x="303" y="98" fill="#C4732C">69 – 230 kV</text>
-</g></svg>"""
+CSS = '''
+:root{--ink:#0E1B2B;--copper:#C4732C;--copper-dk:#9E5A1F;--steel:#EEF1F4;--slate:#5A6675;--line:#D4DCE3;--tint:#F8F9FA;--paper:#fff;--f-display:Archivo,Arial,sans-serif;--f-body:"Source Sans 3",Arial,sans-serif;--f-mono:"IBM Plex Mono",monospace}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:90px}body{margin:0;background:var(--paper);color:var(--ink);font:18px/1.6 var(--f-body);overflow-wrap:break-word}a{color:var(--copper-dk);text-underline-offset:4px}a:hover{text-decoration-thickness:2px}button,input,select,textarea{font:inherit}button,a,input,select,textarea,summary{-webkit-tap-highlight-color:transparent}:focus-visible{outline:3px solid var(--copper);outline-offset:4px}h1,h2,h3{font-family:var(--f-display);font-weight:600;line-height:1.15;margin:0 0 16px;letter-spacing:-.025em}h1{font-size:clamp(36px,4.7vw,66px);max-width:18ch}h2{font-size:clamp(28px,3vw,40px)}h3{font-size:24px}p{margin:0 0 18px}ul{padding-left:22px}img,svg{max-width:100%}.wrap{width:min(1180px,calc(100% - 80px));margin:auto}.small{font-size:15px}.muted{color:var(--slate)}.mono{font-family:var(--f-mono)}.mt{margin-top:20px}.eyebrow{font:500 12px/1.5 var(--f-mono);text-transform:uppercase;letter-spacing:.13em;color:var(--copper-dk);margin-bottom:16px}.s{padding:72px 0}.s.alt{background:var(--tint)}.s.dark{background:var(--ink);color:#fff}.s.dark .eyebrow{color:#E4A568}.s.dark a{color:#F2BC89}.section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;margin-bottom:28px}.section-head p{max-width:48ch;margin-bottom:0}.cols,.grid2{display:grid;grid-template-columns:1fr 1fr;gap:36px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}.cols>*{min-width:0}.section-intro{max-width:740px;margin-bottom:30px}.skip{position:absolute;top:-80px;left:16px;z-index:20;background:#fff;padding:12px}.skip:focus{top:8px}.nav{background:var(--ink);color:#fff;border-bottom:1px solid #314254}.nav .wrap{min-height:92px;display:flex;align-items:center;justify-content:space-between;gap:28px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:9px;color:inherit;text-decoration:none;font:600 19px/1 var(--f-display);letter-spacing:.03em;white-space:nowrap}.brand span{font-weight:400}.mark{width:32px;height:32px;flex:none}.nav ul{display:flex;list-style:none;gap:25px;align-items:center;padding:0;margin:0}.nav a.l{display:inline-flex;align-items:center;min-height:44px;color:#E8EDF2;font-size:15px;text-decoration:none}.nav a[aria-current=page]{box-shadow:inset 0 -2px var(--copper)}.navbtn{display:none;border:1px solid #667487;background:none;color:#fff;min-height:44px;padding:8px 14px;cursor:pointer}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:11px 21px;background:var(--copper-dk);border:1px solid var(--copper-dk);color:white;text-decoration:none;font:600 15px/1.4 var(--f-display);cursor:pointer;border-radius:2px}.btn:hover{background:#824819;color:#fff}.btn.ghost{background:transparent;border-color:var(--line);color:var(--ink)}.btn.ghost:hover{background:var(--steel)}.btn.onDark{color:#fff;border-color:#637184}.btn.onDark:hover{background:#22354A}.btn:disabled{opacity:.65;cursor:wait}.cta{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0 18px}.hero{padding:58px 0 64px;background:var(--ink);color:#fff}.hero .eyebrow{color:#E4A568}.hero .sub{font-size:21px;line-height:1.5;color:#CCD7E1;max-width:64ch;margin:24px 0 0}.hero a.email{color:#D6DFE7;font-size:15px}.hero-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:54px;align-items:center}.hero.plain h1{max-width:25ch;font-size:clamp(34px,4vw,56px)}.hero-art{border:1px solid #33465B;padding:22px 22px 16px;background:linear-gradient(135deg,#13253A,#0E1B2B)}.hero-art svg{width:100%;display:block}.hero-art figcaption{color:#B5C4D1;font:11px/1.6 var(--f-mono);margin-top:14px;letter-spacing:.03em}.hero-art{margin:0}.hero-art .diagram-title{font:12px var(--f-mono);letter-spacing:.1em;color:#C0CED9}.product-card{border:1px solid var(--line);border-top:3px solid var(--copper);padding:30px;background:#fff;display:flex;flex-direction:column;position:relative;min-width:0}.product-card h3{font-size:28px;max-width:17ch}.product-card .number{font:12px var(--f-mono);color:var(--slate);margin-bottom:30px}.product-card p{max-width:48ch;color:var(--slate)}.product-card .more{margin-top:auto;padding-top:16px;font-weight:600;min-height:44px}.product-icon{position:absolute;right:26px;top:24px;width:58px;height:48px;color:var(--copper-dk)}.support-line{margin:25px 0 0;font-size:16px}.card{padding:26px;border:1px solid var(--line);background:#fff;min-width:0}.card h3{font-size:23px}.card p{font-size:17px;color:var(--slate)}.card a{display:inline-flex;align-items:center;min-height:44px;font-weight:600}.label-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}.label-list a{border:1px solid var(--line);padding:9px 15px;font-size:16px;min-height:44px;text-decoration:none;background:white}.proposal-grid{border-top:1px solid var(--line);padding-top:28px}.proposal-item{padding:0 18px 0 0}.proposal-item span{display:block;color:var(--copper-dk);font:12px var(--f-mono);margin-bottom:14px}.proposal-item h3{font-size:20px}.proposal-item p{font-size:16px;color:var(--slate)}.steps{list-style:none;counter-reset:step;padding:0;margin:28px 0 0;display:grid;grid-template-columns:repeat(4,1fr);gap:28px}.steps li{counter-increment:step;border-top:1px solid #57687B;padding-top:18px}.steps li:before{content:"0" counter(step);display:block;color:#E4A568;font:13px var(--f-mono);margin-bottom:20px}.steps b{display:block;font:600 20px/1.3 var(--f-display);margin-bottom:12px}.steps p{font-size:16px;color:#C5D1DD}.compact-steps{list-style:decimal;padding-left:24px}.compact-steps li{padding:0 0 18px 8px}.compact-steps b{display:block;font-family:var(--f-display)}.check{padding-left:20px}.check li{padding-left:4px;margin:10px 0}.check li::marker{color:var(--copper-dk)}.panel{padding:22px 25px;background:var(--steel);border-left:3px solid var(--copper);margin:26px 0}.tbl{overflow-x:auto;margin:24px 0;border:1px solid var(--line)}table{width:100%;border-collapse:collapse;font-size:16px}th,td{padding:15px 18px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{background:var(--steel);font:500 12px/1.5 var(--f-mono);text-transform:uppercase;letter-spacing:.05em}td.v{font-family:var(--f-mono);font-size:14px}.sku{font-weight:600}tr:last-child td{border-bottom:0}.subnav{display:flex;gap:22px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:32px}.subnav a{padding:12px 0;min-height:44px}.subnav a[aria-current]{color:var(--ink);font-weight:600;border-bottom:2px solid var(--copper)}details{border-top:1px solid var(--line);padding:18px 0}summary{cursor:pointer;font:600 19px/1.4 var(--f-display);min-height:44px;padding:9px 0}details[open] summary{margin-bottom:16px}.app-section{scroll-margin-top:24px}.app-section h2{font-size:34px}.footer-cta{display:flex;justify-content:space-between;gap:32px;align-items:center;border-top:1px solid var(--line);padding-top:36px;margin-top:44px}.footer-cta h2{font-size:30px}.footer-cta p{max-width:60ch}.footer-cta .btn{flex:none}footer{background:var(--ink);color:#B9C7D4;padding:42px 0 24px;font-size:15px}footer .footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:40px}footer .brand{color:#fff;margin-bottom:18px}footer a{color:#E7ECF2;display:inline-flex;align-items:center;min-height:36px}footer p{margin-bottom:8px}.footnote{border-top:1px solid #354457;padding-top:20px;margin-top:30px;font:12px var(--f-mono);color:#A2B2C2}.formbox{padding:28px;border:1px solid var(--line);background:#fff}.q{display:grid;grid-template-columns:1fr 1fr;gap:18px}.q .full{grid-column:1/-1}.q label{display:block;font-size:15px;font-weight:600;line-height:1.5;margin-bottom:7px}.q input,.q select,.q textarea{width:100%;max-width:100%;border:1px solid #A9B5C2;border-radius:2px;padding:11px 12px;background:white;color:var(--ink);font-size:16px;min-height:46px}.q textarea{min-height:130px;resize:vertical}.q details{grid-column:1/-1}.q .fields,.form-grid,.optional-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.field-pair,.input-unit,.unit-pair{display:grid;grid-template-columns:minmax(0,1fr) 105px;gap:10px}.q small,.hint,.form-hint{font-size:14px;color:var(--slate);display:block;margin:6px 0 0}.q .error,.field-error{color:#9F2626;font-size:14px;margin:5px 0 0}.form-status{padding:16px;border-left:3px solid var(--copper);background:var(--steel)}.q [aria-invalid=true]{border-color:#A52A2A}.q .honeypot{display:none}.quote-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:48px;align-items:start}.quote-aside{font-size:17px}.quote-aside h2{font-size:27px}.quote-aside h3{font-size:22px}.attachment-field label{display:block;font-size:15px;font-weight:600;margin-bottom:8px}.attachment-field input{width:100%;min-height:46px;padding:11px 12px;border:1px solid #A9B5C2;font-size:16px}.field-hint{font-weight:400;color:var(--slate);font-size:14px}.q [hidden],[hidden]{display:none!important}.prose{max-width:780px}.prose h2{margin-top:35px;font-size:28px}
+@media(min-width:1600px){.hero{padding:76px 0}}
+@media(max-width:1100px){.nav .wrap{gap:18px}.nav ul{gap:16px}.nav .brand{font-size:17px}.nav .btn{padding:10px 14px}.hero-grid{gap:28px}.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.nav .wrap{padding:17px 0;min-height:78px}.nav ul{width:100%;flex-wrap:wrap;border-top:1px solid #34465B;padding-top:16px}.navbtn:not([hidden]){display:inline-flex}.nav.menu-ready ul:not(.is-open){display:none}.hero-grid{grid-template-columns:1fr}.hero-art{display:none}.hero h1{max-width:20ch}.hero .sub{max-width:57ch}.section-head{display:block}.section-head p{margin-top:18px}.grid3{grid-template-columns:1fr}.steps{grid-template-columns:1fr 1fr}.quote-grid{grid-template-columns:1fr;gap:36px}.footer-cta{align-items:flex-start;flex-direction:column}.cols{gap:28px}.q .full{min-width:0}}
+@media(max-width:600px){.wrap{width:calc(100% - 40px)}body{font-size:17px}.s{padding:46px 0}.hero{padding:40px 0 46px}.hero .sub{font-size:19px}.hero .cta .btn{width:100%}.nav .brand{font-size:16px;gap:7px}.nav .mark{width:28px;height:28px}.nav ul{display:block}.nav li a.l{padding:7px 0}.nav li .btn{margin-top:12px;width:100%}.grid2,.grid4,.cols{grid-template-columns:1fr}.product-card{padding:25px}.product-card .number{margin-bottom:24px}.product-card h3{font-size:26px}.product-icon{right:22px}.proposal-grid{gap:24px}.proposal-item{border-bottom:1px solid var(--line);padding-bottom:8px}.steps{gap:22px}.steps b{font-size:18px}.steps p{font-size:15px}.q,.q .fields,.form-grid,.optional-grid{grid-template-columns:1fr}.formbox{padding:20px}.section-head h2{max-width:20ch}.footer-grid{grid-template-columns:1fr!important;gap:26px!important}.footer-cta h2{font-size:27px}.tbl table{min-width:560px}.tbl{scrollbar-width:thin}.label-list{gap:8px}h1{font-size:36px}.hero.plain h1{font-size:34px}.brand span{letter-spacing:0}.formbox .btn{width:100%}}
+@media(max-width:359px){.wrap{width:calc(100% - 32px)}.nav .brand{font-size:14px}.nav .wrap{gap:10px}.navbtn{padding:8px 10px}h1{font-size:33px}.steps{grid-template-columns:1fr}.product-card{padding:22px}.formbox{padding:16px}.field-pair,.input-unit,.unit-pair{grid-template-columns:minmax(0,1fr) 90px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+'''
 
-CSS = """
-:root{--ink:#0E1B2B;--ink2:#16263A;--copper:#C4732C;--copper-dk:#9E5A1F;--steel:#EEF1F4;--slate:#5A6675;--line:#CBD3DB;--paper:#FFFFFF;--tint:#F7F8FA;--text:#0E1B2B;
---f-display:"Archivo",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;--f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;--f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
-*{box-sizing:border-box}html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--paper);color:var(--text);font-family:var(--f-body);font-size:17px;line-height:1.55;overflow-x:hidden}
-a{color:var(--copper-dk)}img,svg{max-width:100%}
-h1,h2,h3,h4{font-family:var(--f-display);letter-spacing:-0.01em;line-height:1.12;margin:0;text-wrap:balance;overflow-wrap:anywhere}
-h1{font-size:clamp(30px,6.5vw,54px);font-weight:700}h2{font-size:clamp(24px,4vw,36px);font-weight:700}h3{font-size:20px;font-weight:600}h4{font-size:16px;font-weight:600}
-p{margin:0 0 14px;max-width:66ch}
-.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--copper);margin-bottom:10px}
-.mono{font-family:var(--f-mono)}.muted{color:var(--slate)}.small{font-size:15px}.mt{margin-top:14px}
-.wrap{max-width:1120px;margin:0 auto;padding-inline:clamp(16px,4vw,40px)}
-.nav{background:var(--ink);color:#fff;position:sticky;top:0;z-index:20}
-.nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:14px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-family:var(--f-display);font-weight:700;letter-spacing:.16em;font-size:14px;white-space:nowrap}
-.brand .mark{width:22px;height:22px;color:#fff;flex:none}.brand span{font-weight:400;color:#B9C3CE;letter-spacing:.2em}
-.nav ul{list-style:none;margin:0;padding:0;display:flex;gap:22px;flex-wrap:wrap;align-items:center}
-.nav a.l{color:#DCE2E8;text-decoration:none;font-size:15px;padding-block:4px;border-bottom:2px solid transparent}.nav a.l:hover,.nav a.l[aria-current]{color:#fff;border-bottom-color:var(--copper)}
-.navtoggle,.navbtn{display:none}
-.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:var(--copper);color:#fff;text-decoration:none;font-family:var(--f-display);font-weight:600;padding:10px 20px;border-radius:2px;font-size:15px;border:0;cursor:pointer}
-.btn:hover{background:var(--copper-dk)}.btn.ghost{background:transparent;border:1.5px solid var(--copper);color:var(--copper)}.btn.ghost.onDark{color:#fff;border-color:#fff}
-.nav .btn{min-height:40px;padding:8px 16px}
-.hero{background:var(--ink);color:#fff;padding-block:clamp(48px,8vw,104px);position:relative;overflow:hidden}
-.hero .wrap{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:40px;align-items:center}
-.hero.plain .wrap{display:block}
-.hero h1{color:#fff;max-width:18ch}.hero .sub{font-family:var(--f-display);font-weight:400;font-size:clamp(17px,2vw,21px);color:#B9C3CE;max-width:52ch;margin-top:18px}
-.hero .cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:28px}
-.sld{width:100%;height:auto;display:block;border:1px solid #2A3D53}
-.strip{border-top:1px solid #33465B;margin-top:44px;padding-top:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px 24px;font-family:var(--f-mono);font-size:13px;letter-spacing:.06em;color:#DCE2E8;grid-column:1/-1}
-section.s{padding-block:clamp(44px,7vw,84px)}section.s.alt{background:var(--tint)}section.s.dark{background:var(--ink);color:#fff}section.s.dark h2,section.s.dark h3{color:#fff}section.s.dark p{color:#DCE2E8}
-.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:36px}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:14px;margin-top:24px}
-.tile{background:var(--steel);padding:18px 20px;border-top:3px solid var(--copper);color:var(--ink)}
-.tile .v{font-family:var(--f-display);font-weight:700;font-size:clamp(22px,3vw,30px);line-height:1.05;overflow-wrap:anywhere}
-.tile .l{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--slate);margin-top:6px}
-.steps{counter-reset:s;list-style:none;margin:20px 0 0;padding:0}
-.steps li{display:grid;grid-template-columns:40px 1fr;gap:14px;padding:16px 0;border-top:1px solid var(--line)}
-.steps li::before{counter-increment:s;content:counter(s,decimal-leading-zero);font-family:var(--f-mono);color:var(--copper);font-size:15px;padding-top:3px}
-.steps b{font-family:var(--f-display);font-weight:600;display:block;margin-bottom:3px}
-.panel{background:var(--tint);border-left:3px solid var(--copper);padding:16px 20px;margin:18px 0;max-width:70ch}
-.tbl{overflow-x:auto;border:1px solid var(--line);background:#fff;margin-top:20px;-webkit-overflow-scrolling:touch}
-table{border-collapse:collapse;width:100%;font-size:15px}
-th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
-th{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);background:var(--steel);font-weight:500}
-td.k{color:var(--slate);width:30%}td.v{font-family:var(--f-mono);font-size:14px;white-space:nowrap}
-tr.sec td{background:var(--tint);font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
-.sku{font-family:var(--f-mono);font-weight:500;white-space:nowrap}
-ul.check{list-style:none;padding:0;margin:12px 0}ul.check li{position:relative;padding-left:18px;margin:8px 0}
-ul.check li::before{content:"";position:absolute;left:0;top:10px;width:7px;height:7px;background:var(--copper)}
-.card{border:1px solid var(--line);padding:22px 24px;background:#fff;display:flex;flex-direction:column;gap:8px;color:var(--ink)}
-.card .tag{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--copper)}
-.card p{margin:0}.card a.more{margin-top:auto;font-family:var(--f-display);font-weight:600;text-decoration:none;color:var(--copper-dk)}
-.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin-top:20px}
-.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:16px;margin-top:20px}
-details{border-top:1px solid var(--line);padding:14px 0}details summary{cursor:pointer;font-family:var(--f-display);font-weight:600;font-size:18px;list-style:none;display:flex;justify-content:space-between;gap:12px}
-details summary::-webkit-details-marker{display:none}details summary::after{content:"+";color:var(--copper);font-weight:400;flex:none}details[open] summary::after{content:"–"}
-footer{background:var(--ink);color:#B9C3CE;padding-block:40px;font-size:14px}
-footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}footer a{color:#fff}
-form.q{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}form.q .full{grid-column:1/-1}
-form.q label{display:block;font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--slate);margin-bottom:5px}
-form.q input,form.q select,form.q textarea{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:2px;background:#fff;color:var(--ink);min-height:44px}
-form.q textarea{min-height:120px;resize:vertical}form.q input:focus,form.q select:focus,form.q textarea:focus{outline:2px solid var(--copper);outline-offset:1px;border-color:var(--copper)}
-.formbox{border:1px solid var(--line);background:#fff;padding:clamp(16px,3vw,28px)}
-@media (max-width:900px){
- .nav .wrap{padding-block:10px}.navbtn{display:inline-flex;align-items:center;gap:8px;color:#fff;font-family:var(--f-display);font-weight:600;font-size:14px;cursor:pointer;padding:8px 0;min-height:44px;margin-left:auto}
- .navbtn i{display:block;width:22px;height:2px;background:#fff;box-shadow:0 -7px 0 #fff,0 7px 0 #fff}
- .nav ul{display:none;width:100%;flex-direction:column;align-items:stretch;gap:0;padding-block:6px 10px;border-top:1px solid #33465B}
- .nav ul li a.l{display:block;padding:12px 0;font-size:17px;border-bottom:1px solid #1F3247}.nav ul li a.l[aria-current]{border-bottom-color:var(--copper)}
- .nav ul li:last-child{padding-top:12px}.nav .btn{width:100%}
- .navtoggle:checked~ul{display:flex}
- .hero .wrap{grid-template-columns:1fr;gap:28px}.hero .sld{max-width:520px}
- .hero .cta .btn{width:100%}.strip{grid-template-columns:1fr 1fr;margin-top:32px}
- .steps li{grid-template-columns:32px 1fr}form.q{grid-template-columns:1fr}
- table.stack thead{display:none}table.stack tr{display:block;padding:8px 0;border-bottom:2px solid var(--line)}
- table.stack td{display:grid;grid-template-columns:110px 1fr;gap:10px;border:0;padding:5px 12px;white-space:normal}
- table.stack td::before{content:attr(data-label);font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--slate);padding-top:2px}
- table.stack td.sku{display:block;font-size:16px;font-family:var(--f-display);font-weight:600;padding-top:8px}table.stack td.sku::before{display:none}
-}
-"""
+SHARED_JS = '''
+(() => {
+  const allowedApplications = new Set(['data-center','solar','storage','utility','industrial','other']);
+  const allowedProducts = new Set(['power','distribution','unsure']);
+  const params = new URLSearchParams(location.search);
+  const app = params.get('application');
+  const combined = location.pathname.endsWith('/solar-storage.html') && ['solar','storage'].includes(app);
+  if ((allowedProducts.has(document.body.dataset.product) || combined) && params.getAll('application').length === 1 && allowedApplications.has(app)) {
+    document.body.dataset.application = app;
+    document.querySelectorAll('a[href]').forEach(link => {
+      const target = link.getAttribute('href');
+      if (target.startsWith('#')) return;
+      const url = new URL(target, location.href);
+      if (url.origin === location.origin && ['/quote.html','/power-transformers.html','/distribution-transformers.html'].some(route => url.pathname.endsWith(route))) {
+        url.searchParams.set('application', app);
+        link.setAttribute('href', url.pathname.split('/').pop() + '?' + url.searchParams.toString() + url.hash);
+      }
+    });
+  }
+  const nav = document.querySelector('.nav');
+  const toggle = document.querySelector('.navbtn');
+  const menu = document.getElementById('site-menu');
+  if (nav && toggle && menu) {
+    toggle.hidden = false;
+    nav.classList.add('menu-ready');
+    const close = () => { menu.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); };
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') !== 'true';
+      menu.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+    });
+    nav.addEventListener('keydown', event => { if (event.key === 'Escape') { close(); toggle.focus(); } });
+    menu.addEventListener('click', event => { if (event.target.closest('a')) close(); });
+    window.addEventListener('pageshow', close);
+  }
+})();
+'''
 
-def page(title, body, current, desc):
-    VER = __import__("hashlib").md5(CSS.encode()).hexdigest()[:8]
-    nav = "".join('<li><a class="l" href="%s"%s>%s</a></li>' % (h, ' aria-current="page"' if h == current else '', t) for t, h in NAV)
-    return f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title}</title><meta name="description" content="{desc}">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="style.css?v={VER}">
-</head><body>
-<nav class="nav"><div class="wrap"><a class="brand" href="index.html">{MARK}FARPOINT&nbsp;<span>ENERGY</span></a>
-<input type="checkbox" id="navtoggle" class="navtoggle" aria-hidden="true"><label for="navtoggle" class="navbtn" aria-label="Menu"><i></i>Menu</label>
-<ul>{nav}<li><a class="btn" href="quote.html">Request a quotation</a></li></ul></div></nav>
-{body}
-<footer><div class="wrap"><div><div class="brand" style="margin-bottom:10px">{MARK}FARPOINT&nbsp;<span>ENERGY</span></div>Power transformers, engineered to your specification.<br>{SITE['city']}</div>
-<div><a href="mailto:{SITE['email']}">{SITE['email']}</a><br><a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a><br><a href="quote.html">Request a quotation</a></div>
-<div class="mono" style="font-size:12px;align-self:flex-end">© 2026 Farpoint Energy · IEEE C57.12.00 / C57.12.90</div></div></footer>
-</body></html>"""
+def href(category=None, application=None):
+    params = {k: v for k, v in [('product', category), ('application', application)] if v}
+    return 'quote.html' + ('?' + urlencode(params) if params else '')
 
-def hero(eyebrow, h1, sub=None, diagram=False, cta=None, strip=None):
-    inner = f'<div><div class="eyebrow">{E(eyebrow)}</div><h1>{E(h1)}</h1>' + (f'<p class="sub">{E(sub)}</p>' if sub else '') + (cta or '') + '</div>'
-    if diagram: inner += f'<div>{DIAGRAM}</div>'
-    if strip: inner += f'<div class="strip">{"".join(f"<span>{E(x)}</span>" for x in strip)}</div>'
-    cls = "hero" if diagram else "hero plain"
-    sty = "" if diagram else ' style="padding-block:clamp(40px,6vw,72px)"'
-    return f'<header class="{cls}"{sty}><div class="wrap">{inner}</div></header>'
+def checks(items):
+    return '<ul class="check">' + ''.join(f'<li>{E(x)}</li>' for x in items) + '</ul>'
 
-def steps(items): return '<ol class="steps">' + "".join(f'<li><div><b>{E(b)}</b>{E(t)}</div></li>' for b, t in items) + '</ol>'
-def checks(items): return '<ul class="check">' + "".join(f'<li>{E(i)}</li>' for i in items) + '</ul>'
-def tiles(items, mt=True): return f'<div class="tiles"{"" if mt else " style=margin-top:0"}>' + "".join(f'<div class="tile"><div class="v">{E(v)}</div><div class="l">{E(l)}</div></div>' for v, l in items) + '</div>'
+def hero(eyebrow, title, sub='', actions='', graphic=False):
+    content = f'<div><div class="eyebrow">{E(eyebrow)}</div><h1>{E(title)}</h1><p class="sub">{E(sub)}</p>{actions}</div>'
+    if graphic:
+        content += diagram()
+    return f'<header class="hero {"" if graphic else "plain"}"><div class="wrap {"hero-grid" if graphic else ""}">{content}</div></header>'
 
-CAP_HEAD = ["Family", "HV class", "Rating", "BIL (HV)", "Typical use"]
-def cap_table(notes=True):
-    heads = CAP_HEAD if notes else CAP_HEAD[:4]
-    rows = ""
-    for r in CAPABILITY:
-        cells = r if notes else r[:4]
-        rows += "<tr>" + "".join(f'<td data-label="{heads[i]}" class="{"sku" if i==0 else ("v" if i in (1,2,3) else "")}">{E(c)}</td>' for i, c in enumerate(cells)) + "</tr>"
-    return f'<div class="tbl"><table class="stack"><thead><tr>{"".join(f"<th>{h}</th>" for h in heads)}</tr></thead><tbody>{rows}</tbody></table></div><p class="small muted" style="margin-top:10px">{E(CAP_NOTE)}</p>'
+def diagram():
+    return '''<figure class="hero-art"><div class="diagram-title">TRANSFORMER SUPPLY / TWO PRODUCT PATHS</div><svg viewBox="0 0 420 250" role="img" aria-labelledby="diagram-title"><title id="diagram-title">Illustrative power and distribution transformer symbols, shown as equal product categories</title><g fill="none" stroke="#8D9EAF" stroke-width="1"><path d="M0 40H420M0 90H420M0 140H420M0 190H420M50 20V225M130 20V225M210 20V225M290 20V225M370 20V225" opacity=".15"/></g><g fill="none" stroke="#E4A568" stroke-width="2"><path d="M95 60V85M95 167V192M310 60V85M310 167V192"/><circle cx="95" cy="116" r="31"/><circle cx="95" cy="140" r="27"/><circle cx="310" cy="116" r="31"/><circle cx="310" cy="140" r="27"/></g><g font-family="Arial,sans-serif" fill="#DAE4EC" font-size="16" text-anchor="middle"><text x="95" y="223">Power</text><text x="310" y="223">Distribution</text></g><path d="M210 70V185" stroke="#43556A" stroke-dasharray="3 6"/></svg><figcaption>Illustrative product symbols. Configuration is set by the project specification.</figcaption></figure>'''
 
-# ---------- HOME
-apps = "".join(f'<div class="card"><div class="tag">{E(m["name"])}</div><p>{E(m["lead"])}</p><a class="more" href="applications.html#{m["id"]}">Read more →</a></div>' for m in APPLICATIONS)
-home = hero(HERO['eyebrow'], HERO['h1'], HERO['sub'], diagram=True,
-            cta='<div class="cta"><a class="btn" href="quote.html">Request a quotation</a><a class="btn ghost onDark" href="products.html">Capability and product line</a></div>', strip=HERO['strip']) + f"""
-<section class="s"><div class="wrap"><div class="eyebrow">{E(ETO['h'])}</div><h2>Every unit is designed for its project</h2><p class="mt">{E(ETO['p'])}</p>{cap_table(notes=False)}
-<p class="mt"><a class="btn ghost" href="products.html">Capability ranges and the FP-MPT standard line</a></p></div></section>
-<section class="s alt"><div class="wrap"><div class="eyebrow">Applications</div><h2>What your site does to the transformer, and what changes in the design because of it</h2><div class="grid4">{apps}</div></div></section>
-<section class="s dark"><div class="wrap"><div class="cols"><div><div class="eyebrow">{E(BASE['h'])}</div><h2>{E(BASE['model_h'])}</h2><p class="mt">{E(BASE['model'])}</p><p><a class="btn ghost onDark" href="manufacturing.html">The manufacturing base</a></p></div>
-<div>{tiles(BASE['facts'], mt=False)}</div></div></div></section>
-<section class="s"><div class="wrap"><div class="cols"><div><div class="eyebrow">Quality</div><h2>{E(QUALITY['h'])}</h2><p class="mt">{E(QUALITY['blocks'][2][1])}</p><p><a href="quality.html">Test program, inspection points, and documentation →</a></p></div>
-<div><div class="eyebrow">Delivery &amp; warranty</div><h2>{E(DELIVERY['warranty_h'])}</h2><p class="mt">{E(DELIVERY['warranty'])}</p><p><a href="delivery.html">Lead time, stages, and service →</a></p></div></div></div></section>
-"""
-(OUT/"index.html").write_text(page("Farpoint Energy — Power transformers, engineered to your specification", home, "index.html", "Power transformers to 250 MVA and 230 kV for utility, renewable, storage, data center, and industrial projects. IEEE C57 design and test, three-year warranty, 100 units per year."))
+def icon():
+    return '<svg class="product-icon" viewBox="0 0 64 50" aria-hidden="true"><path d="M4 25H15M49 25H60" stroke="currentColor" fill="none" stroke-width="2"/><circle cx="26" cy="25" r="13" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="39" cy="25" r="13" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
 
-# ---------- PRODUCTS
-s = STANDARD
-lineup = "".join(f'<tr><td class="sku" data-label="Configuration">{E(a)}</td><td class="v" data-label="Rating">{E(b)}</td><td class="v" data-label="High side">{E(c)}</td><td class="v" data-label="Low side">{E(d)}</td></tr>' for a,b,c,d in s['lineup'])
-products = hero("Products", "Power transformers to 250 MVA and 230 kV", "Main power, generator step-up, substation, auto, and special-duty transformers, engineered to your specification. A pre-engineered standard line for solar and storage interconnections.") + f"""
-<section class="s"><div class="wrap"><div class="eyebrow">{E(ETO['h'])}</div><h2>Capability ranges</h2><p class="mt">{E(ETO['p'])}</p>{cap_table()}</div></section>
-<section class="s alt"><div class="wrap"><div class="eyebrow">Standard line</div><h2>{E(s['h'])}</h2><p class="mt">{E(s['p'])}</p>
-<div class="tbl"><table class="stack"><thead><tr><th>Configuration</th><th>Rating</th><th>High side</th><th>Low side</th></tr></thead><tbody>{lineup}</tbody></table></div>
-<p class="small muted" style="margin-top:12px">{E(s['common'])}</p><p class="small">{E(s['options'])}</p>
-<div class="panel">{E(s['catalog_note'])} <a href="quote.html">Request it with your quotation.</a></div></div></section>
-<section class="s"><div class="wrap"><div class="cols"><div><h2>Already have a specification?</h2><p class="mt">Send it. The quotation answers every clause: comply, comply with clarification, or exception. Your utility's standard specification works the same way.</p></div>
-<div><h2>Early in development?</h2><p class="mt">Send the single-line diagram, the MW at the point of interconnection, and the site conditions. We propose the unit and quote it.</p><a class="btn" href="quote.html">Request a quotation</a></div></div></div></section>"""
-(OUT/"products.html").write_text(page("Products — Farpoint Energy", products, "products.html", "Main power, generator step-up, substation, auto, and special-duty transformers to 250 MVA and 230 kV, and the FP-MPT standard line for 50 and 100 MW solar and storage blocks."))
+def product_cards(application=None):
+    return '<div class="grid2">' + ''.join(f'<article class="product-card"><span class="number">0{i+1} / TRANSFORMERS</span>{icon()}<h3>{E(p["name"])}</h3><p>{E(p["summary"])}</p><a class="more" href="{p["route"]}">Explore {E(p["name"].lower())} <span aria-hidden="true">→</span></a></article>' for i,p in enumerate(PRODUCT_CATEGORIES)) + '</div>'
 
-# ---------- APPLICATIONS
-asec = "".join(f"""
-<section class="s{' alt' if i%2 else ''}" id="{m['id']}"><div class="wrap"><div class="cols"><div><div class="eyebrow">Applications</div><h2>{E(m['name'])}</h2><p class="mt" style="font-family:var(--f-display);font-size:19px">{E(m['lead'])}</p></div>
-<div><p>{E(m['body'])}</p></div></div></div></section>""" for i,m in enumerate(APPLICATIONS))
-applications = hero("Applications", "Every project loads a transformer differently", "What your site does to the unit, and what changes in the design because of it.") + asec + f"""
-<section class="s dark"><div class="wrap"><h2>Your application is not listed?</h2><p class="mt">Special-duty units, ester-filled designs, furnace and rectifier duty, and replacements to an existing nameplate are engineered per project.</p><a class="btn" href="quote.html">Request a quotation</a></div></section>"""
-(OUT/"applications.html").write_text(page("Applications — Farpoint Energy", applications, "applications.html", "Power transformers for utilities, utility-scale solar, battery storage, hybrid sites, data centers, industrial plants, wind, and fleet replacement."))
+def proposal():
+    return '<section class="s"><div class="wrap"><div class="section-head"><div><div class="eyebrow">Your proposal</div><h2>A clear basis for the purchase</h2></div><p>Review the configuration, scope and schedule together. Technical exceptions are set out for your team.</p></div><div class="grid4 proposal-grid">' + ''.join(f'<div class="proposal-item"><span>0{i+1}</span><h3>{E(h)}</h3><p>{E(p)}</p></div>' for i,(h,p) in enumerate(PROPOSAL)) + '</div></div></section>'
 
-# ---------- MANUFACTURING BASE
-b = BASE
-manufacturing = hero("Manufacturing base", b['h'], b['intro']) + f"""
-<section class="s"><div class="wrap">{tiles(b['facts'], mt=False)}<div class="cols" style="margin-top:36px"><div><h2>Plants and laboratories</h2>{checks(b['lines'])}</div>
-<div><h2>{E(b['model_h'])}</h2><p class="mt">{E(b['model'])}</p><p><a href="quality.html">How every unit is inspected and tested →</a></p></div></div></div></section>
-<section class="s alt"><div class="wrap"><h2>Visit the plant building your unit</h2><p class="mt">Buyers and owner's engineers are welcome at the plant for the pre-production audit, at any inspection hold point, and for the witnessed factory acceptance test. Farpoint arranges the visit and hosts it.</p><a class="btn" href="quote.html">Request a quotation</a></div></section>"""
-(OUT/"manufacturing.html").write_text(page("Manufacturing base — Farpoint Energy", manufacturing, "manufacturing.html", "Farpoint units are built across a qualified base of established power-transformer plants with ISO/IEC 17025 laboratories, 100+ GVA combined capacity, and units in service in 25+ countries."))
+def cta(category=None, application=None, title='Have a transformer requirement?'):
+    return f'<div class="footer-cta"><div><h2>{E(title)}</h2><p>Send your specification, equipment schedule or an outline of the requirement. Include your required site date when known.</p><a href="mailto:{SITE["email"]}">{SITE["email"]}</a></div><a class="btn" href="{E(href(category,application))}">Request a quotation</a></div>'
 
-# ---------- QUALITY
-q = QUALITY
-blocks = "".join(f'<div><h3>{E(a)}</h3><p class="mt">{E(bb)}</p></div>' for a,bb in q['blocks'])
-tests = "".join(f'<tr class="sec"><td colspan="2">{E(sec)}</td></tr>' + "".join(f'<tr><td class="k" style="color:var(--ink)">{E(k)}</td><td>{E(v)}</td></tr>' for k,v in items) for sec,items in q['tests'])
-quality = hero("Quality", q['h']) + f"""
-<section class="s"><div class="wrap"><div class="grid4" style="gap:32px;margin-top:0">{blocks}</div></div></section>
-<section class="s alt"><div class="wrap"><div class="eyebrow">For your engineering team</div><h2>Test program, inspection points, standards, and interfaces</h2>
-<details style="margin-top:20px"><summary>Factory test program — IEEE C57.12.90</summary><div class="tbl"><table><thead><tr><th>Test</th><th>Scope</th></tr></thead><tbody>{tests}</tbody></table></div></details>
-<details><summary>Inspection and test plan</summary><p class="small">Issued for your sign-off before production. Each point is marked hold (production stops until released), witness, or review.</p>{checks(q['itp'])}</details>
-<details><summary>Site program</summary>{checks(q['site'])}</details>
-<details><summary>Standards</summary><p class="mono small mt">{E(q['standards'])}</p><p class="small">Built to IEC 60076 or regional specifications when the project requires it.</p></details>
-<details><summary>Interfaces and submittals</summary><p class="mt">{E(q['interfaces'])}</p></details>
-</div></section>
-<section class="s"><div class="wrap"><h2>Bring your inspector</h2><p class="mt">Your engineer or third-party inspector is welcome at any hold point and at the factory acceptance test. We schedule it with you at order.</p><a class="btn" href="quote.html">Request a quotation</a></div></section>"""
-(OUT/"quality.html").write_text(page("Quality — Farpoint Energy", quality, "quality.html", "Engineering review, stage-gated inspection, the full IEEE C57.12.90 factory test program in ISO/IEC 17025 laboratories, and a serialized documentation dossier on every Farpoint transformer."))
+def subnav(current):
+    return '<nav class="subnav" aria-label="Quality and delivery">' + ''.join(f'<a href="{route}"{chr(32)+"aria-current=page" if current==route else ""}>{title}</a>' for title,route in [('Quality','quality.html'),('Delivery and warranty','delivery.html'),('From specification to delivery','manufacturing.html')]) + '</nav>'
 
-# ---------- DELIVERY
-d = DELIVERY
-stages = "".join(f'<tr><td class="v">{E(a)}</td><td>{E(bb)}</td></tr>' for a,bb in d['stages'])
-delivery = hero("Delivery & warranty", "From order to energization", d['intro']) + f"""
-<section class="s"><div class="wrap"><div class="cols"><div><h2>Stages</h2><div class="tbl"><table><thead><tr><th>Stage</th><th>What happens</th></tr></thead><tbody>{stages}</tbody></table></div></div>
-<div><div class="eyebrow">Warranty</div><h2>{E(d['warranty_h'])}</h2><p class="mt">{E(d['warranty'])}</p><div class="eyebrow" style="margin-top:28px">Service</div>{checks(d['service'])}<a class="btn" href="quote.html">Request a quotation</a></div></div></div></section>"""
-(OUT/"delivery.html").write_text(page("Delivery & warranty — Farpoint Energy", delivery, "delivery.html", "100 units per year capacity, committed delivery dates, monthly order status reports, and a three-year warranty from energization with field service from Farpoint."))
+PAGES = []
+def write(route, title, desc, body, section=None, noindex=False, product='', application=''):
+    ver = hashlib.sha256(CSS.encode()).hexdigest()[:10]
+    jsver = hashlib.sha256(SHARED_JS.encode()).hexdigest()[:10]
+    formver = hashlib.sha256((OUT/'inquiry.js').read_bytes()).hexdigest()[:10]
+    canonical = SITE['domain'] + ('/' if route == 'index.html' else '/' + route)
+    nav = ''.join(f'<li><a class="l" href="{link}"'+(' aria-current="page"' if link == (section or route) else '')+f'>{title}</a></li>' for title,link in NAV)
+    quote_url = E(href(product or None, application or None))
+    org = json.dumps({'@context':'https://schema.org','@type':'Organization','name':SITE['name'],'url':SITE['domain'],'email':SITE['email'],'telephone':SITE['phone_raw']})
+    document = f'''<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{E(title)}</title><meta name="description" content="{E(desc)}"><link rel="canonical" href="{canonical}">
+{ '<meta name="robots" content="noindex,follow">' if noindex else '' }
+<meta property="og:type" content="website"><meta property="og:site_name" content="Farpoint Energy"><meta property="og:title" content="{E(title)}"><meta property="og:description" content="{E(desc)}"><meta property="og:url" content="{canonical}"><meta property="og:image" content="{SITE['domain']}/social-card.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Farpoint Energy — Power and distribution transformers"><meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap"><link rel="stylesheet" href="style.css?v={ver}">
+<script type="application/ld+json">{org}</script><script src="site.js?v={jsver}" defer></script><script src="inquiry.js?v={formver}" defer></script></head>
+<body data-product="{product}" data-application="{application}"><a class="skip" href="#main">Skip to content</a><nav class="nav" aria-label="Main navigation"><div class="wrap"><a class="brand" href="index.html">{MARK}FARPOINT&nbsp;<span>ENERGY</span></a><button class="navbtn" type="button" aria-controls="site-menu" aria-expanded="false" hidden>Menu</button><ul id="site-menu">{nav}<li><a class="btn" href="{quote_url}">Request a quotation</a></li></ul></div></nav>
+<main id="main">{body}</main>
+<footer><div class="wrap"><div class="footer-grid"><div><div class="brand">{MARK}FARPOINT&nbsp;<span>ENERGY</span></div><p>Power and distribution transformers,<br>built to your specification.</p><p>{SITE['city']}</p></div><div><p><a href="products.html">Products</a><br><a href="applications.html">Applications</a><br><a href="manufacturing.html">From specification to delivery</a><br><a href="delivery.html">Delivery and warranty</a></p></div><div><a href="mailto:{SITE['email']}">{SITE['email']}</a><br><a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a><br><a href="{quote_url}">Request a quotation</a><br><a href="privacy.html">Privacy</a></div></div><div class="footnote">© 2026 Farpoint Energy</div></div></footer></body></html>'''
+    (OUT/route).write_text(document+'\n',encoding='utf-8')
+    if not noindex: PAGES.append(route)
 
-# ---------- QUOTE (FormSubmit)
-qq = QUOTE
-app_opts = "".join(f'<option>{E(m["name"])}</option>' for m in APPLICATIONS) + '<option>Other</option>'
-form = f"""<div class="formbox"><form class="q" action="{SITE['form_action']}" method="POST">
-<input type="hidden" name="_subject" value="Quotation request — farpointenergy.com"><input type="hidden" name="_template" value="table"><input type="hidden" name="_next" value="{SITE['domain']}/thanks.html"><input type="hidden" name="_captcha" value="false"><input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
-<div><label for="f-name">Name</label><input id="f-name" name="Name" required autocomplete="name"></div>
-<div><label for="f-company">Company</label><input id="f-company" name="Company" required autocomplete="organization"></div>
-<div><label for="f-email">Email</label><input id="f-email" name="Email" type="email" required autocomplete="email"></div>
-<div><label for="f-phone">Phone</label><input id="f-phone" name="Phone" type="tel" autocomplete="tel"></div>
-<div><label for="f-app">Application</label><select id="f-app" name="Application">{app_opts}</select></div>
-<div><label for="f-mw">MW at the point of interconnection</label><input id="f-mw" name="MW at POI" inputmode="decimal" placeholder="e.g. 90"></div>
-<div><label for="f-hv">High-side voltage (kV)</label><input id="f-hv" name="HV kV" inputmode="decimal" placeholder="e.g. 138"></div>
-<div><label for="f-lv">Low-side voltage (kV)</label><input id="f-lv" name="LV kV" inputmode="decimal" placeholder="e.g. 34.5"></div>
-<div class="full"><label for="f-date">Target energization</label><input id="f-date" name="Target energization" placeholder="e.g. Q4 2028"></div>
-<div class="full"><label for="f-msg">Project details</label><textarea id="f-msg" name="Message" placeholder="Site, utility, specification status, quantity, anything else that helps us quote."></textarea></div>
-<div class="full"><button class="btn" type="submit">Send request</button><p class="small muted" style="margin:10px 0 0">Attach the single-line and specification by replying to the confirmation email, or send them to <a href="mailto:{SITE['email']}">{SITE['email']}</a>.</p></div>
-</form></div>"""
-quote = hero("Request a quotation", qq['h'], qq['sub']) + f"""
-<section class="s"><div class="wrap"><div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))"><div>{form}</div>
-<div><h2>Three ways to start</h2>{steps(qq['ways'])}<h3 style="margin-top:28px">What to send</h3>{checks(qq['send'])}<div class="panel">{E(qq['back'])}</div>
-<p class="small">Prefer email or a call? <a href="mailto:{SITE['email']}?subject=Quotation%20request">{SITE['email']}</a> · <a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a></p></div></div></div></section>"""
-(OUT/"quote.html").write_text(page("Request a quotation — Farpoint Energy", quote, "quote.html", "Pick a configuration, send your specification, or send a single-line diagram and site data. Farpoint returns a quotation, a compliance matrix, and a committed delivery date."))
-(OUT/"thanks.html").write_text(page("Request received — Farpoint Energy", hero("Request a quotation", "Request received", "Thank you. Farpoint engineering reviews every request; you will hear from us by email. Send drawings and specifications to " + SITE['email'] + ".") + '<section class="s"><div class="wrap"><p><a href="index.html">Back to the home page</a></p></div></section>', "quote.html", "Quotation request received."))
+# Home
+home = hero(HERO['eyebrow'], HERO['h1'], HERO['sub'], f'<div class="cta"><a class="btn" href="quote.html">Request a quotation</a><a class="btn ghost onDark" href="products.html">Explore transformers</a></div><a class="email" href="mailto:{SITE["email"]}">{SITE["email"]}</a>', True)
+home += '<section class="s"><div class="wrap"><div class="section-head"><div><div class="eyebrow">Products</div><h2>The transformer your project needs</h2></div><p>Two product paths. Each quoted to the specification, installation and delivery requirements of your project.</p></div>' + product_cards() + '<p class="support-line">Not sure which category fits? <a href="quote.html?product=unsure">Send the requirement.</a></p></div></section>'
+home += '<section class="s alt"><div class="wrap"><div class="section-head"><div><div class="eyebrow">Applications</div><h2>From the substation to site distribution</h2></div><a href="applications.html">View all applications →</a></div><div class="grid2"><article class="card"><h3>Data centers</h3><p>Incoming utility and substation transformation, plus distribution for the site. Send the package specification and delivery phases.</p><a href="data-centers.html">Data-center transformers →</a></article><article class="card"><h3>Solar and storage</h3><p>Main interconnection transformers and medium-voltage units associated with solar and storage systems.</p><a href="solar-storage.html">Solar and storage transformers →</a></article></div><div class="label-list"><a href="applications.html#utilities">Utilities</a><a href="applications.html#industrial">Industrial projects</a><a href="applications.html#replacement">Replacements</a></div></div></section>'
+home += proposal()
+home += '<section class="s dark"><div class="wrap"><div class="eyebrow">Execution</div><h2>From requirement to delivery</h2><ol class="steps">' + ''.join(f'<li><b>{E(h)}</b><p>{E(p)}</p></li>' for h,p in PROCESS) + '</ol><p class="mt"><a href="manufacturing.html">Explore the delivery process →</a></p></div></section><section class="s"><div class="wrap">' + cta() + '</div></section>'
+write('index.html','Farpoint Energy — Power and distribution transformers',HERO['sub'],home)
 
-# ---------- ABOUT
-a = ABOUT
-about = hero("About", a['h'], a['intro']) + f"""
+# Product overview and detail routes
+body = hero('Products','Power and distribution transformers','Find the right quotation path for your transformer package. Send the specification you have, or start with the project requirement.')
+body += '<section class="s"><div class="wrap">' + product_cards() + cta('unsure', title='Not sure which category fits?') + '</div></section>' + proposal()
+write('products.html','Transformer products — Farpoint Energy','Power and distribution transformer supply for data centers, energy projects, utilities and industry.',body)
+for p in PRODUCT_CATEGORIES:
+    body = hero('Products / '+p['eyebrow'],p['name'],p['summary'],f'<div class="cta"><a class="btn" href="{href(p["id"])}">Request a quotation</a><a class="btn ghost onDark" href="products.html">Compare product paths</a></div>')
+    body += '<section class="s"><div class="wrap"><div class="cols"><div><div class="eyebrow">Package scope</div><h2>Built around the application</h2>' + checks(p['uses']) + '</div><div><div class="eyebrow">Start with what you have</div><h2>Useful specification inputs</h2>' + checks(p['inputs']) + '</div></div></div></section>'
+    if p['id']=='power':
+        rows = ''.join('<tr>'+''.join(f'<td class="{ "sku" if j==0 else "v" }">{E(c)}</td>' for j,c in enumerate(row))+'</tr>' for row in STANDARD['lineup'])
+        body += f'<section class="s alt"><div class="wrap"><div class="eyebrow">Reference configurations</div><h2>{E(STANDARD["h"])}</h2><p class="section-intro">{E(STANDARD["p"])}</p><div class="tbl" tabindex="0" role="region" aria-label="Example transformer configurations; scroll horizontally on small screens"><table><thead><tr><th scope="col">Reference</th><th scope="col">Cooling-stage ratings</th><th scope="col">High side</th><th scope="col">Low side</th></tr></thead><tbody>{rows}</tbody></table></div><p class="small muted">{E(STANDARD["common"])}</p><p class="small">{E(STANDARD["options"])}</p></div></section>'
+    else:
+        body += '<section class="s alt"><div class="wrap"><div class="cols"><div><h2>The installation sets the configuration</h2><p>Mounting arrangement, insulation medium, taps, impedance, terminals and accessories are specified for the project. Include site conditions and installation constraints with your inquiry.</p></div><div><h2>One unit or a phased package</h2><p>Send quantities by rating and the required site dates for each phase. If the equipment schedule is still developing, share the information available.</p></div></div></div></section>'
+    body += proposal() + '<section class="s alt"><div class="wrap">'+cta(p['id'])+'</div></section>'
+    write(p['route'],p['name']+' — Farpoint Energy',p['summary'],body,'products.html',product=p['id'])
+
+# Applications retain established fragment addresses.
+body = hero('Applications','Transformer supply for your project','Select the application, then the transformer package. The project specification determines its rating and configuration.')
+body += '<section class="s"><div class="wrap"><div class="label-list">'+''.join(f'<a href="#{a["id"]}">{E(a["name"])}</a>' for a in APPLICATIONS)+'</div></div></section>'
+for i,a in enumerate(APPLICATIONS):
+    body += f'<section class="s app-section {"alt" if i%2==0 else ""}" id="{a["id"]}"><div class="wrap"><div class="cols"><div><h2>{E(a["name"])}</h2><p>{E(a["lead"])}</p></div><div><p>{E(a["body"])}</p><div class="cta"><a class="btn" href="{E(href(a.get("category"),a["application"]))}">Request a quotation</a>'
+    if a.get('route') and not a['route'].startswith('applications.html'): body += f'<a class="btn ghost" href="{a["route"]}">Explore the application</a>'
+    body += '</div></div></div></div></section>'
+body += proposal()
+write('applications.html','Transformer applications — Farpoint Energy','Transformer packages for data centers, solar, battery storage, utilities, industry and replacement projects.',body,'applications.html')
+for key,data in APPLICATION_LANDINGS.items():
+    app = 'data-center' if key=='data-center' else ''
+    route = 'data-centers.html' if key=='data-center' else 'solar-storage.html'
+    body=hero('Applications',data['title'],data['intro'])
+    body+='<section class="s"><div class="wrap"><div class="grid2">'
+    for heading,desc,cat in data['packages']:
+        product = next(p for p in PRODUCT_CATEGORIES if p['id']==cat)
+        body+=f'<article class="product-card"><div class="eyebrow">{E(product["name"])}</div><h2>{E(heading)}</h2><p>{E(desc)}</p><a class="more" href="{E(href(cat,app))}">Request this transformer package →</a><a href="{product["route"]}{"?application="+app if app else ""}">Explore {E(product["name"].lower())}</a></article>'
+    body+='</div></div></section><section class="s alt"><div class="wrap"><div class="cols"><div><h2>What to send</h2>'+checks(data['inputs'])+'</div><div><h2>Define the package and the schedule</h2><p>Identify the units in scope and any delivery phases. The quotation sets out transformer supply, technical exceptions, testing, documentation and the agreed delivery scope.</p><p>Start with your existing documents; an early requirement is welcome.</p></div></div>'+cta(application=app)+'</div></section>'+proposal()
+    write(route,data['title']+' — Farpoint Energy',data['intro'],body,'applications.html',application=app)
+
+# Quality, execution, delivery
+q=QUALITY
+body=hero('Quality and delivery',q['h'],q['intro'])+'<section class="s"><div class="wrap">'+subnav('quality.html')+'<div class="grid2">'+''.join(f'<div><h3>{E(h)}</h3><p>{E(p)}</p></div>' for h,p in q['blocks'])+'</div></div></section>'
+rows=''.join(f'<tr><td>{E(h)}</td><td>{E(p)}</td></tr>' for h,p in q['tests'])
+body+='<section class="s alt"><div class="wrap"><h2>For your engineering team</h2><details><summary>Factory test plan</summary><p>The applicable product standard and agreed specification determine the test scope, acceptance criteria and witnessing arrangements.</p><div class="tbl" tabindex="0" role="region" aria-label="Test planning examples"><table><thead><tr><th>Test area</th><th>Scope to define</th></tr></thead><tbody>'+rows+'</tbody></table></div></details><details><summary>Inspection and release points</summary>'+checks(q['itp'])+'</details><details><summary>Site activities</summary>'+checks(q['site'])+'</details><details><summary>Standards and interfaces</summary><p>'+E(q['standards'])+'</p><p>'+E(q['interfaces'])+'</p></details>'+cta()+'</div></section>'
+write('quality.html','Quality and testing — Farpoint Energy','Specification review, approval drawings, inspection, factory acceptance testing and documentation for the proposed transformer package.',body,'quality.html')
+body=hero('Quality and delivery','From specification to delivery','A defined transformer package, an agreed approval process and a delivery plan built around your project.')+'<section class="s"><div class="wrap">'+subnav('manufacturing.html')+'<div class="grid2">'+''.join(f'<div><div class="eyebrow">0{i+1}</div><h2>{E(h)}</h2><p>{E(p)}</p></div>' for i,(h,p) in enumerate(PROCESS))+'</div>'+cta()+'</div></section>'
+write('manufacturing.html','From specification to delivery — Farpoint Energy','Requirement review, design approvals, production, testing and delivery for project-specific transformer supply.',body,'quality.html')
+d=DELIVERY
+body=hero('Quality and delivery','Delivery, warranty and service',d['intro'])+'<section class="s"><div class="wrap">'+subnav('delivery.html')+'<div class="cols"><div><h2>A schedule with defined milestones</h2><ol class="compact-steps">'+''.join(f'<li><b>{E(h)}</b>{E(p)}</li>' for h,p in d['stages'])+'</ol></div><div><h2>'+E(d['warranty_h'])+'</h2><p>'+E(d['warranty'])+'</p><h3 class="mt">After-sales scope</h3>'+checks(d['service'])+'</div></div>'+cta()+'</div></section>'
+write('delivery.html','Delivery and warranty — Farpoint Energy','Project-specific delivery schedules, warranty terms and after-sales scope included in the transformer proposal.',body,'quality.html')
+
+# Inquiry and confirmation
+qq=QUOTE
+body=hero('Start a conversation',qq['h'],qq['sub'])+'<section class="s"><div class="wrap quote-grid"><div>'+render_form(SITE,PRODUCT_CATEGORIES,APPLICATIONS)+'</div><aside class="quote-aside"><h2>Start with what you have</h2><ol class="compact-steps">'+''.join(f'<li><b>{E(h)}</b>{E(p)}</li>' for h,p in qq['ways'])+'</ol><h3>Useful documents</h3>'+checks(qq['send'])+'<div class="panel">'+E(qq['back'])+f'</div><p>Prefer email?<br><a href="mailto:{SITE["email"]}">{SITE["email"]}</a></p></aside></div></section>'
+write('quote.html','Request a quotation — Farpoint Energy','Send a transformer requirement or specification. Power and distribution inquiries for complete specifications and early project planning.',body)
+write('thanks.html','Your quotation request — Farpoint Energy','Next steps for a Farpoint transformer inquiry.',thanks_content(SITE),noindex=True)
+
+# Preserve the established founder section.
+a=ABOUT
+about=hero('About',a['h'],a['intro'])+f'''
 <section class="s"><div class="wrap"><div class="cols"><div><div class="eyebrow">Founder</div><h2>{E(a['founder_name'])}</h2><p class="muted">{E(a['founder_title'])}</p><p>{E(a['founder'])}</p><p>{E(a['advisors'])}</p></div>
-<div><div class="eyebrow">Contact</div><h2>New York</h2><p class="mt"><a href="mailto:{SITE['founder_email']}">{SITE['founder_email']}</a><br><a href="mailto:{SITE['email']}">{SITE['email']}</a><br><a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a></p><a class="btn" href="quote.html">Request a quotation</a></div></div></div></section>"""
-(OUT/"about.html").write_text(page("About — Farpoint Energy", about, "about.html", "Farpoint Energy builds power transformers for the US grid, based in New York."))
+<div><div class="eyebrow">Contact</div><h2>New York</h2><p class="mt"><a href="mailto:{SITE['founder_email']}">{SITE['founder_email']}</a><br><a href="mailto:{SITE['email']}">{SITE['email']}</a><br><a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a></p><a class="btn" href="quote.html">Request a quotation</a></div></div></div></section>'''
+write('about.html','About — Farpoint Energy','Farpoint Energy supplies power and distribution transformers for US projects. Based in New York.',about)
 
-# ---------- 404, redirects, sitemap, css
-(OUT/"404.html").write_text(page("Page not found — Farpoint Energy", '<section class="s"><div class="wrap"><h1>Page not found</h1><p class="mt"><a href="index.html">Back to the home page</a></p></div></section>', "", "Page not found"))
-for old, new in [("markets.html", "applications.html"), ("contact.html", "quote.html")]:
-    (OUT/old).write_text(f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Farpoint Energy</title><meta http-equiv="refresh" content="0; url={new}"><link rel="canonical" href="{SITE["domain"]}/{new}"></head><body><a href="{new}">Continue</a></body></html>')
-pages = ["index","products","applications","manufacturing","quality","delivery","quote","about"]
-(OUT/"sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "".join(f'  <url><loc>{SITE["domain"]}/{p}.html</loc></url>\n' for p in pages) + '</urlset>\n')
-(OUT/"style.css").write_text(CSS.strip()+"\n")
-(OUT/"README.md").write_text("# farpointenergy.com\n\nStatic site. Edit `content.py`, run `python3 build.py`, commit the generated HTML. Hosted on GitHub Pages.\n")
-print("built", ", ".join(p+".html" for p in pages))
+privacy=hero('Privacy','Inquiry information','How information sent through this website is handled.')+f'''<section class="s"><div class="wrap prose"><h2>Information you send</h2><p>The quotation form collects your contact details and the project information you choose to provide. Farpoint uses it to review your requirement, prepare a response and communicate about the potential supply.</p><h2>Form and email processing</h2><p>The form is submitted through <a href="https://formsubmit.co/privacy.pdf" rel="external">FormSubmit</a> and routed to {SITE['email']}. Email attachments go directly to that business inbox. FormSubmit and the email provider process information as part of those services. Send only information you are authorized to share; contact us first if a project requires a separate confidential document process.</p><h2>Website services</h2><p>This static website is hosted on GitHub Pages and uses Google Fonts. Those services receive technical request information when your browser loads their resources. This website does not currently send inquiry analytics to a tracking service.</p><p>After an accepted form submission, this website may use temporary browser session storage to display the confirmation. It is cleared after the confirmation is displayed. A source or campaign code may be included with an inquiry; personal information is not added to page URLs.</p><h2>Questions and requests</h2><p>For questions about information you have sent, or to request correction or deletion, email <a href="mailto:{SITE['email']}">{SITE['email']}</a>.</p></div></section>'''
+write('privacy.html','Privacy — Farpoint Energy','How contact and project information submitted through the Farpoint website is processed.',privacy)
+write('404.html','Page not found — Farpoint Energy','Page not found.',hero('404','Page not found','Use the product pages or send us your transformer requirement.', '<div class="cta"><a class="btn" href="products.html">Explore transformers</a><a class="btn ghost onDark" href="quote.html">Request a quotation</a></div>'),noindex=True)
+for old,new in [('markets.html','applications.html'),('contact.html','quote.html')]:
+    (OUT/old).write_text(f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,follow"><title>Farpoint Energy</title><meta http-equiv="refresh" content="0; url={new}"><link rel="canonical" href="{SITE["domain"]}/{new}"></head><body><a href="{new}">Continue to Farpoint Energy</a><script>location.replace("{new}" + location.hash);</script></body></html>\n',encoding='utf-8')
+(OUT/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+''.join(f'  <url><loc>{SITE["domain"]}/{"" if r=="index.html" else r}</loc></url>\n' for r in PAGES)+'</urlset>\n',encoding='utf-8')
+(OUT/'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: '+SITE['domain']+'/sitemap.xml\n',encoding='utf-8')
+(OUT/'style.css').write_text(CSS.strip()+'\n',encoding='utf-8')
+(OUT/'site.js').write_text(SHARED_JS.strip()+'\n',encoding='utf-8')
+(OUT/'README.md').write_text('''# farpointenergy.com
+
+Static website hosted on GitHub Pages. Python 3 standard library builds the pages.
+
+- Edit public copy in `content.py` and layout/style in `build.py`.
+- Inquiry markup is in `inquiry.py`; progressive enhancement is in `inquiry.js`.
+- Run `python3 build.py` and commit source and generated output together.
+- Run `python3 check_site.py` for route, metadata, preservation and build checks.
+- Run `node check_inquiry.js` for mocked inquiry and confirmation behavior (no emails sent).
+- Preview with `python3 -m http.server 8000` in a local development environment.
+- The form retains a native FormSubmit POST fallback. Confirm receiver activation and test actual inbox delivery before release.
+- Optional `window.farpointAnalytics` receives only event name and allowlisted product/application values. No tracking destination is configured.
+- Keep `CNAME`, `.nojekyll` and existing PDF files intact. Product PDFs are not linked by the website.
+- Review a feature branch before merging into the production branch. Verify the Pages source and the deployment after release; use a Git revert for rollback.
+''',encoding='utf-8')
+print('Built',len(PAGES),'indexable pages plus confirmation, redirects and 404.')
