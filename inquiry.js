@@ -10,11 +10,13 @@
   const path = location.pathname.split("/").pop();
   const productPages = { "power-transformers.html": "power", "distribution-transformers.html": "distribution" };
   const applicationPages = { "data-centers.html": "data-center" };
+  const productSections = { "#power": "power", "#distribution": "distribution" };
+  const applicationSections = { "#datacenter": "data-center", "#solar": "solar", "#storage": "storage", "#utilities": "utility", "#industrial": "industrial", "#hybrid": "other", "#wind": "other", "#replacement": "other" };
   const eventNames = new Set(["product_path_view", "rfq_start", "rfq_submit_success", "email_click"]);
 
   function context() {
-    const product = form ? form.elements["Transformer category"].value : document.body.dataset.product || productPages[path];
-    const application = form ? form.elements.Application.value : document.body.dataset.application || applicationPages[path];
+    const product = form ? form.elements["Transformer category"].value : document.body.dataset.product || productPages[path] || (path === "products.html" && productSections[location.hash]);
+    const application = form ? form.elements.Application.value : document.body.dataset.application || applicationPages[path] || (path === "applications.html" && applicationSections[location.hash]);
     return {
       product: products.has(product) ? product : "unsure",
       application: applications.has(application) ? application : "unsure"
@@ -46,7 +48,10 @@
     if (input) input.addEventListener("input", updateAttachmentLinks);
   });
   updateAttachmentLinks();
-  if (productPages[path]) emit("product_path_view");
+  if (productPages[path] || (path === "products.html" && productSections[location.hash])) emit("product_path_view");
+  if (path === "products.html") window.addEventListener("hashchange", () => {
+    if (productSections[location.hash]) emit("product_path_view");
+  });
 
   const thanks = document.querySelector("[data-inquiry-thanks]");
   if (thanks) {
@@ -152,7 +157,8 @@
         referrerPolicy: "strict-origin"
       });
       const result = await response.json();
-      if (response.ok && (result.success === true || result.success === "true")) {
+      const accepted = result && typeof result === "object" ? result.success : null;
+      if (response.ok && (accepted === true || accepted === "true")) {
         finish("accepted", "Your request was submitted. Farpoint reviews your requirement and follows up by email. Send supporting files using the email link above.");
         emit("rfq_submit_success");
         try {
@@ -160,7 +166,7 @@
           sessionStorage.setItem(confirmationKey, JSON.stringify({ accepted: true, at: Date.now() }));
           location.assign(form.dataset.thanks);
         } catch (_) { /* The inline confirmation remains available. */ }
-      } else if (result.success === false || result.success === "false") {
+      } else if (accepted === false || accepted === "false") {
         finish("failed", "The form service reported that it could not accept your request. Your entries are still here. You can try again or email your requirement directly using the link above.");
       } else {
         finish("uncertain", "We could not confirm whether the form service accepted your request. Your entries are still here. To avoid a duplicate, do not submit again yet. Email us using the link above and mention that the form’s status was uncertain.");

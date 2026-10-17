@@ -1,184 +1,186 @@
-# Farpoint Energy — website content. Edit here, then run python3 build.py.
-SITE = {'name': 'Farpoint Energy',
- 'domain': 'https://farpointenergy.com',
- 'email': 'quotes@farpointenergy.com',
- 'founder_email': 'karan@farpointenergy.com',
- 'phone': '+1 (217) 417-9345',
- 'phone_raw': '+12174179345',
- 'city': 'New York, NY',
- 'form_action': 'https://formsubmit.co/quotes@farpointenergy.com'}
-
-HERO = dict(
-    eyebrow="Transformers for your project",
-    h1="Power and distribution transformers, built to your specification.",
-    sub="Farpoint supplies transformers for data centers, energy projects, utilities and industry. Send your specification and required site date for a proposal covering price, delivery and technical exceptions.",
+# Farpoint Energy — website content. Edit here, then `python3 build.py`.
+SITE = dict(
+    name="Farpoint Energy", domain="https://farpointenergy.com",
+    email="quotes@farpointenergy.com", founder_email="karan@farpointenergy.com",
+    phone="+1 (217) 417-9345", phone_raw="+12174179345", city="New York, NY",
+    form_action="https://formsubmit.co/quotes@farpointenergy.com",
 )
 
-PRODUCT_CATEGORIES = [
-    dict(
-        id="power", name="Power transformers", route="power-transformers.html",
-        eyebrow="Main power · Substation · Generator step-up",
-        summary="Main power, substation and generator step-up transformers for interconnection, generation and large-load projects. Step-up or step-down duty, specified for your system.",
-        uses=["Utility and campus substations", "Solar, storage and wind interconnections", "Generator step-up and industrial supply"],
-        inputs=["Rated MVA and cooling-stage ratings, if known", "Primary and secondary voltages", "Quantity and required delivery to site", "Single-line diagram and transformer specification", "Impedance, winding connections, taps and insulation levels", "Site conditions, installation constraints and required accessories"],
-    ),
-    dict(
-        id="distribution", name="Distribution transformers", route="distribution-transformers.html",
-        eyebrow="Site distribution · Medium voltage · Padmount",
-        summary="Distribution transformers for data-center infrastructure, solar, storage and industry. Rating, voltages and installation arrangement are matched to the project requirement.",
-        uses=["Data-center site distribution", "Solar and storage medium-voltage packages", "Industrial and facility distribution"],
-        inputs=["Rated kVA or MVA, if known", "Primary and secondary voltages", "Quantity and delivery phasing", "Installation arrangement and available space", "Buyer specification, single-line diagram or equipment schedule", "Insulation medium, taps, impedance, terminals and accessories, where specified"],
-    ),
+HERO = dict(
+    eyebrow="Power and distribution transformers",
+    h1="Power and distribution transformers, engineered to your specification.",
+    sub="Generator step-up, substation, main power and distribution transformers for utilities, energy projects, data centers and industry. Engineered to your requirements, delivered to site, and backed by Farpoint's three-year warranty.",
+    strip=["POWER & DISTRIBUTION", "ENGINEERED TO ORDER", "3-YEAR WARRANTY", "SITE DELIVERY"],
+)
+
+ETO = dict(
+    h="Engineered to order",
+    p="Every Farpoint unit is designed to the buyer's specification and the applicable utility and site requirements. Send your specification or describe the requirement; the quotation identifies the offered configuration, compliance and technical exceptions.",
+)
+
+# Power-family reference ranges for design inquiries. Columns: family, kV class (HV), MVA, BIL, notes
+CAPABILITY = [
+    ("Main power transformers", "69 – 230 kV", "10 – 250 MVA", "350 – 900 kV", "Renewable and storage interconnections; 34.5 kV low side is a reference option; inverter duty reviewed against applicable IEEE C57.110 and C57.159 requirements"),
+    ("Generator step-up", "69 – 230 kV", "10 – 250 MVA", "350 – 900 kV", "Renewable, storage, and thermal generation; impedance to your system study"),
+    ("Substation transformers", "69 – 230 kV", "10 – 250 MVA", "350 – 900 kV", "Utility, industrial, and data-center substations; 4.16 – 34.5 kV low-side reference range; on-load tap changers and dual secondaries as specified"),
+    ("Auto transformers", "115 / 138 / 161 / 230 kV", "to 250 MVA", "550 – 900 kV", "Transmission interconnection; tertiary windings for reactive support or station service"),
+    ("Special duty", "to 230 kV", "per project", "per project", "Ester-filled units, furnace and rectifier duty, replacement units built to an existing nameplate and footprint"),
 ]
+CAP_NOTE = "Power-family reference ranges for design inquiries. The quotation confirms the offered rating, voltage class and insulation level against the project specification; other requirements can be reviewed. MVA ranges are stated at the top cooling stage."
 
 STANDARD = dict(
-    h="Power-transformer reference configurations",
-    p="These FP-MPT examples provide a starting point for a specification discussion. Each rating sequence describes the cooling stages of one unit. Final ratings, insulation levels and configuration are set in the proposal.",
-    lineup=[('FP-MPT-138-50', '30 / 40 / 50 MVA', '138 kV · 650 kV BIL', '34.5 kV · 200 kV BIL'),
- ('FP-MPT-115-50', '30 / 40 / 50 MVA', '115 kV · 550 kV BIL', '34.5 kV · 200 kV BIL'),
- ('FP-MPT-138-100', '60 / 80 / 100 MVA', '138 kV · 650 kV BIL', '34.5 kV · 200 kV BIL'),
- ('FP-MPT-115-100', '60 / 80 / 100 MVA', '115 kV · 550 kV BIL', '34.5 kV · 200 kV BIL')],
-    common="Example basis: 60 Hz, 34.5 kV low side and three cooling-stage ratings. Project loading, utility requirements and the applicable specification determine the final design.",
-    options="Specify the required taps, winding connections, impedance, insulation medium, sound limits, monitoring and accessories. Options and technical exceptions are identified in the proposal.",
+    h="FP-MPT reference configurations",
+    p="Four reference configurations for solar and storage interconnections at 115 and 138 kV. The 30 / 40 / 50 and 60 / 80 / 100 MVA sequences are cooling-stage ratings of individual units. Loading, power factor, utility requirements and site conditions determine the final specification.",
+    lineup=[("FP-MPT-138-50", "30 / 40 / 50 MVA", "138 kV · 650 kV BIL", "34.5 kV · 200 kV BIL"),
+            ("FP-MPT-115-50", "30 / 40 / 50 MVA", "115 kV · 550 kV BIL", "34.5 kV · 200 kV BIL"),
+            ("FP-MPT-138-100", "60 / 80 / 100 MVA", "138 kV · 650 kV BIL", "34.5 kV · 200 kV BIL"),
+            ("FP-MPT-115-100", "60 / 80 / 100 MVA", "115 kV · 550 kV BIL", "34.5 kV · 200 kV BIL")],
+    common="Reference basis: 60 Hz · ONAN/ONAF/ONAF three-stage cooling · 65 °C rise · DETC ±2 × 2.5 % · mineral oil · IEEE C57.12.00 and C57.12.90 design and test basis, with exact requirements confirmed in the technical response.",
+    options="Configuration options: on-load tap changer, natural-ester fluid, reduced BIL with surge protection reviewed for insulation coordination, composite bushings, low-sound design, monitoring package, project spare-unit arrangements, extended warranty.",
+    catalog_note="These reference configurations are starting points for design review, not stocked inventory or reserved production slots. The quotation defines the equipment supplied and its delivery schedule.",
 )
 
 APPLICATIONS = [
-    dict(
-        id="datacenter", name="Data centers", category="unsure", application="data-center", route="data-centers.html",
-        lead="Incoming substation and site-distribution transformer packages.",
-        body="Identify the package you are sourcing, from incoming utility transformation to distribution across the site. Share the electrical specification, unit quantities and delivery phases for a proposal aligned with your construction schedule.",
-    ),
-    dict(
-        id="solar", name="Solar", category="unsure", application="solar", route="solar-storage.html?application=solar",
-        lead="Main interconnection and medium-voltage transformer requirements.",
-        body="Send the transformer specification and single-line diagram for the main interconnection package or the inverter-associated transformer package. Rating, voltage, duty and interface requirements are reviewed for the individual package.",
-    ),
-    dict(
-        id="storage", name="Battery storage", category="unsure", application="storage", route="solar-storage.html?application=storage",
-        lead="Main power and site-distribution transformers for storage projects.",
-        body="Share charge and discharge duty, the equipment schedule and the required site dates. The proposal addresses the specified transformer scope, including electrical interfaces, losses and accessories where required.",
-    ),
-    dict(
-        id="utilities", name="Utilities", category="unsure", application="utility", route="applications.html#utilities",
-        lead="Substation and distribution transformers to your procurement specification.",
-        body="Start with your standard specification, required ratings and approval process. The proposal identifies the offered configuration, technical exceptions, testing and documentation, with review milestones included in the proposed schedule.",
-    ),
-    dict(
-        id="industrial", name="Industrial", category="unsure", application="industrial", route="applications.html#industrial",
-        lead="Power and distribution transformers for plants and process loads.",
-        body="Provide the load profile, voltage requirements and installation constraints. Include motor-starting, harmonic, protection and control requirements where they apply so these can be addressed in the proposal.",
-    ),
-    dict(
-        id="hybrid", name="Hybrid solar + storage", category="unsure", application="other", route="solar-storage.html",
-        lead="Transformer packages for shared interconnections and phased sites.",
-        body="Share the operating cases for generation and charging, the single-line diagram and the project phases. Each transformer package is specified against its electrical duty and delivery requirement.",
-    ),
-    dict(
-        id="wind", name="Wind", category="power", application="other", route="applications.html#wind",
-        lead="Collector and interconnection transformer requirements.",
-        body="Send the collector-system and interconnection specifications, including loading, voltage, impedance and grounding requirements. The proposal defines the transformer scope and proposed delivery schedule.",
-    ),
-    dict(
-        id="replacement", name="Replacement and spares", category="unsure", application="other", route="applications.html#replacement",
-        lead="Replacement inquiries based on your existing equipment and site.",
-        body="A nameplate, outline drawing or equipment specification is a useful starting point. Include terminal locations, footprint constraints, operating duty and the required replacement window so fit and schedule can be assessed.",
-    ),
+    dict(id="utilities", name="Utilities",
+         lead="Substation, auto and distribution transformers built to your standard specification.",
+         body="Utility purchases run on a standard specification and an approval cycle. The quotation answers your specification clause by clause; outline, nameplate, control schematics, CT curves and bushing drawings are submitted as applicable, with review time built into the schedule. Taps, impedance and grounding are set for the system and loading requirements."),
+    dict(id="solar", name="Utility-scale solar",
+         lead="Main interconnection and medium-voltage transformer packages for solar projects.",
+         body="Solar output varies with irradiance, site conditions and the plant operating limits. For main interconnection transformers, loading and power factor guide the MVA rating and cooling stages; natural and forced cooling are selected for that duty. Medium-voltage transformer packages connect inverter blocks to the collector system, with voltage, impedance, grounding and harmonic requirements matched to the equipment and system studies."),
+    dict(id="storage", name="Battery storage",
+         lead="Main power and medium-voltage transformers for standalone and hybrid storage.",
+         body="Storage transformers carry charging and discharging duty, which can involve repeated periods at high load. The operating cycle, ambient conditions and inverter harmonics inform thermal margin, conductor design and cooling. Both main interconnection transformers and medium-voltage equipment packages are specified for that duty; monitoring can be added so the operator can follow the unit's condition from the control room."),
+    dict(id="hybrid", name="Hybrid solar + storage",
+         lead="Main interconnection and medium-voltage packages for generating and charging.",
+         body="Solar and a battery may share a point of interconnection, with separate transformer packages for their equipment blocks. Export limits, simultaneous operating cases and grid charging determine the duty of the main transformer and each medium-voltage package. Both generating and charging cases go into the design, and unit quantities and delivery phases can follow the project build-out."),
+    dict(id="datacenter", name="Data centers",
+         lead="Incoming substation and downstream distribution transformers for phased campus delivery.",
+         body="A data-center campus can combine sustained demand with changing loads as equipment and halls come online. Incoming substation transformers serve the utility connection; downstream distribution transformers supply the voltage levels required across the site. Ratings, quantities and delivery phases follow the electrical design and construction sequence. On-load tap changers, sound limits and monitoring are included where the package calls for them."),
+    dict(id="industrial", name="Industrial",
+         lead="Power and distribution transformers for plants and process loads.",
+         body="Industrial loads can bring motor starting, harmonic content from drives and duty that runs around the clock. Each unit is engineered to the plant's load profile, fault levels and relaying scheme, with the accessories and interfaces your protection engineer specifies."),
+    dict(id="wind", name="Wind",
+         lead="Collector step-up transformers for onshore wind projects.",
+         body="Wind output arrives in long, variable runs with periods at full load. The collector transformer is rated for sustained output at the collector voltage, with the impedance and low-side grounding set to the collector system study and the interconnecting utility's requirements."),
+    dict(id="replacement", name="Replacement and spares",
+         lead="Replacement units and spare programs for operating fleets.",
+         body="A failed unit or an aging fleet needs a replacement that fits the existing installation. Nameplate ratings, footprint, terminal positions and transport access guide the replacement design. Spare-unit programs, production timing and any storage arrangements are agreed for the fleet and project."),
 ]
 
-APPLICATION_LANDINGS = {
-    "data-center": dict(
-        title="Transformers for data centers",
-        intro="Source the transformer package your project needs, from incoming substation transformation to site distribution. Send a package specification and delivery phases to start the discussion.",
-        packages=[
-            ("Incoming utility and substation", "Power transformers for the campus incoming supply, with ratings, voltage transformation, impedance and interfaces defined by the project specification.", "power"),
-            ("Site distribution", "Distribution transformers for the site's electrical packages. Specify voltage levels, kVA or MVA, quantities and installation arrangement for each requirement.", "distribution"),
-        ],
-        inputs=["Transformer package specification or equipment schedule", "Single-line diagram and voltage levels", "Rating and quantity for each transformer type", "Delivery phases and required site dates", "Installation constraints, terminals and required accessories"],
-    ),
-    "solar-storage": dict(
-        title="Transformers for solar and storage",
-        intro="Main interconnection and medium-voltage transformer packages for solar, standalone storage and hybrid projects. Define each package by its duty, electrical interfaces and required site date.",
-        packages=[
-            ("Main interconnection", "Power transformers for the grid connection, with the proposed rating and cooling stages based on the specified loading and operating cases.", "power"),
-            ("Medium-voltage packages", "Transformers associated with inverter blocks and site distribution. Specify the transformer duty and interfaces to the project's inverter or battery equipment.", "distribution"),
-        ],
-        inputs=["Transformer specification and single-line diagram", "Package ratings, voltage levels and quantities", "Generation, charge and discharge operating cases", "Inverter interface and harmonic requirements, where specified", "Site conditions and delivery phases"],
-    ),
-}
-
-PROPOSAL = [
-    ("Configuration and scope", "Proposed transformer configuration, price, inclusions and commercial terms."),
-    ("Specification response", "A response to your technical requirements, with compliance and exceptions identified."),
-    ("Delivery schedule", "Proposed engineering, approval, testing and delivery milestones."),
-    ("Testing and documentation", "The proposed test plan, document package and warranty scope and duration."),
-]
-
-PROCESS = [
-    ("Requirement and proposal", "Send a specification or the project information you have. Farpoint clarifies the requirement and prepares the proposed technical and commercial scope."),
-    ("Design and approvals", "The order defines the design submissions, review milestones and approval responsibilities before the relevant production stages."),
-    ("Production and testing", "Progress reporting, inspections and factory acceptance testing follow the agreed order schedule and inspection and test plan."),
-    ("Delivery and handover", "Shipment, receiving requirements, final documents and any site services are coordinated to the agreed scope."),
-]
+BASE = dict(
+    h="Manufacturing base",
+    intro="Farpoint selects the manufacturing plant for the ordered transformer, sets the design and inspection requirements, and coordinates factory testing. Farpoint carries the supply contract and warranty, with manufacturing responsibilities defined before production.",
+    facts=[
+        ("One contract", "Farpoint responsibility through delivery and warranty"),
+        ("Plant access", "audits, inspection points and factory tests"),
+        ("Design review", "electrical, mechanical and site requirements"),
+        ("Traceability", "material records and unit documentation"),
+    ],
+    lines=[
+        "Lifting capacity, drying equipment and test-bay capability are reviewed against the ordered unit, including handling, transport and insulation requirements.",
+        "Impulse, partial-discharge, temperature-rise and frequency-response test facilities are reviewed against the applicable factory test program.",
+        "Short-circuit calculations and independent type-test reports are reviewed for their relevance to the offered design.",
+        "IEEE/ANSI C57, IEC 60076 or the specified regional standard sets the design and test requirements. Plant quality-system and laboratory credentials are reviewed for the manufacturing scope.",
+        "Power, generator step-up, auto and distribution transformer requirements, including inverter duty, ester-filled designs and other special-duty applications, are reviewed against the plant and design capability.",
+    ],
+    model_h="How Farpoint works",
+    model="Farpoint engineers the unit to your specification, sets plant qualification and inspection requirements, coordinates the factory tests, and carries the contract and warranty. Delivery and site services are arranged to the order's scope. You deal with Farpoint from quotation to service.",
+)
 
 QUALITY = dict(
-    h="A clear path from specification to acceptance",
-    intro="The proposal identifies applicable standards, technical exceptions and the planned testing and documentation. The order establishes the approval, inspection and acceptance requirements for your transformer.",
+    test_scope="The detailed program below covers tests and records considered for power-transformer orders. Distribution transformers use the tests applicable to their design and specified standard. The agreed plan identifies required measurements, design evidence and additional tests for each package.",
+    itp_scope="The stages below illustrate a liquid-filled power-transformer inspection plan. Equipment-specific plans identify the applicable stages and mark each point hold, witness or review.",
+    site_scope="Site services and measurements are selected for the equipment, transport condition and agreed commissioning scope.",
+    standards_scope="The applicable standards, editions and technical exceptions are identified in the quotation. The references below are selected according to product, voltage class, duty and supplied accessories.",
+    h="Engineered, inspected, and tested for the duty",
     blocks=[
-        ("Specification review", "Electrical ratings, duty, site conditions and interfaces are reviewed against the buyer's specification. The proposal identifies the offered configuration and any exceptions."),
-        ("Approval documents", "The drawing and document schedule is agreed at order. It can include outlines, nameplates, winding connections, control schematics, terminal details and accessory information."),
-        ("Inspection and testing", "The inspection and test plan defines the applicable tests, acceptance criteria, review points and any buyer witness requirements for the proposed product."),
-        ("Final documentation", "The agreed handover package includes test records, final drawings and operating and maintenance information. Additional records are specified to suit the equipment and project."),
+        ("Engineering", "Engineering review covers short-circuit withstand, thermal duty and insulation coordination against the applicable IEEE C57 or project requirements. Design calculations, including finite-element analysis where required, support the proposed design. Drawings, nameplate and test plan are issued for the specified buyer and utility approvals before the relevant production stages."),
+        ("Inspection", "A stage-gated inspection and test plan with hold, witness and review points is issued for your sign-off before production. For liquid-filled power units, stages include core build, winding, assembly, drying and oil processing. Core steel, conductor and insulation traceability is included in the plan. Your inspector is welcome at the agreed hold and witness points."),
+        ("Testing", "Factory tests verify the ordered transformer against its specification and applicable standard. The test plan defines the required electrical, dielectric and functional checks, supporting design tests, and any additional measurements. Buyer witness points are scheduled with your engineer at order."),
+        ("Documentation", "Test reports, final drawings and the operating and maintenance manual form the digital dossier, kept by serial number. Oil certificates, frequency-response and dissolved-gas baselines, impact-recorder logs and commissioning reports are included where applicable to the equipment and supplied scope."),
     ],
     tests=[
-        ("Winding resistance and ratio", "Measurements and connection checks appropriate to the windings, taps and specified test standard."),
-        ("Losses and impedance", "No-load and load measurements, excitation current and impedance at the specified conditions."),
-        ("Dielectric tests", "The applicable applied, induced and impulse test scope is defined by the equipment, voltage class and agreed standard."),
-        ("Mechanical and functional checks", "Checks for the supplied tank, terminals, cooling, controls, alarms and accessories, as applicable."),
-        ("Liquid and insulation records", "Oil or other insulating-liquid tests and insulation measurements where required by the equipment and test plan."),
-        ("Design and additional tests", "Temperature rise, sound, partial discharge, frequency response and other tests are addressed where applicable or specified; the proposal identifies the test or supporting report scope."),
+        ("Factory measurements and checks — scope set for the equipment", [
+            ("Winding resistance", "Specified windings and tap positions"), ("Ratio, polarity, and phase relation", "Specified tap positions and connections"),
+            ("No-load loss and excitation current", "At rated voltage; 110 % excitation where required"), ("Load loss and impedance", "At rated current and specified taps and cooling-stage ratings"),
+            ("Zero-sequence impedance", "Where specified for grounded-wye systems and relay settings"), ("Applied-voltage test", "Low-frequency dielectric; test levels for the specified insulation class"),
+            ("Induced-voltage test with partial discharge", "Partial-discharge measurement, enhancement and one-hour levels where required by the selected test procedure"),
+            ("Lightning impulse", "Full and chopped wave where required, at the specified terminals and test levels"), ("Insulation power factor and resistance", "Windings and bushings; C1 / C2 measurements where applicable"),
+            ("Core ground insulation", "Core-to-ground and core-to-frame"), ("Leak and pressure test", "Liquid-filled tanks and radiators, as applicable"),
+            ("Sweep-frequency response baseline", "When specified: reference fingerprint before shipment, compared at site"),
+            ("Oil tests", "For liquid-filled equipment: specified dielectric strength, moisture, power factor, corrosive sulfur, furans and DGA tests; pre- and post-dielectric samples where required"),
+            ("Current transformers", "Where fitted: ratio, polarity and excitation"), ("Functional checks", "Cooling, controls, alarms, and LTC operation where fitted"),
+        ]),
+        ("Design tests — applicable reports or project testing", [
+            ("Temperature rise", "Specified cooling stages; repeated on individual units when required"), ("Audible sound", "Applicable sound standard and project limits; NEMA TR-1 where specified; unit repeat tests when required"),
+            ("Lifting, jacking, and transport fixtures", "Mechanical verification"),
+        ]),
+        ("Other — when specified", [
+            ("Short-circuit test", "Test or calculation and similar-design evidence to the agreed specification; IEEE C57.12.90 and finite-element force analysis where applicable"),
+            ("Radio-influence voltage", "Corona check on bushings and terminals"), ("Extended temperature-rise or sound program", "Per your specification"),
+        ]),
     ],
-    itp=["Material and component documentation", "Winding and active-part inspection", "Assembly, drying and filling, as applicable", "Final assembly and pre-test inspection", "Factory acceptance tests and buyer witness points", "Document review and release for shipment"],
-    site=["Receiving inspection and transport-record review", "Assembly and liquid handling where required", "Site checks and comparison with factory records", "Pre-energization testing and commissioning support"],
-    standards="Applicable IEEE C57, IEC 60076 or buyer-specified requirements are identified for the proposed product. The specification response records the standards, editions and any exceptions included in the offer.",
-    interfaces="Specify protection and control interfaces, terminals, monitoring, auxiliary power and accessory requirements with your inquiry. Their scope and approval documents are defined in the proposal.",
+    itp=["Material receipt: core steel, conductor and insulation traceability", "Core stacking complete", "Winding completion, each winding", "Core-and-coil assembly, before drying", "Vacuum drying end point: moisture and dew point", "Tanking and oil filling under vacuum", "Final assembly and pre-test checks", "Factory acceptance test — agreed buyer witness points", "Packing, specified transport monitoring and release for shipment"],
+    site=["Receiving inspection and any impact-recorder review", "For gas-shipped units: dew-point and oxygen check before oil filling", "SFRA compared with the factory baseline where specified", "Pre-energization tests for the equipment; IEEE C57.152 where applicable", "DGA at energization and after the first month of service when included in the site program"],
+    standards="IEEE C57.12.00 · C57.12.10 · C57.12.90 · C57.91 · C57.110 · C57.159 · C57.104 · C57.149 · C57.152 · C57.106 · C57.147 · C57.19.00 · C57.13 · C57.131 · C57.93 · IEEE 693 · NEMA TR-1 · ASTM D3487",
+    interfaces="Power-transformer interface examples: multi-ratio bushing current transformers, relay accuracy class C800 where specified, neutral CT on grounded-wye windings · control power 125 V DC and 120/240 V AC, 480 V for cooling where required · alarm and trip contacts for temperature, pressure, liquid level and gas · DNP3 or IEC 61850 monitoring options · approval package: outline, nameplate, control schematics, CT curves and bushing drawings as applicable. Distribution-package interfaces are set by the installation and equipment specification.",
 )
 
 DELIVERY = dict(
-    intro="Delivery is quoted for the project. The proposed schedule includes engineering reviews, production, testing and transport, with the required delivery-to-site date kept distinct from target energization.",
-    stages=[
-        ("Order scope", "Confirm the configuration, commercial terms, responsibilities and agreed delivery milestones."),
-        ("Engineering", "Issue approval documents and track the review dates needed for the production schedule."),
-        ("Production", "Track manufacturing progress and inspection points through the agreed reporting schedule."),
-        ("Factory acceptance", "Complete the agreed tests, review the records and confirm shipment release requirements."),
-        ("Transport", "Coordinate packing, transport, site access and receiving responsibilities for the agreed delivery scope."),
-        ("Handover", "Provide the final document package and coordinate any included assembly, testing or commissioning services."),
-    ],
-    warranty_h="Warranty defined in your proposal",
-    warranty="Warranty scope, duration, start date and claim arrangements are included in the proposal and agreed in the order. Storage requirements, site responsibilities and any extended coverage are addressed for the project.",
-    service=["Installation and commissioning support arranged according to project requirements", "Field testing, diagnostics, liquid processing and repair scope agreed per order", "Recommended spares and replacement components identified for the supplied equipment", "After-sales contacts, response arrangements and responsibilities defined in the order"],
+    intro="Lead time is quoted for the configuration, quantity and project schedule. The delivery date, including engineering, testing and transport, is agreed in the order. Required delivery to site and target energization are tracked separately, with phased shipments arranged where the project requires them.",
+    stages=[("Order", "Purchase order; configuration, production schedule and delivery milestones agreed"),
+            ("Engineering", "Drawings for approval; long-lead materials committed. Monthly order status reports from here to delivery: engineering, materials, production, test, transit"),
+            ("Production", "Core, windings and assembly; drying and oil processing as required by the design"),
+            ("FAT", "Agreed factory test program and buyer witness points; test report reviewed before release"),
+            ("Transport", "Packing and transport monitoring as specified; delivery to the agreed site or delivery point"),
+            ("Site", "Offloading, assembly, oil filling, site tests and commissioning as included in the project scope")],
+    warranty_h="Three years, from energization",
+    warranty="Every unit ships with a Farpoint warranty of 36 months from energization, covering materials, workmanship, and design. The unit is stored to Farpoint's storage procedure before energization. Repair or replacement is at Farpoint's cost, including transport and site labor. The warranty is assignable to your lender or a successor owner. Coverage extends to five years from energization as an option.",
+    service=["Losses designed to your loss-evaluation factors, with guaranteed values and applicable tolerances in the quotation",
+             "Named service contact assigned at order; response arrangements agreed for the project",
+             "On-site technician support arranged for the project location and service requirements",
+             "Field oil handling, testing, diagnostics and repair arranged according to project requirements",
+             "Spare bushings, gaskets, fans and controls identified for the unit; stocking arrangements agreed per order",
+             "Replacement-parts and service records managed by unit serial number"],
 )
 
 QUOTE = dict(
     h="Request a quotation",
-    sub="Send your specification or tell us what the project needs. Early inquiries are welcome.",
-    ways=[
-        ("Send a specification", "Share the transformer specification, equipment schedule or a link to the project documents."),
-        ("Describe the requirement", "Tell us the transformer category, rating, voltages, quantity and required site date, where known."),
-        ("Start with what you have", "A single-line diagram, existing nameplate or short description is enough to begin clarifying the requirement."),
-    ],
-    send=["Specification, single-line diagram or equipment schedule", "Rating, voltages and quantity, if known", "Required delivery to site and project location", "Duty profile, installation constraints and any special requirements"],
-    back="Farpoint reviews the requirement and follows up by email. The proposal sets out configuration, price and scope, technical exceptions, the proposed schedule, and testing, documentation and warranty terms.",
+    sub="Send what you have: a reference configuration, a specification or a project outline.",
+    ways=[("Select a reference configuration", "Choose an FP-MPT power-transformer reference or describe the distribution package. Tell us the rating, voltages and configuration details you already know."),
+          ("Send your specification", "Your transformer specification and data sheet, or your utility's, for power or distribution equipment. The quotation answers the applicable requirements clause by clause."),
+          ("Send your single-line and site data", "Early in development? Send the single-line diagram or project outline, site conditions and delivery window; we clarify the transformer requirement and prepare a proposal.")],
+    send=["Single-line diagram, equipment schedule or project outline",
+          "Transformer rating in kVA or MVA, voltages and quantity, if known",
+          "Your or your utility's transformer specification",
+          "Duty profile; plant MW and power factor where relevant",
+          "Site data (altitude, ambient, seismic), project location and required delivery window"],
+    back="What comes back: a quotation with the proposed configuration, price and scope, a compliance response against your specification, and a proposed delivery schedule. Testing, documentation and warranty terms are included. Farpoint engineering reviews the technical response before it is sent; delivery commitments are agreed in the order.",
 )
 
-ABOUT = {'h': 'Farpoint Energy',
- 'intro': 'Farpoint Energy supplies power and distribution transformers for data centers, energy '
-          'projects, utilities and industry. Based in New York, Farpoint is your point of contact '
-          'for the proposal, agreed delivery scope and after-sales arrangements.',
- 'founder_name': 'Karan Uppal',
- 'founder_title': 'Founder',
- 'founder': 'Before Farpoint, Karan was Chief Technology Officer at EvolutionIQ, a New York AI '
-            'company, where he built and ran the engineering organization. He started Farpoint to '
-            'bring the same operating discipline to grid equipment: committed dates, clear '
-            'specifications, and one accountable supplier.',
- 'advisors': "Farpoint's engineering advisors have designed and tested power transformers to 400 "
-             'kV for more than three decades.'}
+ABOUT = dict(
+    h="Farpoint Energy",
+    intro="Farpoint Energy supplies power and distribution transformers for the US grid and the sites it serves: main power transformers for renewable and storage interconnections, generator step-up, substation and auto transformers, and distribution packages for utility, data-center and industrial projects. Farpoint is based in New York.",
+    founder_name="Karan Uppal", founder_title="Founder",
+    founder="Before Farpoint, Karan was Chief Technology Officer at EvolutionIQ, a New York AI company, where he built and ran the engineering organization. He started Farpoint to bring the same operating discipline to grid equipment: committed dates, clear specifications, and one accountable supplier.",
+    advisors="Farpoint's engineering advisors have designed and tested power transformers to 400 kV for more than three decades.",
+)
+
+PRODUCT_SUMMARY = [
+    ("Power transformers", "Main power, generator step-up, substation and auto transformers for grid and large-load projects.", "power"),
+    ("Distribution transformers", "Site distribution and medium-voltage packages for data centers, solar, storage and industry.", "distribution"),
+]
+
+DISTRIBUTION = dict(
+    h="Distribution and medium-voltage transformers",
+    intro="Site-distribution and medium-voltage transformer packages connect facility loads, inverter blocks and storage equipment to the site's electrical system. The transformer configuration follows the equipment duty and installation requirements.",
+    choices=[
+        ("Ratings and voltages", "kVA or MVA rating, voltage ratio and frequency are selected for the connected equipment and operating duty. Multiple unit types and quantities can form one project package."),
+        ("Installation and terminals", "Padmounted and other installation arrangements are reviewed against the site's layout, access and connection requirements."),
+        ("Insulation and cooling", "Insulation medium, cooling, temperature rise and sound requirements follow the load profile, site environment and installation specification."),
+        ("Electrical configuration", "Winding connections, impedance, taps, losses and grounding are specified for the system. Inverter-associated units also account for the defined harmonic and operating requirements."),
+        ("Accessories and interfaces", "Protection, monitoring, terminal arrangements and accessories are selected for the equipment package and its interfaces."),
+        ("Quantities and delivery phases", "Unit quantities and delivery groups can follow the construction sequence, with package identification carried through drawings, testing and shipment."),
+    ],
+    uses=["Data-center downstream distribution", "Solar inverter and collector-system packages", "Storage equipment and site-distribution packages", "Utility and industrial distribution"],
+)
