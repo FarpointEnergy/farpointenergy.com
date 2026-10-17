@@ -5,7 +5,7 @@ from urllib.parse import quote
 
 
 PRODUCT_VALUES = {"power", "distribution", "unsure"}
-APPLICATION_VALUES = {"data-center", "solar", "storage", "utility", "industrial", "other"}
+APPLICATION_VALUES = {"data-center", "solar", "storage", "hybrid", "utility", "industrial", "other"}
 PRODUCT_OPTIONS = (
     {"value": "power", "name": "Power transformers"},
     {"value": "distribution", "name": "Distribution transformers"},
@@ -14,6 +14,7 @@ APPLICATION_OPTIONS = (
     {"value": "data-center", "name": "Data centers"},
     {"value": "solar", "name": "Solar"},
     {"value": "storage", "name": "Battery storage"},
+    {"value": "hybrid", "name": "Hybrid solar + storage"},
     {"value": "utility", "name": "Utilities"},
     {"value": "industrial", "name": "Industrial"},
     {"value": "other", "name": "Other"},
@@ -41,7 +42,6 @@ def render_form(site, product_categories=None, applications=None):
     email = escape(site["email"], quote=True)
     action = escape(site["form_action"], quote=True)
     ajax_action = escape(site["form_action"].replace("https://formsubmit.co/", "https://formsubmit.co/ajax/", 1), quote=True)
-    thanks = escape(site["domain"].rstrip("/") + "/thanks.html", quote=True)
     mailto = f'mailto:{email}?subject={quote("Transformer specification")}'
     products = _options(PRODUCT_OPTIONS if product_categories is None else product_categories, PRODUCT_VALUES - {"unsure"}, "")
     apps = _options(APPLICATION_OPTIONS if applications is None else applications, APPLICATION_VALUES, "")
@@ -49,7 +49,6 @@ def render_form(site, product_categories=None, applications=None):
 <form id="quote-form" class="q" action="{action}" method="POST" data-ajax-action="{ajax_action}" data-thanks="thanks.html">
 <input type="hidden" name="_subject" value="Quotation request — farpointenergy.com">
 <input type="hidden" name="_template" value="table">
-<input type="hidden" name="_next" value="{thanks}">
 <input type="hidden" name="_captcha" value="false">
 <div hidden aria-hidden="true"><label for="f-honey">Leave this field empty</label><input id="f-honey" type="text" name="_honey" tabindex="-1" autocomplete="off"></div>
 <input type="hidden" id="f-source" name="Source" value="" disabled>
@@ -57,7 +56,7 @@ def render_form(site, product_categories=None, applications=None):
 <div class="field"><label for="f-name">Name <span class="field-hint">(required)</span></label><input id="f-name" name="Name" required autocomplete="name" maxlength="160" aria-describedby="f-name-error"><p class="field-error" id="f-name-error" hidden></p></div>
 <div class="field"><label for="f-company">Company <span class="field-hint">(required)</span></label><input id="f-company" name="Company" required autocomplete="organization" maxlength="200" aria-describedby="f-company-error"><p class="field-error" id="f-company-error" hidden></p></div>
 <div class="field full"><label for="f-email">Email <span class="field-hint">(required)</span></label><input id="f-email" name="email" type="email" required autocomplete="email" maxlength="254" aria-describedby="f-email-error"><p class="field-error" id="f-email-error" hidden></p></div>
-<div class="field full"><label for="f-requirement">Requirement or specification link <span class="field-hint">(required)</span></label><textarea id="f-requirement" name="Requirement or specification link" required rows="4" maxlength="20000" placeholder="Describe the transformer package or paste a specification link." aria-describedby="f-requirement-error"></textarea><p class="field-error" id="f-requirement-error" hidden></p></div>
+<div class="field full"><label for="f-requirement">Requirement or specification link <span class="field-hint">(required)</span></label><textarea id="f-requirement" name="Requirement or specification link" required rows="4" maxlength="20000" placeholder="Describe the transformer package or paste a specification link." aria-describedby="f-requirement-hint f-requirement-error"></textarea><p id="f-requirement-hint" class="small muted">For cooling-stage ratings, mixed transformer types or phased quantities, describe each unit here or share an equipment schedule. Leave single-value fields blank when they do not apply.</p><p class="field-error" id="f-requirement-error" hidden></p></div>
 <div class="field"><label for="f-product">Transformer category <span class="field-hint">(optional)</span></label><select id="f-product" name="Transformer category"><option value="unsure" selected>Not sure</option>{products}</select></div>
 <div class="field"><label for="f-application">Application <span class="field-hint">(optional)</span></label><select id="f-application" name="Application"><option value="" selected>Not sure</option>{apps}</select></div>
 <details class="optional-fields full"><summary>Project and technical details (optional)</summary>

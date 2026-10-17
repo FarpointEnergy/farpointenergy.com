@@ -1,13 +1,13 @@
 (() => {
   "use strict";
   const products = new Set(["power", "distribution", "unsure"]);
-  const applications = new Set(["data-center", "solar", "storage", "utility", "industrial", "other"]);
+  const applications = new Set(["data-center", "solar", "storage", "hybrid", "utility", "industrial", "other"]);
   const sources = new Set(["website", "homepage", "products", "power-transformers", "distribution-transformers", "applications", "data-centers", "solar-storage", "quality", "delivery", "manufacturing", "about", "email"]);
-  const campaigns = new Set(["power", "distribution", "data-center", "solar", "storage", "utility", "industrial", "other"]);
+  const campaigns = new Set(["power", "distribution", "data-center", "solar", "storage", "hybrid", "utility", "industrial", "other"]);
   const allowed = { product: products, application: applications, source: sources, campaign: campaigns };
   const routes = new Set(["products.html", "applications.html", "quote.html"]);
   const productSections = { "#power": "power", "#distribution": "distribution" };
-  const applicationSections = { "#datacenter": "data-center", "#solar": "solar", "#storage": "storage", "#hybrid": "solar", "#utilities": "utility", "#industrial": "industrial", "#wind": "other", "#replacement": "other" };
+  const applicationSections = { "#datacenter": "data-center", "#solar": "solar", "#storage": "storage", "#hybrid": "hybrid", "#utilities": "utility", "#industrial": "industrial", "#wind": "other", "#replacement": "other" };
   const initialProduct = products.has(document.body.dataset.product) ? document.body.dataset.product : undefined;
   const initialApplication = applications.has(document.body.dataset.application) ? document.body.dataset.application : undefined;
 

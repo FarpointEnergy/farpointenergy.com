@@ -118,7 +118,10 @@ CSS += """
 .s:not(.dark) .eyebrow,.card .tag{color:var(--copper-dk)}.jump-links{display:flex;gap:22px;flex-wrap:wrap;margin-top:24px}.jump-links a{color:#fff}
 .unit-pair{display:grid;grid-template-columns:minmax(0,1fr) 5.5rem;gap:8px}.optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px;margin-top:16px}
 .field-hint{font-size:10px;letter-spacing:0}.field-error{color:#9A2A21;font-size:14px;margin:6px 0 0}.form-status{padding:12px;border-left:3px solid var(--copper);background:var(--tint);margin-top:14px}button:disabled{opacity:.65;cursor:default}
-@media(max-width:900px){.nav ul{display:flex}.nav.menu-ready ul:not(.is-open){display:none}.optional-grid{grid-template-columns:1fr}}
+.btn{background:var(--copper-dk)}.btn:hover{background:#804817}.btn.ghost{background:transparent;color:var(--copper-dk);border-color:var(--copper-dk)}.btn.ghost:hover{background:var(--tint)}.btn.ghost.onDark{color:#fff;border-color:#fff}.btn.ghost.onDark:hover{background:var(--ink2)}
+.steps li::before{color:var(--copper-dk)}form.q input,form.q select,form.q textarea{border-color:#7A8795}details summary{min-height:44px;align-items:center}.nav .btn{min-height:44px}
+section[id],#main{scroll-margin-top:140px}
+@media(max-width:900px){.nav ul{display:flex}.nav:not(.menu-ready){position:static}.nav.menu-ready ul{max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px);overflow-y:auto}.nav.menu-ready ul:not(.is-open){display:none}.optional-grid{grid-template-columns:1fr}section[id],#main{scroll-margin-top:84px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 """
 
@@ -145,7 +148,7 @@ def page(title, body, current, desc):
 <nav class="nav" aria-label="Main navigation"><div class="wrap"><a class="brand" href="index.html">{MARK}FARPOINT&nbsp;<span>ENERGY</span></a>
 <button type="button" class="navbtn" aria-controls="site-menu" aria-expanded="false" hidden><i aria-hidden="true"></i>Menu</button>
 <ul id="site-menu">{nav}<li><a class="btn" href="quote.html">Request a quotation</a></li></ul></div></nav>
-<main id="main">{body}</main>
+<main id="main" tabindex="-1">{body}</main>
 <footer><div class="wrap"><div><div class="brand" style="margin-bottom:10px">{MARK}FARPOINT&nbsp;<span>ENERGY</span></div>Power and distribution transformers, engineered to your specification.<br>{SITE['city']}</div>
 <div><a href="mailto:{SITE['email']}">{SITE['email']}</a><br><a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a><br><a href="quote.html">Request a quotation</a></div>
 <div class="mono" style="font-size:12px;align-self:flex-end">© 2026 Farpoint Energy · <a href="privacy.html">Privacy</a></div></div></footer>
@@ -199,7 +202,7 @@ products = hero("Products", "Power and distribution transformers", "Main power a
 <details><summary>FP-MPT reference configurations — ratings, cooling, taps, and options</summary><h3 class="mt">{E(s['h'])}</h3><p class="mt">{E(s['p'])}</p>
 <div class="tbl"><table class="stack"><thead><tr><th>Configuration</th><th>Rating</th><th>High side</th><th>Low side</th></tr></thead><tbody>{lineup}</tbody></table></div>
 <p class="small muted" style="margin-top:12px">{E(s['common'])}</p><p class="small">{E(s['options'])}</p>
-<div class="panel">{E(s['catalog_note'])} <a href="quote.html?product=power">Request it with your quotation.</a></div></details>
+<div class="panel">{E(s['catalog_note'])}</div></details>
 <p class="mt"><a href="quote.html?product=power">Request a power-transformer quotation →</a></p></div></section>
 <section class="s alt" id="distribution"><div class="wrap"><div class="eyebrow">Distribution transformers</div><h2>{E(DISTRIBUTION['h'])}</h2><p class="mt">{E(DISTRIBUTION['intro'])}</p>
 <div class="tbl"><table><thead><tr><th>Configuration</th><th>Project choices</th></tr></thead><tbody>{dist_rows}</tbody></table></div>
@@ -208,11 +211,11 @@ products = hero("Products", "Power and distribution transformers", "Main power a
 (OUT/"products.html").write_text(page("Products — Farpoint Energy", products, "products.html", "Power-transformer reference ranges and FP-MPT configurations, plus project-specific distribution and medium-voltage transformers for data centers, solar, and storage."))
 
 # ---------- APPLICATIONS
-APP_CONTEXT = {'utilities':'utility','solar':'solar','storage':'storage','hybrid':'solar','datacenter':'data-center','industrial':'industrial','wind':'other','replacement':'other'}
+APP_CONTEXT = {'utilities':'utility','solar':'solar','storage':'storage','hybrid':'hybrid','datacenter':'data-center','industrial':'industrial','wind':'other','replacement':'other'}
 def application_links(m):
     app = APP_CONTEXT[m['id']]
     categories = '<a href="products.html?application=' + app + '#power">Power transformers</a>'
-    if m['id'] in {'datacenter','solar','storage','hybrid','industrial','utilities'}:
+    if m['id'] in {'datacenter','solar','storage','hybrid','industrial','utilities','replacement'}:
         categories += ' · <a href="products.html?application=' + app + '#distribution">Distribution transformers</a>'
     return '<p class="small mt">' + categories + '</p><p><a href="quote.html?application=' + app + '">Discuss this application →</a></p>'
 asec = "".join(f"""
@@ -286,7 +289,7 @@ redirects = [("markets.html", "applications.html"), ("contact.html", "quote.html
              ("data-centers.html", "applications.html#datacenter"), ("solar-storage.html", "applications.html#solar")]
 for old, new in redirects:
     # Compatibility only: retain safe inquiry context, never personal fields.
-    script = """(()=>{const u=new URL(DEST,location.href),p=new URLSearchParams(location.search),allow={product:['power','distribution','unsure'],application:['data-center','solar','storage','utility','industrial','other'],source:['website','homepage','products','power-transformers','distribution-transformers','applications','data-centers','solar-storage','quality','delivery','manufacturing','about','email'],campaign:['power','distribution','data-center','solar','storage','utility','industrial','other']};for(const k of ['product','application','source','campaign']){const v=p.get(k);if(p.getAll(k).length===1&&v&&allow[k].includes(v))u.searchParams.set(k,v)}if(location.pathname.endsWith('/markets.html')&&['#utilities','#solar','#storage','#hybrid','#datacenter','#industrial','#wind','#replacement'].includes(location.hash))u.hash=location.hash;if(location.pathname.endsWith('/solar-storage.html')&&u.searchParams.get('application')==='storage')u.hash='storage';location.replace(u.href)})();""".replace('DEST', json.dumps(new))
+    script = """(()=>{const u=new URL(DEST,location.href),p=new URLSearchParams(location.search),allow={product:['power','distribution','unsure'],application:['data-center','solar','storage','hybrid','utility','industrial','other'],source:['website','homepage','products','power-transformers','distribution-transformers','applications','data-centers','solar-storage','quality','delivery','manufacturing','about','email'],campaign:['power','distribution','data-center','solar','storage','hybrid','utility','industrial','other']};for(const k of ['product','application','source','campaign']){const v=p.get(k);if(p.getAll(k).length===1&&v&&allow[k].includes(v))u.searchParams.set(k,v)}if(location.pathname.endsWith('/markets.html')&&['#utilities','#solar','#storage','#hybrid','#datacenter','#industrial','#wind','#replacement'].includes(location.hash))u.hash=location.hash;if(location.pathname.endsWith('/solar-storage.html')&&['storage','hybrid'].includes(u.searchParams.get('application')))u.hash=u.searchParams.get('application');location.replace(u.href)})();""".replace('DEST', json.dumps(new))
     (OUT/old).write_text(f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Farpoint Energy</title><meta name="robots" content="noindex,follow"><script>{script}</script><meta http-equiv="refresh" content="0; url={new}"><link rel="canonical" href="{SITE["domain"]}/{new}"></head><body><a href="{new}">Continue</a></body></html>')
 pages = ["index","products","applications","manufacturing","quality","delivery","quote","about","privacy"]
 (OUT/"sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "".join(f'  <url><loc>{SITE["domain"]}/{p}.html</loc></url>\n' for p in pages) + '</urlset>\n')

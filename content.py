@@ -116,7 +116,7 @@ QUALITY = dict(
             ("Lifting, jacking, and transport fixtures", "Mechanical verification"),
         ]),
         ("Other — when specified", [
-            ("Short-circuit test", "Test or calculation and similar-design evidence to the agreed specification; IEEE C57.12.90 and finite-element force analysis where applicable"),
+            ("Short-circuit withstand verification", "Test or calculation and similar-design evidence to the agreed specification; IEEE C57.12.90 and finite-element force analysis where applicable"),
             ("Radio-influence voltage", "Corona check on bushings and terminals"), ("Extended temperature-rise or sound program", "Per your specification"),
         ]),
     ],

@@ -2,16 +2,16 @@
 (() => {
   "use strict";
   const products = new Set(["power", "distribution", "unsure"]);
-  const applications = new Set(["data-center", "solar", "storage", "utility", "industrial", "other"]);
+  const applications = new Set(["data-center", "solar", "storage", "hybrid", "utility", "industrial", "other"]);
   const publicSources = new Set(["website", "homepage", "products", "power-transformers", "distribution-transformers", "applications", "data-centers", "solar-storage", "quality", "delivery", "manufacturing", "about", "email"]);
-  const publicCampaigns = new Set(["power", "distribution", "data-center", "solar", "storage", "utility", "industrial", "other"]);
+  const publicCampaigns = new Set(["power", "distribution", "data-center", "solar", "storage", "hybrid", "utility", "industrial", "other"]);
   const confirmationKey = "farpoint-inquiry-accepted";
   const form = document.getElementById("quote-form");
   const path = location.pathname.split("/").pop();
   const productPages = { "power-transformers.html": "power", "distribution-transformers.html": "distribution" };
   const applicationPages = { "data-centers.html": "data-center" };
   const productSections = { "#power": "power", "#distribution": "distribution" };
-  const applicationSections = { "#datacenter": "data-center", "#solar": "solar", "#storage": "storage", "#utilities": "utility", "#industrial": "industrial", "#hybrid": "other", "#wind": "other", "#replacement": "other" };
+  const applicationSections = { "#datacenter": "data-center", "#solar": "solar", "#storage": "storage", "#utilities": "utility", "#industrial": "industrial", "#hybrid": "hybrid", "#wind": "other", "#replacement": "other" };
   const eventNames = new Set(["product_path_view", "rfq_start", "rfq_submit_success", "email_click"]);
 
   function context() {
@@ -110,6 +110,18 @@
   const button = document.getElementById("quote-submit");
   const status = document.getElementById("quote-status");
   let state = "ready";
+  const fieldStates = new Map();
+  function freezeFields() {
+    for (const field of form.querySelectorAll("input, select, textarea")) {
+      if (field.type === "hidden") continue;
+      fieldStates.set(field, field.disabled);
+      field.disabled = true;
+    }
+  }
+  function restoreFields() {
+    for (const [field, disabled] of fieldStates) field.disabled = disabled;
+    fieldStates.clear();
+  }
   function setStatus(message, kind) {
     status.textContent = message;
     status.dataset.state = kind;
@@ -118,6 +130,7 @@
   function finish(kind, message) {
     state = kind;
     form.removeAttribute("aria-busy");
+    if (kind !== "accepted") restoreFields();
     button.disabled = kind !== "failed";
     button.textContent = kind === "accepted" ? "Request submitted" : kind === "uncertain" ? "Submission status uncertain" : "Send request";
     setStatus(message, kind);
@@ -145,6 +158,9 @@
     }
     const reference = document.getElementById("f-reference").value.trim().replace(/[\r\n]/g, " ").slice(0, 160);
     if (reference) payload._subject = `Quotation request — ${reference}`;
+    // Freeze only after taking the payload snapshot, so a successful response
+    // cannot discard edits made while the request is in flight.
+    freezeFields();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 25000);
     try {
