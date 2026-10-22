@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Farpoint Energy website generator. Content lives in content.py; run `python3 build.py` to regenerate all pages."""
-import pathlib, html as H
+import pathlib, html as H, json
 from content import *
+from inquiry import render_form, thanks_content
 OUT = pathlib.Path(__file__).parent
 E = H.escape
 MARK = '<svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="1" width="38" height="38" fill="none" stroke="#C4732C" stroke-width="3"/><line x1="7" y1="28" x2="33" y2="28" stroke="currentColor" stroke-width="3"/><circle cx="29" cy="13" r="4" fill="#C4732C"/></svg>'
@@ -110,28 +111,54 @@ form.q textarea{min-height:120px;resize:vertical}form.q input:focus,form.q selec
 }
 """
 
+CSS += """
+[hidden]{display:none!important}.skip{position:absolute;left:16px;top:-100px;z-index:30;background:#fff;padding:12px}.skip:focus{top:8px}
+:focus-visible{outline:3px solid var(--copper);outline-offset:4px}main{display:block}section[id]{scroll-margin-top:100px}
+.cols>*,.hero .wrap>*,form.q>*{min-width:0}.navbtn{background:none;border:0}.diagram-caption{font-size:13px;color:#B9C3CE;margin:10px 0 0}
+.s:not(.dark) .eyebrow,.card .tag{color:var(--copper-dk)}.jump-links{display:flex;gap:22px;flex-wrap:wrap;margin-top:24px}.jump-links a{color:#fff}
+.unit-pair{display:grid;grid-template-columns:minmax(0,1fr) 5.5rem;gap:8px}.optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px;margin-top:16px}
+.field-hint{font-size:10px;letter-spacing:0}.field-error{color:#9A2A21;font-size:14px;margin:6px 0 0}.form-status{padding:12px;border-left:3px solid var(--copper);background:var(--tint);margin-top:14px}button:disabled{opacity:.65;cursor:default}
+.btn{background:var(--copper-dk)}.btn:hover{background:#804817}.btn.ghost{background:transparent;color:var(--copper-dk);border-color:var(--copper-dk)}.btn.ghost:hover{background:var(--tint)}.btn.ghost.onDark{color:#fff;border-color:#fff}.btn.ghost.onDark:hover{background:var(--ink2)}
+.steps li::before{color:var(--copper-dk)}form.q input,form.q select,form.q textarea{border-color:#7A8795}details summary{min-height:44px;align-items:center}.nav .btn{min-height:44px}
+section[id],#main{scroll-margin-top:140px}
+.reference-link{display:inline-flex;align-items:center;min-height:44px}#quote-form{scroll-margin-top:140px}
+@media(max-width:900px){.nav ul{display:flex}.nav:not(.menu-ready){position:static}.nav.menu-ready ul{max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px);overflow-y:auto}.nav.menu-ready ul:not(.is-open){display:none}.optional-grid{grid-template-columns:1fr}section[id],#main,#quote-form{scroll-margin-top:84px}}
+@media(max-width:360px){.nav .wrap{gap:8px}.nav .brand{font-size:12px;letter-spacing:.12em;gap:8px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+"""
+
 def page(title, body, current, desc):
     VER = __import__("hashlib").md5(CSS.encode()).hexdigest()[:8]
+    script_versions = {name: __import__("hashlib").sha256((OUT / name).read_bytes()).hexdigest()[:10] for name in ("site.js", "inquiry.js")}
+    route = current or "404.html"
+    canonical = SITE['domain'].rstrip('/') + ('/' if route == 'index.html' else '/' + route)
+    robots = '<meta name="robots" content="noindex,follow">' if route in {'thanks.html','404.html'} else ''
+    org = json.dumps({'@context':'https://schema.org','@type':'Organization','name':'Farpoint Energy','url':SITE['domain'],'email':SITE['email'],'telephone':SITE['phone']})
     nav = "".join('<li><a class="l" href="%s"%s>%s</a></li>' % (h, ' aria-current="page"' if h == current else '', t) for t, h in NAV)
     return f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title}</title><meta name="description" content="{desc}">
+<title>{E(title)}</title><meta name="description" content="{E(desc, quote=True)}">
+<link rel="canonical" href="{canonical}">{robots}
+<meta property="og:type" content="website"><meta property="og:site_name" content="Farpoint Energy"><meta property="og:url" content="{canonical}">
+<meta property="og:title" content="{E(title, quote=True)}"><meta property="og:description" content="{E(desc, quote=True)}"><meta property="og:image" content="{SITE['domain']}/social-card.png">
+<meta name="twitter:card" content="summary_large_image"><script type="application/ld+json">{org}</script>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css?v={VER}">
-</head><body>
-<nav class="nav"><div class="wrap"><a class="brand" href="index.html">{MARK}FARPOINT&nbsp;<span>ENERGY</span></a>
-<input type="checkbox" id="navtoggle" class="navtoggle" aria-hidden="true"><label for="navtoggle" class="navbtn" aria-label="Menu"><i></i>Menu</label>
-<ul>{nav}<li><a class="btn" href="quote.html">Request a quotation</a></li></ul></div></nav>
-{body}
-<footer><div class="wrap"><div><div class="brand" style="margin-bottom:10px">{MARK}FARPOINT&nbsp;<span>ENERGY</span></div>Power transformers, engineered to your specification.<br>{SITE['city']}</div>
+<script src="site.js?v={script_versions['site.js']}" defer></script><script src="inquiry.js?v={script_versions['inquiry.js']}" defer></script>
+</head><body><a class="skip" href="#main">Skip to content</a>
+<nav class="nav" aria-label="Main navigation"><div class="wrap"><a class="brand" href="index.html">{MARK}FARPOINT&nbsp;<span>ENERGY</span></a>
+<button type="button" class="navbtn" aria-controls="site-menu" aria-expanded="false" hidden><i aria-hidden="true"></i>Menu</button>
+<ul id="site-menu">{nav}<li><a class="btn" href="quote.html">Request a quotation</a></li></ul></div></nav>
+<main id="main" tabindex="-1">{body}</main>
+<footer><div class="wrap"><div><div class="brand" style="margin-bottom:10px">{MARK}FARPOINT&nbsp;<span>ENERGY</span></div>Power and distribution transformers, engineered to your specification.<br>{SITE['city']}</div>
 <div><a href="mailto:{SITE['email']}">{SITE['email']}</a><br><a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a><br><a href="quote.html">Request a quotation</a></div>
-<div class="mono" style="font-size:12px;align-self:flex-end">© 2026 Farpoint Energy · IEEE C57.12.00 / C57.12.90</div></div></footer>
+<div class="mono" style="font-size:12px;align-self:flex-end">© 2026 Farpoint Energy · <a href="privacy.html">Privacy</a></div></div></footer>
 </body></html>"""
 
 def hero(eyebrow, h1, sub=None, diagram=False, cta=None, strip=None):
     inner = f'<div><div class="eyebrow">{E(eyebrow)}</div><h1>{E(h1)}</h1>' + (f'<p class="sub">{E(sub)}</p>' if sub else '') + (cta or '') + '</div>'
-    if diagram: inner += f'<div>{DIAGRAM}</div>'
+    if diagram: inner += f'<div>{DIAGRAM}<p class="diagram-caption">Illustrative generation/interconnection example.</p></div>'
     if strip: inner += f'<div class="strip">{"".join(f"<span>{E(x)}</span>" for x in strip)}</div>'
     cls = "hero" if diagram else "hero plain"
     sty = "" if diagram else ' style="padding-block:clamp(40px,6vw,72px)"'
@@ -141,57 +168,72 @@ def steps(items): return '<ol class="steps">' + "".join(f'<li><div><b>{E(b)}</b>
 def checks(items): return '<ul class="check">' + "".join(f'<li>{E(i)}</li>' for i in items) + '</ul>'
 def tiles(items, mt=True): return f'<div class="tiles"{"" if mt else " style=margin-top:0"}>' + "".join(f'<div class="tile"><div class="v">{E(v)}</div><div class="l">{E(l)}</div></div>' for v, l in items) + '</div>'
 
-CAP_HEAD = ["Family", "HV class", "Rating", "BIL (HV)", "Typical use"]
+CAP_HEAD = ["Family", "High-voltage class", "Rating", "Typical use"]
 def cap_table(notes=True):
-    heads = CAP_HEAD if notes else CAP_HEAD[:4]
+    heads = CAP_HEAD
     rows = ""
     for r in CAPABILITY:
-        cells = r if notes else r[:4]
-        rows += "<tr>" + "".join(f'<td data-label="{heads[i]}" class="{"sku" if i==0 else ("v" if i in (1,2,3) else "")}">{E(c)}</td>' for i, c in enumerate(cells)) + "</tr>"
+        cells = [r[0], r[1], r[2], r[4]]
+        rows += "<tr>" + "".join(f'<td data-label="{heads[i]}" class="{"sku" if i==0 else ("v" if i in (1,2) else "")}">{E(c)}</td>' for i, c in enumerate(cells)) + "</tr>"
     return f'<div class="tbl"><table class="stack"><thead><tr>{"".join(f"<th>{h}</th>" for h in heads)}</tr></thead><tbody>{rows}</tbody></table></div><p class="small muted" style="margin-top:10px">{E(CAP_NOTE)}</p>'
 
 # ---------- HOME
-apps = "".join(f'<div class="card"><div class="tag">{E(m["name"])}</div><p>{E(m["lead"])}</p><a class="more" href="applications.html#{m["id"]}">Read more →</a></div>' for m in APPLICATIONS)
+summary_rows = ''.join(f'<tr><td><a href="products.html#{E(anchor)}">{E(family)}</a></td><td>{E(use)}</td></tr>' for family,use,anchor in PRODUCT_SUMMARY)
+summary_table = f'<div class="tbl"><table><thead><tr><th>Product family</th><th>Project scope</th></tr></thead><tbody>{summary_rows}</tbody></table></div>'
+apps = "".join(f'<div class="card"><div class="tag">{E(m["name"])}</div><p>{E(m["lead"])}</p><a class="more" href="applications.html#{m["id"]}" aria-label="Read more about {E(m["name"])}">Read more →</a></div>' for m in APPLICATIONS)
 home = hero(HERO['eyebrow'], HERO['h1'], HERO['sub'], diagram=True,
             cta='<div class="cta"><a class="btn" href="quote.html">Request a quotation</a><a class="btn ghost onDark" href="products.html">Capability and product line</a></div>', strip=HERO['strip']) + f"""
-<section class="s"><div class="wrap"><div class="eyebrow">{E(ETO['h'])}</div><h2>Every unit is designed for its project</h2><p class="mt">{E(ETO['p'])}</p>{cap_table(notes=False)}
-<p class="mt"><a class="btn ghost" href="products.html">Capability ranges and the FP-MPT standard line</a></p></div></section>
+<section class="s"><div class="wrap"><div class="eyebrow">{E(ETO['h'])}</div><h2>Every unit is designed for its project</h2><p class="mt">{E(ETO['p'])}</p>{summary_table}
+<p class="mt"><a class="btn ghost" href="products.html">Product families and reference configurations</a></p></div></section>
 <section class="s alt"><div class="wrap"><div class="eyebrow">Applications</div><h2>What your site does to the transformer, and what changes in the design because of it</h2><div class="grid4">{apps}</div></div></section>
-<section class="s dark"><div class="wrap"><div class="cols"><div><div class="eyebrow">{E(BASE['h'])}</div><h2>{E(BASE['model_h'])}</h2><p class="mt">{E(BASE['model'])}</p><p><a class="btn ghost onDark" href="manufacturing.html">The manufacturing base</a></p></div>
+<section class="s dark"><div class="wrap"><div class="cols"><div><div class="eyebrow">{E(BASE['h'])}</div><h2>{E(BASE['model_h'])}</h2><p class="mt">Established transformer plants, qualified and audited by Farpoint, build each unit under our engineering, inspection and test program. Farpoint is your contractual counterpart, from quotation through delivery and warranty.</p><p><a class="btn ghost onDark" href="manufacturing.html">The manufacturing base</a></p></div>
 <div>{tiles(BASE['facts'], mt=False)}</div></div></div></section>
 <section class="s"><div class="wrap"><div class="cols"><div><div class="eyebrow">Quality</div><h2>{E(QUALITY['h'])}</h2><p class="mt">{E(QUALITY['blocks'][2][1])}</p><p><a href="quality.html">Test program, inspection points, and documentation →</a></p></div>
 <div><div class="eyebrow">Delivery &amp; warranty</div><h2>{E(DELIVERY['warranty_h'])}</h2><p class="mt">{E(DELIVERY['warranty'])}</p><p><a href="delivery.html">Lead time, stages, and service →</a></p></div></div></div></section>
 """
-(OUT/"index.html").write_text(page("Farpoint Energy — Power transformers, engineered to your specification", home, "index.html", "Power transformers to 250 MVA and 230 kV for utility, renewable, storage, data center, and industrial projects. IEEE C57 design and test, three-year warranty, 100 units per year."))
+(OUT/"index.html").write_text(page("Farpoint Energy — Power and distribution transformers", home, "index.html", "Power and distribution transformers engineered for data centers, solar, storage, utilities, and industrial projects. Project-specific designs and a three-year warranty from energization."))
 
 # ---------- PRODUCTS
 s = STANDARD
-lineup = "".join(f'<tr><td class="sku" data-label="Configuration">{E(a)}</td><td class="v" data-label="Rating">{E(b)}</td><td class="v" data-label="High side">{E(c)}</td><td class="v" data-label="Low side">{E(d)}</td></tr>' for a,b,c,d in s['lineup'])
-products = hero("Products", "Power transformers to 250 MVA and 230 kV", "Main power, generator step-up, substation, auto, and special-duty transformers, engineered to your specification. A pre-engineered standard line for solar and storage interconnections.") + f"""
-<section class="s"><div class="wrap"><div class="eyebrow">{E(ETO['h'])}</div><h2>Capability ranges</h2><p class="mt">{E(ETO['p'])}</p>{cap_table()}</div></section>
-<section class="s alt"><div class="wrap"><div class="eyebrow">Standard line</div><h2>{E(s['h'])}</h2><p class="mt">{E(s['p'])}</p>
-<div class="tbl"><table class="stack"><thead><tr><th>Configuration</th><th>Rating</th><th>High side</th><th>Low side</th></tr></thead><tbody>{lineup}</tbody></table></div>
+lineup = "".join(f'<tr><td class="sku" data-label="Configuration">{E(a)}</td><td class="v" data-label="Rating">{E(b)}</td><td class="v" data-label="High side">{E(c)}</td><td class="v" data-label="Low side">{E(d)}</td><td data-label="Quotation"><a class="reference-link" href="quote.html?product=power&amp;reference={E(a)}#quote-form" aria-label="Use this reference: {E(a)} for your quotation">Use this reference →</a></td></tr>' for a,b,c,d in s['lineup'])
+bil_rows = ''.join(f'<tr><td>{E(r[0])}</td><td>{E(r[3])}</td></tr>' for r in CAPABILITY)
+dist_rows = ''.join(f'<tr><td class="k">{E(label)}</td><td>{E(text)}</td></tr>' for label,text in DISTRIBUTION['choices'])
+products = hero("Products", "Power and distribution transformers", "Main power and incoming-substation transformers, plus distribution and medium-voltage packages engineered for your site.", cta='<div class="jump-links"><a href="#power">Power transformers ↓</a><a href="#distribution">Distribution transformers ↓</a></div>') + f"""
+<section class="s" id="power"><div class="wrap"><div class="eyebrow">Power transformers</div><h2>Power-transformer reference ranges</h2><p class="mt">{E(ETO['p'])}</p>{cap_table()}
+<details><summary>Insulation levels and engineering detail</summary><p class="small mt">Basic impulse insulation level (BIL) is selected for the system and insulation coordination requirements. The high-side values below accompany the reference ranges.</p><div class="tbl"><table><thead><tr><th>Family</th><th>Reference high-side BIL</th></tr></thead><tbody>{bil_rows}</tbody></table></div></details>
+<details><summary>FP-MPT reference configurations — ratings, cooling, taps, and options</summary><h3 class="mt">{E(s['h'])}</h3><p class="mt">{E(s['p'])}</p>
+<div class="tbl"><table class="stack"><thead><tr><th>Configuration</th><th>Rating</th><th>High side</th><th>Low side</th><th>Quotation</th></tr></thead><tbody>{lineup}</tbody></table></div>
 <p class="small muted" style="margin-top:12px">{E(s['common'])}</p><p class="small">{E(s['options'])}</p>
-<div class="panel">{E(s['catalog_note'])} <a href="quote.html">Request it with your quotation.</a></div></div></section>
-<section class="s"><div class="wrap"><div class="cols"><div><h2>Already have a specification?</h2><p class="mt">Send it. The quotation answers every clause: comply, comply with clarification, or exception. Your utility's standard specification works the same way.</p></div>
-<div><h2>Early in development?</h2><p class="mt">Send the single-line diagram, the MW at the point of interconnection, and the site conditions. We propose the unit and quote it.</p><a class="btn" href="quote.html">Request a quotation</a></div></div></div></section>"""
-(OUT/"products.html").write_text(page("Products — Farpoint Energy", products, "products.html", "Main power, generator step-up, substation, auto, and special-duty transformers to 250 MVA and 230 kV, and the FP-MPT standard line for 50 and 100 MW solar and storage blocks."))
+<div class="panel">{E(s['catalog_note'])}</div></details>
+<p class="mt"><a href="quote.html?product=power">Request a power-transformer quotation →</a></p></div></section>
+<section class="s alt" id="distribution"><div class="wrap"><div class="eyebrow">Distribution transformers</div><h2>{E(DISTRIBUTION['h'])}</h2><p class="mt">{E(DISTRIBUTION['intro'])}</p>
+<div class="tbl"><table><thead><tr><th>Configuration</th><th>Project choices</th></tr></thead><tbody>{dist_rows}</tbody></table></div>
+<p class="mt">For <a href="applications.html?product=distribution#datacenter">data-center site distribution</a> and <a href="applications.html?product=distribution#solar">solar</a> or <a href="applications.html?product=distribution#storage">storage packages</a>, define quantities and delivery phases alongside the electrical requirements.</p>
+<p><a href="quote.html?product=distribution">Request a distribution-transformer quotation →</a></p></div></section>"""
+(OUT/"products.html").write_text(page("Products — Farpoint Energy", products, "products.html", "Power-transformer reference ranges and FP-MPT configurations, plus project-specific distribution and medium-voltage transformers for data centers, solar, and storage."))
 
 # ---------- APPLICATIONS
+APP_CONTEXT = {'utilities':'utility','solar':'solar','storage':'storage','hybrid':'hybrid','datacenter':'data-center','industrial':'industrial','wind':'other','replacement':'other'}
+def application_links(m):
+    app = APP_CONTEXT[m['id']]
+    categories = '<a href="products.html?application=' + app + '#power">Power transformers</a>'
+    if m['id'] in {'datacenter','solar','storage','hybrid','industrial','utilities','replacement'}:
+        categories += ' · <a href="products.html?application=' + app + '#distribution">Distribution transformers</a>'
+    return '<p class="small mt">' + categories + '</p><p><a href="quote.html?application=' + app + '">Discuss this application →</a></p>'
 asec = "".join(f"""
 <section class="s{' alt' if i%2 else ''}" id="{m['id']}"><div class="wrap"><div class="cols"><div><div class="eyebrow">Applications</div><h2>{E(m['name'])}</h2><p class="mt" style="font-family:var(--f-display);font-size:19px">{E(m['lead'])}</p></div>
-<div><p>{E(m['body'])}</p></div></div></div></section>""" for i,m in enumerate(APPLICATIONS))
+<div><p>{E(m['body'])}</p>{application_links(m)}</div></div></div></section>""" for i,m in enumerate(APPLICATIONS))
 applications = hero("Applications", "Every project loads a transformer differently", "What your site does to the unit, and what changes in the design because of it.") + asec + f"""
 <section class="s dark"><div class="wrap"><h2>Your application is not listed?</h2><p class="mt">Special-duty units, ester-filled designs, furnace and rectifier duty, and replacements to an existing nameplate are engineered per project.</p><a class="btn" href="quote.html">Request a quotation</a></div></section>"""
-(OUT/"applications.html").write_text(page("Applications — Farpoint Energy", applications, "applications.html", "Power transformers for utilities, utility-scale solar, battery storage, hybrid sites, data centers, industrial plants, wind, and fleet replacement."))
+(OUT/"applications.html").write_text(page("Applications — Farpoint Energy", applications, "applications.html", "Power and distribution transformers for utilities, solar, storage, hybrid sites, data centers, industrial plants, wind, and fleet replacement."))
 
 # ---------- MANUFACTURING BASE
 b = BASE
 manufacturing = hero("Manufacturing base", b['h'], b['intro']) + f"""
 <section class="s"><div class="wrap">{tiles(b['facts'], mt=False)}<div class="cols" style="margin-top:36px"><div><h2>Plants and laboratories</h2>{checks(b['lines'])}</div>
 <div><h2>{E(b['model_h'])}</h2><p class="mt">{E(b['model'])}</p><p><a href="quality.html">How every unit is inspected and tested →</a></p></div></div></div></section>
-<section class="s alt"><div class="wrap"><h2>Visit the plant building your unit</h2><p class="mt">Buyers and owner's engineers are welcome at the plant for the pre-production audit, at any inspection hold point, and for the witnessed factory acceptance test. Farpoint arranges the visit and hosts it.</p><a class="btn" href="quote.html">Request a quotation</a></div></section>"""
-(OUT/"manufacturing.html").write_text(page("Manufacturing base — Farpoint Energy", manufacturing, "manufacturing.html", "Farpoint units are built across a qualified base of established power-transformer plants with ISO/IEC 17025 laboratories, 100+ GVA combined capacity, and units in service in 25+ countries."))
+<section class="s alt"><div class="wrap"><h2>Visit the plant building your unit</h2><p class="mt">Buyers and owner's engineers are welcome at the plant for the agreed pre-production audit, inspection hold points, and witnessed factory acceptance test. Farpoint arranges the visit and hosts it.</p><a class="btn" href="quote.html">Request a quotation</a></div></section>"""
+(OUT/"manufacturing.html").write_text(page("Manufacturing base — Farpoint Energy", manufacturing, "manufacturing.html", "Established power and distribution transformer plants, qualified and audited by Farpoint. Every unit engineered, inspected, and tested under Farpoint's program."))
 
 # ---------- QUALITY
 q = QUALITY
@@ -200,14 +242,14 @@ tests = "".join(f'<tr class="sec"><td colspan="2">{E(sec)}</td></tr>' + "".join(
 quality = hero("Quality", q['h']) + f"""
 <section class="s"><div class="wrap"><div class="grid4" style="gap:32px;margin-top:0">{blocks}</div></div></section>
 <section class="s alt"><div class="wrap"><div class="eyebrow">For your engineering team</div><h2>Test program, inspection points, standards, and interfaces</h2>
-<details style="margin-top:20px"><summary>Factory test program — IEEE C57.12.90</summary><div class="tbl"><table><thead><tr><th>Test</th><th>Scope</th></tr></thead><tbody>{tests}</tbody></table></div></details>
-<details><summary>Inspection and test plan</summary><p class="small">Issued for your sign-off before production. Each point is marked hold (production stops until released), witness, or review.</p>{checks(q['itp'])}</details>
-<details><summary>Site program</summary>{checks(q['site'])}</details>
-<details><summary>Standards</summary><p class="mono small mt">{E(q['standards'])}</p><p class="small">Built to IEC 60076 or regional specifications when the project requires it.</p></details>
+<details style="margin-top:20px"><summary>Factory test program — project scope and IEEE C57.12.90</summary><p class="small mt">{E(q['test_scope'])}</p><div class="tbl"><table><thead><tr><th>Test</th><th>Scope</th></tr></thead><tbody>{tests}</tbody></table></div></details>
+<details><summary>Inspection and test plan</summary><p class="small">{E(q['itp_scope'])}</p>{checks(q['itp'])}</details>
+<details><summary>Site program</summary><p class="small mt">{E(q['site_scope'])}</p>{checks(q['site'])}</details>
+<details><summary>Standards</summary><p class="small mt">{E(q['standards_scope'])}</p><p class="mono small mt">{E(q['standards'])}</p><p class="small">Built to IEC 60076 or regional specifications when the project requires it.</p></details>
 <details><summary>Interfaces and submittals</summary><p class="mt">{E(q['interfaces'])}</p></details>
 </div></section>
-<section class="s"><div class="wrap"><h2>Bring your inspector</h2><p class="mt">Your engineer or third-party inspector is welcome at any hold point and at the factory acceptance test. We schedule it with you at order.</p><a class="btn" href="quote.html">Request a quotation</a></div></section>"""
-(OUT/"quality.html").write_text(page("Quality — Farpoint Energy", quality, "quality.html", "Engineering review, stage-gated inspection, the full IEEE C57.12.90 factory test program in ISO/IEC 17025 laboratories, and a serialized documentation dossier on every Farpoint transformer."))
+<section class="s"><div class="wrap"><h2>Bring your inspector</h2><p class="mt">Your engineer or third-party inspector is welcome at the agreed hold points and factory acceptance test. We schedule it with you at order.</p><a class="btn" href="quote.html">Request a quotation</a></div></section>"""
+(OUT/"quality.html").write_text(page("Quality — Farpoint Energy", quality, "quality.html", "Engineering review, inspection hold points, project-specific factory and site tests, and serialized transformer documentation."))
 
 # ---------- DELIVERY
 d = DELIVERY
@@ -215,45 +257,55 @@ stages = "".join(f'<tr><td class="v">{E(a)}</td><td>{E(bb)}</td></tr>' for a,bb 
 delivery = hero("Delivery & warranty", "From order to energization", d['intro']) + f"""
 <section class="s"><div class="wrap"><div class="cols"><div><h2>Stages</h2><div class="tbl"><table><thead><tr><th>Stage</th><th>What happens</th></tr></thead><tbody>{stages}</tbody></table></div></div>
 <div><div class="eyebrow">Warranty</div><h2>{E(d['warranty_h'])}</h2><p class="mt">{E(d['warranty'])}</p><div class="eyebrow" style="margin-top:28px">Service</div>{checks(d['service'])}<a class="btn" href="quote.html">Request a quotation</a></div></div></div></section>"""
-(OUT/"delivery.html").write_text(page("Delivery & warranty — Farpoint Energy", delivery, "delivery.html", "100 units per year capacity, committed delivery dates, monthly order status reports, and a three-year warranty from energization with field service from Farpoint."))
+(OUT/"delivery.html").write_text(page("Delivery & warranty — Farpoint Energy", delivery, "delivery.html", "Transformer delivery stages, project schedules, and a three-year warranty from energization with optional coverage to five years from energization."))
 
 # ---------- QUOTE (FormSubmit)
 qq = QUOTE
-app_opts = "".join(f'<option>{E(m["name"])}</option>' for m in APPLICATIONS) + '<option>Other</option>'
-form = f"""<div class="formbox"><form class="q" action="{SITE['form_action']}" method="POST">
-<input type="hidden" name="_subject" value="Quotation request — farpointenergy.com"><input type="hidden" name="_template" value="table"><input type="hidden" name="_next" value="{SITE['domain']}/thanks.html"><input type="hidden" name="_captcha" value="false"><input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
-<div><label for="f-name">Name</label><input id="f-name" name="Name" required autocomplete="name"></div>
-<div><label for="f-company">Company</label><input id="f-company" name="Company" required autocomplete="organization"></div>
-<div><label for="f-email">Email</label><input id="f-email" name="Email" type="email" required autocomplete="email"></div>
-<div><label for="f-phone">Phone</label><input id="f-phone" name="Phone" type="tel" autocomplete="tel"></div>
-<div><label for="f-app">Application</label><select id="f-app" name="Application">{app_opts}</select></div>
-<div><label for="f-mw">MW at the point of interconnection</label><input id="f-mw" name="MW at POI" inputmode="decimal" placeholder="e.g. 90"></div>
-<div><label for="f-hv">High-side voltage (kV)</label><input id="f-hv" name="HV kV" inputmode="decimal" placeholder="e.g. 138"></div>
-<div><label for="f-lv">Low-side voltage (kV)</label><input id="f-lv" name="LV kV" inputmode="decimal" placeholder="e.g. 34.5"></div>
-<div class="full"><label for="f-date">Target energization</label><input id="f-date" name="Target energization" placeholder="e.g. Q4 2028"></div>
-<div class="full"><label for="f-msg">Project details</label><textarea id="f-msg" name="Message" placeholder="Site, utility, specification status, quantity, anything else that helps us quote."></textarea></div>
-<div class="full"><button class="btn" type="submit">Send request</button><p class="small muted" style="margin:10px 0 0">Attach the single-line and specification by replying to the confirmation email, or send them to <a href="mailto:{SITE['email']}">{SITE['email']}</a>.</p></div>
-</form></div>"""
+form = render_form(SITE)
 quote = hero("Request a quotation", qq['h'], qq['sub']) + f"""
 <section class="s"><div class="wrap"><div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))"><div>{form}</div>
-<div><h2>Three ways to start</h2>{steps(qq['ways'])}<h3 style="margin-top:28px">What to send</h3>{checks(qq['send'])}<div class="panel">{E(qq['back'])}</div>
+<div><h2>Three ways to start</h2>{steps(qq['ways'])}<div class="panel">{E(qq['back'])}</div>
 <p class="small">Prefer email or a call? <a href="mailto:{SITE['email']}?subject=Quotation%20request">{SITE['email']}</a> · <a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a></p></div></div></div></section>"""
-(OUT/"quote.html").write_text(page("Request a quotation — Farpoint Energy", quote, "quote.html", "Pick a configuration, send your specification, or send a single-line diagram and site data. Farpoint returns a quotation, a compliance matrix, and a committed delivery date."))
-(OUT/"thanks.html").write_text(page("Request received — Farpoint Energy", hero("Request a quotation", "Request received", "Thank you. Farpoint engineering reviews every request; you will hear from us by email. Send drawings and specifications to " + SITE['email'] + ".") + '<section class="s"><div class="wrap"><p><a href="index.html">Back to the home page</a></p></div></section>', "quote.html", "Quotation request received."))
+(OUT/"quote.html").write_text(page("Request a quotation — Farpoint Energy", quote, "quote.html", "Request power or distribution transformers with a reference configuration, specification, or single-line diagram and project outline."))
+(OUT/"thanks.html").write_text(page("Your inquiry — Farpoint Energy", thanks_content(SITE), "thanks.html", "Continue your transformer inquiry and share project documents with Farpoint."))
 
 # ---------- ABOUT
 a = ABOUT
 about = hero("About", a['h'], a['intro']) + f"""
 <section class="s"><div class="wrap"><div class="cols"><div><div class="eyebrow">Founder</div><h2>{E(a['founder_name'])}</h2><p class="muted">{E(a['founder_title'])}</p><p>{E(a['founder'])}</p><p>{E(a['advisors'])}</p></div>
 <div><div class="eyebrow">Contact</div><h2>New York</h2><p class="mt"><a href="mailto:{SITE['founder_email']}">{SITE['founder_email']}</a><br><a href="mailto:{SITE['email']}">{SITE['email']}</a><br><a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a></p><a class="btn" href="quote.html">Request a quotation</a></div></div></div></section>"""
-(OUT/"about.html").write_text(page("About — Farpoint Energy", about, "about.html", "Farpoint Energy builds power transformers for the US grid, based in New York."))
+(OUT/"about.html").write_text(page("About — Farpoint Energy", about, "about.html", "Farpoint Energy supplies power and distribution transformers for the US grid, based in New York."))
+
+# ---------- PRIVACY
+privacy = hero("Privacy", "Inquiry information", "How information sent through this website is handled.") + f"""
+<section class="s"><div class="wrap"><h2>Information you send</h2><p class="mt">The quotation form collects your contact details and the project information you choose to provide. Farpoint uses it to review your requirement, prepare a response and communicate about the potential supply.</p>
+<h2 class="mt">Form and email processing</h2><p class="mt">The form is submitted through <a href="https://formsubmit.co/privacy.pdf">FormSubmit</a> and routed to {SITE['email']}. Email attachments go directly to that business inbox. FormSubmit and the email provider process information as part of those services. Contact us first if a project requires a separate confidential document process.</p>
+<h2 class="mt">Website services</h2><p class="mt">This static website is hosted on GitHub Pages and uses Google Fonts. Those services receive technical request information when your browser loads their resources. This website does not currently send inquiry analytics to a tracking service.</p><p>After an accepted form submission, temporary browser session storage may display the confirmation. It is cleared after the confirmation is displayed. A source or campaign code may be included with an inquiry; personal information is not added to page URLs.</p>
+<h2 class="mt">Questions and requests</h2><p class="mt">For questions about information you have sent, or to request correction or deletion, email <a href="mailto:{SITE['email']}">{SITE['email']}</a>.</p></div></section>"""
+(OUT/"privacy.html").write_text(page("Privacy — Farpoint Energy", privacy, "privacy.html", "How contact and project information submitted through the Farpoint website is processed."))
 
 # ---------- 404, redirects, sitemap, css
 (OUT/"404.html").write_text(page("Page not found — Farpoint Energy", '<section class="s"><div class="wrap"><h1>Page not found</h1><p class="mt"><a href="index.html">Back to the home page</a></p></div></section>', "", "Page not found"))
-for old, new in [("markets.html", "applications.html"), ("contact.html", "quote.html")]:
-    (OUT/old).write_text(f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Farpoint Energy</title><meta http-equiv="refresh" content="0; url={new}"><link rel="canonical" href="{SITE["domain"]}/{new}"></head><body><a href="{new}">Continue</a></body></html>')
-pages = ["index","products","applications","manufacturing","quality","delivery","quote","about"]
+redirects = [("markets.html", "applications.html"), ("contact.html", "quote.html"),
+             ("power-transformers.html", "products.html#power"), ("distribution-transformers.html", "products.html#distribution"),
+             ("data-centers.html", "applications.html#datacenter"), ("solar-storage.html", "applications.html#solar")]
+for old, new in redirects:
+    # Compatibility only: retain safe inquiry context, never personal fields.
+    script = """(()=>{const u=new URL(DEST,location.href),p=new URLSearchParams(location.search),allow={product:['power','distribution','unsure'],application:['data-center','solar','storage','hybrid','utility','industrial','other'],source:['website','homepage','products','power-transformers','distribution-transformers','applications','data-centers','solar-storage','quality','delivery','manufacturing','about','email'],campaign:['power','distribution','data-center','solar','storage','hybrid','utility','industrial','other']};for(const k of ['product','application','source','campaign']){const v=p.get(k);if(p.getAll(k).length===1&&v&&allow[k].includes(v))u.searchParams.set(k,v)}if(location.pathname.endsWith('/markets.html')&&['#utilities','#solar','#storage','#hybrid','#datacenter','#industrial','#wind','#replacement'].includes(location.hash))u.hash=location.hash;if(location.pathname.endsWith('/solar-storage.html')&&['storage','hybrid'].includes(u.searchParams.get('application')))u.hash=u.searchParams.get('application');location.replace(u.href)})();""".replace('DEST', json.dumps(new))
+    (OUT/old).write_text(f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Farpoint Energy</title><meta name="robots" content="noindex,follow"><script>{script}</script><meta http-equiv="refresh" content="0; url={new}"><link rel="canonical" href="{SITE["domain"]}/{new}"></head><body><a href="{new}">Continue</a></body></html>')
+pages = ["index","products","applications","manufacturing","quality","delivery","quote","about","privacy"]
 (OUT/"sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "".join(f'  <url><loc>{SITE["domain"]}/{p}.html</loc></url>\n' for p in pages) + '</urlset>\n')
 (OUT/"style.css").write_text(CSS.strip()+"\n")
-(OUT/"README.md").write_text("# farpointenergy.com\n\nStatic site. Edit `content.py`, run `python3 build.py`, commit the generated HTML. Hosted on GitHub Pages.\n")
+(OUT/"README.md").write_text("""# farpointenergy.com
+
+Static GitHub Pages site. Edit `content.py` for copy and `build.py` for layout, then run `python3 build.py` and commit the generated pages. Preserve `CNAME` and `.nojekyll`.
+
+## Review checks
+
+Run `python3 check_site.py`, `node check_inquiry.js`, and `node check_context.js`. These check baseline preservation, local navigation, reproducible builds, and mocked inquiry/context behavior. They do not send email or prove delivery. Browser review and one controlled inquiry receipt check are required before release.
+
+The quote form progressively enhances a native FormSubmit POST. Only explicit provider acceptance shows success; uncertain transport results retain the entered values. No analytics destination is configured. Preview snapshots must disable submissions and indexing.
+
+Power and distribution are sections of Products. The four former standalone draft routes are compatibility redirects. Catalog PDFs remain unchanged and unlinked.
+""")
 print("built", ", ".join(p+".html" for p in pages))

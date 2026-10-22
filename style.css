@@ -75,3 +75,17 @@ form.q textarea{min-height:120px;resize:vertical}form.q input:focus,form.q selec
  table.stack td::before{content:attr(data-label);font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--slate);padding-top:2px}
  table.stack td.sku{display:block;font-size:16px;font-family:var(--f-display);font-weight:600;padding-top:8px}table.stack td.sku::before{display:none}
 }
+
+[hidden]{display:none!important}.skip{position:absolute;left:16px;top:-100px;z-index:30;background:#fff;padding:12px}.skip:focus{top:8px}
+:focus-visible{outline:3px solid var(--copper);outline-offset:4px}main{display:block}section[id]{scroll-margin-top:100px}
+.cols>*,.hero .wrap>*,form.q>*{min-width:0}.navbtn{background:none;border:0}.diagram-caption{font-size:13px;color:#B9C3CE;margin:10px 0 0}
+.s:not(.dark) .eyebrow,.card .tag{color:var(--copper-dk)}.jump-links{display:flex;gap:22px;flex-wrap:wrap;margin-top:24px}.jump-links a{color:#fff}
+.unit-pair{display:grid;grid-template-columns:minmax(0,1fr) 5.5rem;gap:8px}.optional-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px;margin-top:16px}
+.field-hint{font-size:10px;letter-spacing:0}.field-error{color:#9A2A21;font-size:14px;margin:6px 0 0}.form-status{padding:12px;border-left:3px solid var(--copper);background:var(--tint);margin-top:14px}button:disabled{opacity:.65;cursor:default}
+.btn{background:var(--copper-dk)}.btn:hover{background:#804817}.btn.ghost{background:transparent;color:var(--copper-dk);border-color:var(--copper-dk)}.btn.ghost:hover{background:var(--tint)}.btn.ghost.onDark{color:#fff;border-color:#fff}.btn.ghost.onDark:hover{background:var(--ink2)}
+.steps li::before{color:var(--copper-dk)}form.q input,form.q select,form.q textarea{border-color:#7A8795}details summary{min-height:44px;align-items:center}.nav .btn{min-height:44px}
+section[id],#main{scroll-margin-top:140px}
+.reference-link{display:inline-flex;align-items:center;min-height:44px}#quote-form{scroll-margin-top:140px}
+@media(max-width:900px){.nav ul{display:flex}.nav:not(.menu-ready){position:static}.nav.menu-ready ul{max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px);overflow-y:auto}.nav.menu-ready ul:not(.is-open){display:none}.optional-grid{grid-template-columns:1fr}section[id],#main,#quote-form{scroll-margin-top:84px}}
+@media(max-width:360px){.nav .wrap{gap:8px}.nav .brand{font-size:12px;letter-spacing:.12em;gap:8px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
