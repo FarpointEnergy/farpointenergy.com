@@ -8,7 +8,7 @@ import pathlib
 import re
 import subprocess
 import sys
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 import xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).parent
@@ -149,6 +149,19 @@ def main():
             check((ROOT / filename).read_bytes() == baseline(filename), f'Preserved asset changed: {filename}')
 
     form = pages['quote.html']
+    expected_references = {row[0] for row in constant(content, 'STANDARD')['lineup']}
+    reference_links = pages['products.html'].find('a', **{'class': 'reference-link'})
+    linked_references = []
+    for link in reference_links:
+        target = urlsplit(link['href'])
+        query = parse_qs(target.query)
+        linked_references.extend(query.get('reference', []))
+        check(target.path == 'quote.html' and target.fragment == 'quote-form' and query.get('product') == ['power'], 'Reference action does not lead directly to power quotation form')
+        check(link.get('aria-label', '').startswith('Use this reference:'), 'Reference action loses its visible accessible name')
+    check(len(linked_references) == 4 and set(linked_references) == expected_references, 'Reference quotation actions do not match the product lineup')
+    selector = re.search(r'<select[^>]*id="f-configuration"[^>]*>.*?</select>', form.text, re.S)
+    reference_options = Page(selector.group(0)).find('option') if selector else []
+    check({o.get('value') for o in reference_options} == expected_references | {''}, 'Reference selector and product lineup differ')
     required = {a.get('name') for _, a in form.tags if 'required' in a}
     check(required == {'Name', 'Company', 'email', 'Requirement or specification link'}, f'Required form fields changed: {required}')
     check(bool(form.find('form', method='POST', action='https://formsubmit.co/quotes@farpointenergy.com')), 'Native form fallback missing')

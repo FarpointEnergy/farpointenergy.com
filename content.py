@@ -69,7 +69,7 @@ APPLICATIONS = [
 
 BASE = dict(
     h="Manufacturing base",
-    intro="Farpoint selects the manufacturing plant for the ordered transformer, sets the design and inspection requirements, and coordinates factory testing. Farpoint carries the supply contract and warranty, with manufacturing responsibilities defined before production.",
+    intro="Farpoint units are built across a qualified manufacturing base of established power and distribution transformer plants, selected and audited by Farpoint, with every unit engineered, inspected, and tested under Farpoint's program.",
     facts=[
         ("One contract", "Farpoint responsibility through delivery and warranty"),
         ("Plant access", "audits, inspection points and factory tests"),
@@ -77,14 +77,14 @@ BASE = dict(
         ("Traceability", "material records and unit documentation"),
     ],
     lines=[
-        "Lifting capacity, drying equipment and test-bay capability are reviewed against the ordered unit, including handling, transport and insulation requirements.",
-        "Impulse, partial-discharge, temperature-rise and frequency-response test facilities are reviewed against the applicable factory test program.",
-        "Short-circuit calculations and independent type-test reports are reviewed for their relevance to the offered design.",
-        "IEEE/ANSI C57, IEC 60076 or the specified regional standard sets the design and test requirements. Plant quality-system and laboratory credentials are reviewed for the manufacturing scope.",
-        "Power, generator step-up, auto and distribution transformer requirements, including inverter duty, ester-filled designs and other special-duty applications, are reviewed against the plant and design capability.",
+        "Plants equipped with heavy-lifting equipment, drying facilities, and dedicated high-voltage test bays.",
+        "Factory testing capabilities include impulse, partial-discharge, temperature-rise, and frequency-response measurements.",
+        "Short-circuit design verification uses engineering calculations and applicable independent type-test reports.",
+        "Units built to the applicable IEEE/ANSI C57, IEC 60076 or specified regional standards and project requirements, with documented quality controls and material traceability.",
+        "Product breadth across power, generator step-up, auto and distribution transformers, including inverter-duty, ester-filled and other special-duty designs.",
     ],
     model_h="How Farpoint works",
-    model="Farpoint engineers the unit to your specification, sets plant qualification and inspection requirements, coordinates the factory tests, and carries the contract and warranty. Delivery and site services are arranged to the order's scope. You deal with Farpoint from quotation to service.",
+    model="Farpoint designs each unit to your specification, qualifies and audits the plants that build it, sets the inspection hold points, witnesses the agreed factory tests, and carries the contract and warranty. Delivery and site services follow the order's scope. You deal with Farpoint from quotation to service.",
 )
 
 QUALITY = dict(
@@ -147,7 +147,7 @@ DELIVERY = dict(
 QUOTE = dict(
     h="Request a quotation",
     sub="Send what you have: a reference configuration, a specification or a project outline.",
-    ways=[("Select a reference configuration", "Choose an FP-MPT power-transformer reference or describe the distribution package. Tell us the rating, voltages and configuration details you already know."),
+    ways=[("Start from a reference configuration", "Choose an FP-MPT power-transformer reference in the form as an optional starting point. Final configuration follows your project requirements. For a custom power transformer or distribution package, describe what you need."),
           ("Send your specification", "Your transformer specification and data sheet, or your utility's, for power or distribution equipment. The quotation answers the applicable requirements clause by clause."),
           ("Send your single-line and site data", "Early in development? Send the single-line diagram or project outline, site conditions and delivery window; we clarify the transformer requirement and prepare a proposal.")],
     send=["Single-line diagram, equipment schedule or project outline",

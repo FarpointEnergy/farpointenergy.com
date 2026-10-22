@@ -2,6 +2,7 @@
 
 from html import escape
 from urllib.parse import quote
+from content import STANDARD
 
 
 PRODUCT_VALUES = {"power", "distribution", "unsure"}
@@ -18,6 +19,10 @@ APPLICATION_OPTIONS = (
     {"value": "utility", "name": "Utilities"},
     {"value": "industrial", "name": "Industrial"},
     {"value": "other", "name": "Other"},
+)
+REFERENCE_OPTIONS = tuple(
+    {"value": code, "name": f"{primary.split(' kV')[0]} / {secondary.split(' kV')[0]} kV · {rating} — {code}"}
+    for code, rating, primary, secondary in STANDARD["lineup"]
 )
 
 
@@ -45,6 +50,7 @@ def render_form(site, product_categories=None, applications=None):
     mailto = f'mailto:{email}?subject={quote("Transformer specification")}'
     products = _options(PRODUCT_OPTIONS if product_categories is None else product_categories, PRODUCT_VALUES - {"unsure"}, "")
     apps = _options(APPLICATION_OPTIONS if applications is None else applications, APPLICATION_VALUES, "")
+    references = _options(REFERENCE_OPTIONS, {item["value"] for item in REFERENCE_OPTIONS}, "")
     return f'''<div class="formbox">
 <form id="quote-form" class="q" action="{action}" method="POST" data-ajax-action="{ajax_action}" data-thanks="thanks.html">
 <input type="hidden" name="_subject" value="Quotation request — farpointenergy.com">
@@ -53,12 +59,14 @@ def render_form(site, product_categories=None, applications=None):
 <div hidden aria-hidden="true"><label for="f-honey">Leave this field empty</label><input id="f-honey" type="text" name="_honey" tabindex="-1" autocomplete="off"></div>
 <input type="hidden" id="f-source" name="Source" value="" disabled>
 <input type="hidden" id="f-campaign" name="Campaign" value="" disabled>
+<p id="configuration-summary" class="small full" role="status" aria-live="polite" aria-atomic="true" hidden></p>
 <div class="field"><label for="f-name">Name <span class="field-hint">(required)</span></label><input id="f-name" name="Name" required autocomplete="name" maxlength="160" aria-describedby="f-name-error"><p class="field-error" id="f-name-error" hidden></p></div>
 <div class="field"><label for="f-company">Company <span class="field-hint">(required)</span></label><input id="f-company" name="Company" required autocomplete="organization" maxlength="200" aria-describedby="f-company-error"><p class="field-error" id="f-company-error" hidden></p></div>
 <div class="field full"><label for="f-email">Email <span class="field-hint">(required)</span></label><input id="f-email" name="email" type="email" required autocomplete="email" maxlength="254" aria-describedby="f-email-error"><p class="field-error" id="f-email-error" hidden></p></div>
 <div class="field full"><label for="f-requirement">Requirement or specification link <span class="field-hint">(required)</span></label><textarea id="f-requirement" name="Requirement or specification link" required rows="4" maxlength="20000" placeholder="Describe the transformer package or paste a specification link." aria-describedby="f-requirement-hint f-requirement-error"></textarea><p id="f-requirement-hint" class="small muted">For cooling-stage ratings, mixed transformer types or phased quantities, describe each unit here or share an equipment schedule. Leave single-value fields blank when they do not apply.</p><p class="field-error" id="f-requirement-error" hidden></p></div>
 <div class="field"><label for="f-product">Transformer category <span class="field-hint">(optional)</span></label><select id="f-product" name="Transformer category"><option value="unsure" selected>Not sure</option>{products}</select></div>
 <div class="field"><label for="f-application">Application <span class="field-hint">(optional)</span></label><select id="f-application" name="Application"><option value="" selected>Not sure</option>{apps}</select></div>
+<div class="field full"><label for="f-configuration">Power-transformer reference configuration <span class="field-hint">(optional)</span></label><select id="f-configuration" name="Power-transformer reference configuration" aria-describedby="f-configuration-hint"><option value="" selected>Custom requirement / not sure</option>{references}</select><p id="f-configuration-hint" class="small muted">An optional starting point for power-transformer design review. Your project requirements determine the final specification.</p></div>
 <details class="optional-fields full"><summary>Project and technical details (optional)</summary>
 <div class="optional-grid">
 <div class="field"><label for="f-quantity">Quantity</label><input id="f-quantity" name="Quantity" type="number" inputmode="numeric" min="1" step="1" placeholder="Number of units" aria-describedby="f-quantity-error"><p class="field-error" id="f-quantity-error" hidden></p></div>

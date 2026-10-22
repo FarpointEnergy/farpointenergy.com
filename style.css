@@ -85,5 +85,7 @@ form.q textarea{min-height:120px;resize:vertical}form.q input:focus,form.q selec
 .btn{background:var(--copper-dk)}.btn:hover{background:#804817}.btn.ghost{background:transparent;color:var(--copper-dk);border-color:var(--copper-dk)}.btn.ghost:hover{background:var(--tint)}.btn.ghost.onDark{color:#fff;border-color:#fff}.btn.ghost.onDark:hover{background:var(--ink2)}
 .steps li::before{color:var(--copper-dk)}form.q input,form.q select,form.q textarea{border-color:#7A8795}details summary{min-height:44px;align-items:center}.nav .btn{min-height:44px}
 section[id],#main{scroll-margin-top:140px}
-@media(max-width:900px){.nav ul{display:flex}.nav:not(.menu-ready){position:static}.nav.menu-ready ul{max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px);overflow-y:auto}.nav.menu-ready ul:not(.is-open){display:none}.optional-grid{grid-template-columns:1fr}section[id],#main{scroll-margin-top:84px}}
+.reference-link{display:inline-flex;align-items:center;min-height:44px}#quote-form{scroll-margin-top:140px}
+@media(max-width:900px){.nav ul{display:flex}.nav:not(.menu-ready){position:static}.nav.menu-ready ul{max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px);overflow-y:auto}.nav.menu-ready ul:not(.is-open){display:none}.optional-grid{grid-template-columns:1fr}section[id],#main,#quote-form{scroll-margin-top:84px}}
+@media(max-width:360px){.nav .wrap{gap:8px}.nav .brand{font-size:12px;letter-spacing:.12em;gap:8px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}

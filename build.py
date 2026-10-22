@@ -121,7 +121,9 @@ CSS += """
 .btn{background:var(--copper-dk)}.btn:hover{background:#804817}.btn.ghost{background:transparent;color:var(--copper-dk);border-color:var(--copper-dk)}.btn.ghost:hover{background:var(--tint)}.btn.ghost.onDark{color:#fff;border-color:#fff}.btn.ghost.onDark:hover{background:var(--ink2)}
 .steps li::before{color:var(--copper-dk)}form.q input,form.q select,form.q textarea{border-color:#7A8795}details summary{min-height:44px;align-items:center}.nav .btn{min-height:44px}
 section[id],#main{scroll-margin-top:140px}
-@media(max-width:900px){.nav ul{display:flex}.nav:not(.menu-ready){position:static}.nav.menu-ready ul{max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px);overflow-y:auto}.nav.menu-ready ul:not(.is-open){display:none}.optional-grid{grid-template-columns:1fr}section[id],#main{scroll-margin-top:84px}}
+.reference-link{display:inline-flex;align-items:center;min-height:44px}#quote-form{scroll-margin-top:140px}
+@media(max-width:900px){.nav ul{display:flex}.nav:not(.menu-ready){position:static}.nav.menu-ready ul{max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px);overflow-y:auto}.nav.menu-ready ul:not(.is-open){display:none}.optional-grid{grid-template-columns:1fr}section[id],#main,#quote-form{scroll-margin-top:84px}}
+@media(max-width:360px){.nav .wrap{gap:8px}.nav .brand{font-size:12px;letter-spacing:.12em;gap:8px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 """
 
@@ -178,13 +180,13 @@ def cap_table(notes=True):
 # ---------- HOME
 summary_rows = ''.join(f'<tr><td><a href="products.html#{E(anchor)}">{E(family)}</a></td><td>{E(use)}</td></tr>' for family,use,anchor in PRODUCT_SUMMARY)
 summary_table = f'<div class="tbl"><table><thead><tr><th>Product family</th><th>Project scope</th></tr></thead><tbody>{summary_rows}</tbody></table></div>'
-apps = "".join(f'<div class="card"><div class="tag">{E(m["name"])}</div><p>{E(m["lead"])}</p><a class="more" href="applications.html#{m["id"]}">Read more →</a></div>' for m in APPLICATIONS)
+apps = "".join(f'<div class="card"><div class="tag">{E(m["name"])}</div><p>{E(m["lead"])}</p><a class="more" href="applications.html#{m["id"]}" aria-label="Read more about {E(m["name"])}">Read more →</a></div>' for m in APPLICATIONS)
 home = hero(HERO['eyebrow'], HERO['h1'], HERO['sub'], diagram=True,
             cta='<div class="cta"><a class="btn" href="quote.html">Request a quotation</a><a class="btn ghost onDark" href="products.html">Capability and product line</a></div>', strip=HERO['strip']) + f"""
 <section class="s"><div class="wrap"><div class="eyebrow">{E(ETO['h'])}</div><h2>Every unit is designed for its project</h2><p class="mt">{E(ETO['p'])}</p>{summary_table}
 <p class="mt"><a class="btn ghost" href="products.html">Product families and reference configurations</a></p></div></section>
 <section class="s alt"><div class="wrap"><div class="eyebrow">Applications</div><h2>What your site does to the transformer, and what changes in the design because of it</h2><div class="grid4">{apps}</div></div></section>
-<section class="s dark"><div class="wrap"><div class="cols"><div><div class="eyebrow">{E(BASE['h'])}</div><h2>{E(BASE['model_h'])}</h2><p class="mt">{E(BASE['model'])}</p><p><a class="btn ghost onDark" href="manufacturing.html">The manufacturing base</a></p></div>
+<section class="s dark"><div class="wrap"><div class="cols"><div><div class="eyebrow">{E(BASE['h'])}</div><h2>{E(BASE['model_h'])}</h2><p class="mt">Established transformer plants, qualified and audited by Farpoint, build each unit under our engineering, inspection and test program. Farpoint is your contractual counterpart, from quotation through delivery and warranty.</p><p><a class="btn ghost onDark" href="manufacturing.html">The manufacturing base</a></p></div>
 <div>{tiles(BASE['facts'], mt=False)}</div></div></div></section>
 <section class="s"><div class="wrap"><div class="cols"><div><div class="eyebrow">Quality</div><h2>{E(QUALITY['h'])}</h2><p class="mt">{E(QUALITY['blocks'][2][1])}</p><p><a href="quality.html">Test program, inspection points, and documentation →</a></p></div>
 <div><div class="eyebrow">Delivery &amp; warranty</div><h2>{E(DELIVERY['warranty_h'])}</h2><p class="mt">{E(DELIVERY['warranty'])}</p><p><a href="delivery.html">Lead time, stages, and service →</a></p></div></div></div></section>
@@ -193,14 +195,14 @@ home = hero(HERO['eyebrow'], HERO['h1'], HERO['sub'], diagram=True,
 
 # ---------- PRODUCTS
 s = STANDARD
-lineup = "".join(f'<tr><td class="sku" data-label="Configuration">{E(a)}</td><td class="v" data-label="Rating">{E(b)}</td><td class="v" data-label="High side">{E(c)}</td><td class="v" data-label="Low side">{E(d)}</td></tr>' for a,b,c,d in s['lineup'])
+lineup = "".join(f'<tr><td class="sku" data-label="Configuration">{E(a)}</td><td class="v" data-label="Rating">{E(b)}</td><td class="v" data-label="High side">{E(c)}</td><td class="v" data-label="Low side">{E(d)}</td><td data-label="Quotation"><a class="reference-link" href="quote.html?product=power&amp;reference={E(a)}#quote-form" aria-label="Use this reference: {E(a)} for your quotation">Use this reference →</a></td></tr>' for a,b,c,d in s['lineup'])
 bil_rows = ''.join(f'<tr><td>{E(r[0])}</td><td>{E(r[3])}</td></tr>' for r in CAPABILITY)
 dist_rows = ''.join(f'<tr><td class="k">{E(label)}</td><td>{E(text)}</td></tr>' for label,text in DISTRIBUTION['choices'])
 products = hero("Products", "Power and distribution transformers", "Main power and incoming-substation transformers, plus distribution and medium-voltage packages engineered for your site.", cta='<div class="jump-links"><a href="#power">Power transformers ↓</a><a href="#distribution">Distribution transformers ↓</a></div>') + f"""
 <section class="s" id="power"><div class="wrap"><div class="eyebrow">Power transformers</div><h2>Power-transformer reference ranges</h2><p class="mt">{E(ETO['p'])}</p>{cap_table()}
 <details><summary>Insulation levels and engineering detail</summary><p class="small mt">Basic impulse insulation level (BIL) is selected for the system and insulation coordination requirements. The high-side values below accompany the reference ranges.</p><div class="tbl"><table><thead><tr><th>Family</th><th>Reference high-side BIL</th></tr></thead><tbody>{bil_rows}</tbody></table></div></details>
 <details><summary>FP-MPT reference configurations — ratings, cooling, taps, and options</summary><h3 class="mt">{E(s['h'])}</h3><p class="mt">{E(s['p'])}</p>
-<div class="tbl"><table class="stack"><thead><tr><th>Configuration</th><th>Rating</th><th>High side</th><th>Low side</th></tr></thead><tbody>{lineup}</tbody></table></div>
+<div class="tbl"><table class="stack"><thead><tr><th>Configuration</th><th>Rating</th><th>High side</th><th>Low side</th><th>Quotation</th></tr></thead><tbody>{lineup}</tbody></table></div>
 <p class="small muted" style="margin-top:12px">{E(s['common'])}</p><p class="small">{E(s['options'])}</p>
 <div class="panel">{E(s['catalog_note'])}</div></details>
 <p class="mt"><a href="quote.html?product=power">Request a power-transformer quotation →</a></p></div></section>
@@ -231,7 +233,7 @@ manufacturing = hero("Manufacturing base", b['h'], b['intro']) + f"""
 <section class="s"><div class="wrap">{tiles(b['facts'], mt=False)}<div class="cols" style="margin-top:36px"><div><h2>Plants and laboratories</h2>{checks(b['lines'])}</div>
 <div><h2>{E(b['model_h'])}</h2><p class="mt">{E(b['model'])}</p><p><a href="quality.html">How every unit is inspected and tested →</a></p></div></div></div></section>
 <section class="s alt"><div class="wrap"><h2>Visit the plant building your unit</h2><p class="mt">Buyers and owner's engineers are welcome at the plant for the agreed pre-production audit, inspection hold points, and witnessed factory acceptance test. Farpoint arranges the visit and hosts it.</p><a class="btn" href="quote.html">Request a quotation</a></div></section>"""
-(OUT/"manufacturing.html").write_text(page("Manufacturing base — Farpoint Energy", manufacturing, "manufacturing.html", "Farpoint coordinates transformer design, manufacturing, inspection, and documentation against the agreed project specification."))
+(OUT/"manufacturing.html").write_text(page("Manufacturing base — Farpoint Energy", manufacturing, "manufacturing.html", "Established power and distribution transformer plants, qualified and audited by Farpoint. Every unit engineered, inspected, and tested under Farpoint's program."))
 
 # ---------- QUALITY
 q = QUALITY
@@ -255,7 +257,7 @@ stages = "".join(f'<tr><td class="v">{E(a)}</td><td>{E(bb)}</td></tr>' for a,bb 
 delivery = hero("Delivery & warranty", "From order to energization", d['intro']) + f"""
 <section class="s"><div class="wrap"><div class="cols"><div><h2>Stages</h2><div class="tbl"><table><thead><tr><th>Stage</th><th>What happens</th></tr></thead><tbody>{stages}</tbody></table></div></div>
 <div><div class="eyebrow">Warranty</div><h2>{E(d['warranty_h'])}</h2><p class="mt">{E(d['warranty'])}</p><div class="eyebrow" style="margin-top:28px">Service</div>{checks(d['service'])}<a class="btn" href="quote.html">Request a quotation</a></div></div></div></section>"""
-(OUT/"delivery.html").write_text(page("Delivery & warranty — Farpoint Energy", delivery, "delivery.html", "Transformer delivery stages, project schedules, and a three-year warranty from energization with an optional five-year extension."))
+(OUT/"delivery.html").write_text(page("Delivery & warranty — Farpoint Energy", delivery, "delivery.html", "Transformer delivery stages, project schedules, and a three-year warranty from energization with optional coverage to five years from energization."))
 
 # ---------- QUOTE (FormSubmit)
 qq = QUOTE

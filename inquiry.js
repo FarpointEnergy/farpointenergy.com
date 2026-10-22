@@ -82,6 +82,36 @@
   setPrefill("source", document.getElementById("f-source"), publicSources);
   setPrefill("campaign", document.getElementById("f-campaign"), publicCampaigns);
 
+  const category = document.getElementById("f-product");
+  const configuration = document.getElementById("f-configuration");
+  const configurationHint = document.getElementById("f-configuration-hint");
+  const configurationSummary = document.getElementById("configuration-summary");
+  const defaultConfigurationHint = configurationHint.textContent;
+  // The generated options share the Products table's source. No free-form
+  // query value is accepted, and a reference never fills electrical inputs.
+  const references = new Set(Array.from(configuration.options, option => option.value).filter(Boolean));
+  if (category.value !== "distribution") {
+    setPrefill("reference", configuration, references);
+    if (configuration.value) category.value = "power";
+  }
+  function syncConfiguration() {
+    const distribution = category.value === "distribution";
+    if (distribution) configuration.value = "";
+    configuration.disabled = distribution;
+    configurationHint.textContent = distribution
+      ? "Distribution transformers are specified to your requirements; no power-transformer reference selection is needed."
+      : defaultConfigurationHint;
+    const selected = Array.from(configuration.options).find(option => option.value === configuration.value && references.has(option.value));
+    configurationSummary.textContent = selected ? `Starting from: ${selected.textContent}. Final design follows your specification.` : "";
+    configurationSummary.hidden = !selected;
+  }
+  category.addEventListener("change", syncConfiguration);
+  configuration.addEventListener("change", () => {
+    if (references.has(configuration.value)) category.value = "power";
+    syncConfiguration();
+  });
+  syncConfiguration();
+
   let started = false;
   function start() {
     if (!started) { started = true; emit("rfq_start"); }
