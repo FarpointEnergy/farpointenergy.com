@@ -232,7 +232,7 @@ b = BASE
 manufacturing = hero("Manufacturing base", b['h'], b['intro']) + f"""
 <section class="s"><div class="wrap">{tiles(b['facts'], mt=False)}<div class="cols" style="margin-top:36px"><div><h2>Plants and laboratories</h2>{checks(b['lines'])}</div>
 <div><h2>{E(b['model_h'])}</h2><p class="mt">{E(b['model'])}</p><p><a href="quality.html">How every unit is inspected and tested →</a></p></div></div></div></section>
-<section class="s alt"><div class="wrap"><h2>Visit the plant building your unit</h2><p class="mt">Buyers and owner's engineers are welcome at the plant for the agreed pre-production audit, inspection hold points, and witnessed factory acceptance test. Farpoint arranges the visit and hosts it.</p><a class="btn" href="quote.html">Request a quotation</a></div></section>"""
+<section class="s alt"><div class="wrap"><h2>Visit the plant building your unit</h2><p class="mt">Buyers and owner's engineers are welcome at the plant for the agreed pre-production audit, inspection hold points, and witnessed factory acceptance test. Farpoint arranges the visit and hosts it.</p><a class="btn" href="quote.html">Request a quotation</a><p class="mt">Qualifying a new supplier? Send your vendor-onboarding requirements to <a href="mailto:{SITE['email']}">{SITE['email']}</a>.</p></div></section>"""
 (OUT/"manufacturing.html").write_text(page("Manufacturing base — Farpoint Energy", manufacturing, "manufacturing.html", "Established power and distribution transformer plants, qualified and audited by Farpoint. Every unit engineered, inspected, and tested under Farpoint's program."))
 
 # ---------- QUALITY
@@ -262,10 +262,11 @@ delivery = hero("Delivery & warranty", "From order to energization", d['intro'])
 # ---------- QUOTE (FormSubmit)
 qq = QUOTE
 form = render_form(SITE)
-quote = hero("Request a quotation", qq['h'], qq['sub']) + f"""
+quote = hero("Request a quotation", qq['h'], qq['sub'],
+             cta=f'<p>Email your RFQ and attachments to <a href="mailto:{SITE["email"]}?subject=Quotation%20request" style="color:inherit">{SITE["email"]}</a>, or use the form below.</p>') + f"""
 <section class="s"><div class="wrap"><div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))"><div>{form}</div>
 <div><h2>Three ways to start</h2>{steps(qq['ways'])}<div class="panel">{E(qq['back'])}</div>
-<p class="small">Prefer email or a call? <a href="mailto:{SITE['email']}?subject=Quotation%20request">{SITE['email']}</a> · <a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a></p></div></div></div></section>"""
+<p class="small">Prefer a call? <a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a></p></div></div></div></section>"""
 (OUT/"quote.html").write_text(page("Request a quotation — Farpoint Energy", quote, "quote.html", "Request power or distribution transformers with a reference configuration, specification, or single-line diagram and project outline."))
 (OUT/"thanks.html").write_text(page("Your inquiry — Farpoint Energy", thanks_content(SITE), "thanks.html", "Continue your transformer inquiry and share project documents with Farpoint."))
 
