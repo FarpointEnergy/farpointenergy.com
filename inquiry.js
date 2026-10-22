@@ -154,6 +154,14 @@
   }
   function setStatus(message, kind) {
     status.textContent = message;
+    if (kind === "failed" || kind === "uncertain") {
+      const email = document.createElement("a");
+      email.href = "mailto:quotes@farpointenergy.com";
+      email.textContent = "quotes@farpointenergy.com";
+      status.append(" Email your requirement directly to ", email, kind === "uncertain"
+        ? " and mention that the form’s status was uncertain."
+        : ".");
+    }
     status.dataset.state = kind;
     status.hidden = false;
   }
@@ -213,12 +221,12 @@
           location.assign(form.dataset.thanks);
         } catch (_) { /* The inline confirmation remains available. */ }
       } else if (accepted === false || accepted === "false") {
-        finish("failed", "The form service reported that it could not accept your request. Your entries are still here. You can try again or email your requirement directly using the link above.");
+        finish("failed", "The form service reported that it could not accept your request. Your entries are still here. You can try again.");
       } else {
-        finish("uncertain", "We could not confirm whether the form service accepted your request. Your entries are still here. To avoid a duplicate, do not submit again yet. Email us using the link above and mention that the form’s status was uncertain.");
+        finish("uncertain", "We could not confirm whether the form service accepted your request. Your entries are still here. To avoid a duplicate, do not submit again yet.");
       }
     } catch (_) {
-      finish("uncertain", "The connection ended before we could confirm the result. Your request may have reached the form service, and your entries are still here. To avoid a duplicate, do not submit again yet. Email us using the link above and mention that the form’s status was uncertain.");
+      finish("uncertain", "The connection ended before we could confirm the result. Your request may have reached the form service, and your entries are still here. To avoid a duplicate, do not submit again yet.");
     } finally {
       clearTimeout(timer);
     }

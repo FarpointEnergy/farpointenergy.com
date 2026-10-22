@@ -146,7 +146,7 @@ DELIVERY = dict(
 
 QUOTE = dict(
     h="Request a quotation",
-    sub="Send what you have: a reference configuration, a specification or a project outline.",
+    sub="Send your specification or project outline. Farpoint will prepare a proposal covering price, scope, proposed delivery and any technical exceptions. Include your required site date if known.",
     ways=[("Start from a reference configuration", "Choose an FP-MPT power-transformer reference in the form as an optional starting point. Final configuration follows your project requirements. For a custom power transformer or distribution package, describe what you need."),
           ("Send your specification", "Your transformer specification and data sheet, or your utility's, for power or distribution equipment. The quotation answers the applicable requirements clause by clause."),
           ("Send your single-line and site data", "Early in development? Send the single-line diagram or project outline, site conditions and delivery window; we clarify the transformer requirement and prepare a proposal.")],
@@ -155,7 +155,7 @@ QUOTE = dict(
           "Your or your utility's transformer specification",
           "Duty profile; plant MW and power factor where relevant",
           "Site data (altitude, ambient, seismic), project location and required delivery window"],
-    back="What comes back: a quotation with the proposed configuration, price and scope, a compliance response against your specification, and a proposed delivery schedule. Testing, documentation and warranty terms are included. Farpoint engineering reviews the technical response before it is sent; delivery commitments are agreed in the order.",
+    back="Your proposal includes the proposed configuration, a compliance response against your specification, and testing, documentation and warranty terms. Farpoint engineering reviews the technical response before it is sent; delivery commitments are agreed in the order.",
 )
 
 ABOUT = dict(
