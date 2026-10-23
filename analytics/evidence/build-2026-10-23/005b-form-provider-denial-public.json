@@ -1,0 +1,39 @@
+{
+  "record_type": "provider_compatibility_test_result",
+  "date": "2026-10-23",
+  "case_id": "FARPOINT-ANALYTICS-QA-20261023-783AEEF9",
+  "status": "BLOCKED",
+  "scope": "single direct HTTP provider compatibility attempt; not browser-generated funnel proof",
+  "endpoint": "https://formsubmit.co/ajax/quotes@farpointenergy.com",
+  "attempts": 1,
+  "attempted_at": "2026-10-23T21:20:53Z",
+  "response_at": "2026-10-23T21:20:58.461062+00:00",
+  "response": {
+    "http_status": 403,
+    "provider_acceptance_observed": false,
+    "error_code": 1010,
+    "error_name": "browser_signature_banned",
+    "description": "The provider's Cloudflare access control denied this execution environment's browser signature."
+  },
+  "retries": 0,
+  "protection_bypass_attempted": false,
+  "request_sha256": "df6242dfadb244cbd192bf90b110eee6ff5823509a4020b500661c10e973a590",
+  "response_body_sha256": "3d4ad63164919495e793a17c1bc80df18ec2fe92a2ecf744372b146fe989404e",
+  "expected_field_counts": {
+    "business": 20,
+    "legacy_context": 2,
+    "correlation": 6,
+    "provider_controls": 4,
+    "received_fields_to_compare": 28
+  },
+  "inbox_search": {
+    "search_scope": "all folders including spam/trash, exact synthetic case marker",
+    "completed": true,
+    "matching_messages": 0,
+    "all_search_pages_complete": true
+  },
+  "field_comparison": "NOT RUN — no matching received message available.",
+  "conclusion": "No new delivery or field-preservation claim. The direct request was explicitly denied before any observed provider acceptance. Absence of a mailbox match in one search is not a permanent-loss conclusion.",
+  "remaining_work": "Run an authorized actual-browser test through the normal form route without bypassing provider controls, or obtain provider-supported access for this environment. Preserve distinct browser/telemetry and inbox evidence.",
+  "privacy": "Public-safe summary; no Gmail message IDs, authentication headers, personal phone, or raw mailbox content."
+}

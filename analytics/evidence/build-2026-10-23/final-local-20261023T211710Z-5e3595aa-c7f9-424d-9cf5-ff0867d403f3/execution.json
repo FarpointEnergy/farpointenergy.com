@@ -1,0 +1,126 @@
+{
+  "record_type": "final_local_verification",
+  "run_id": "final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3",
+  "source_head": "3e48ca35cf3414d40b677cac8839d052602ab1e9",
+  "implementation_committed": false,
+  "timezone": "America/New_York",
+  "environment": "local synthetic, no real customer data or network submissions",
+  "node": "v24.19.0",
+  "python": "Python 3.12.14",
+  "source_unchanged": true,
+  "cases_are_not_acceptance_case_count": true,
+  "runs": [
+    {
+      "test_suite": "collector",
+      "command": [
+        "node",
+        "--test",
+        "analytics/tests/collector/collector.test.mjs"
+      ],
+      "started_at": "2026-10-23T21:17:10.766199+00:00",
+      "ended_at": "2026-10-23T21:17:11.246996+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "d06fd58e065c4ff3193da973d3b9a06c0ff78d36bfdb43e061fc3c2afb1d885a",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "python",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "analytics/tests/python",
+        "-v"
+      ],
+      "started_at": "2026-10-23T21:17:11.247461+00:00",
+      "ended_at": "2026-10-23T21:17:11.991928+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "5b4878af56e8bbb2f6f1dfde1452bf1544b545487f7f22c6279486aa3f8d7663"
+    },
+    {
+      "test_suite": "tracker",
+      "command": [
+        "node",
+        "check_tracker.js"
+      ],
+      "started_at": "2026-10-23T21:17:11.992690+00:00",
+      "ended_at": "2026-10-23T21:17:12.153825+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "e58d86d8668f794ececc12303b592480a8457bead6a53a86c766a1964ccc8a12",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "inquiry",
+      "command": [
+        "node",
+        "check_inquiry.js"
+      ],
+      "started_at": "2026-10-23T21:17:12.154290+00:00",
+      "ended_at": "2026-10-23T21:17:12.398536+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "1e6b4a7dfc718f886491308b8bb12626bda6069abfdce2f25f54301f75be368e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "context",
+      "command": [
+        "node",
+        "check_context.js"
+      ],
+      "started_at": "2026-10-23T21:17:12.399616+00:00",
+      "ended_at": "2026-10-23T21:17:12.572131+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "589e73144b93a3eb59061dd603a646a6fdcc84e0e8c69aa5f86d19e6910a8e38",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "wrapper",
+      "command": [
+        "node",
+        "--test",
+        "analytics/deploy/sites/wrapper.test.mjs"
+      ],
+      "started_at": "2026-10-23T21:17:12.573141+00:00",
+      "ended_at": "2026-10-23T21:17:12.842959+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "b62d3971dcb55cb1b8a868228bf0289c37b1138cbcab14f96f2559c5e971739b",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "cross-language",
+      "command": [
+        "node",
+        "analytics/tests/collector/cross-language.mjs"
+      ],
+      "started_at": "2026-10-23T21:17:12.843466+00:00",
+      "ended_at": "2026-10-23T21:17:13.083275+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "48e6b0a4ccdee0c35cf34f91f4fbeeb98e347a53978246545639c7a6ff855b78",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "site",
+      "command": [
+        "python3",
+        "check_site.py"
+      ],
+      "started_at": "2026-10-23T21:17:13.083837+00:00",
+      "ended_at": "2026-10-23T21:17:13.310019+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "90ce28238c3198cdae19e3feb9cbdc9cc77e0202c6908695fe7f7e77d718a087",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "source_inventory_sha256": "36a1d02888c023b3bfc9287ee0cc5fd84600b38a4ccfaf9bb2fad9a7233ba330"
+}

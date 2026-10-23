@@ -1,0 +1,40 @@
+✔ full rescan crosses pages and chunk limits; remote completion verifies every byte (64.706709ms)
+✔ repeated cursor produces partial diagnostics; no completed record (23.081195ms)
+✔ corrupt chunk cannot enter verified source inventory (29.969435ms)
+✔ bad mail retains available original artifact and is incomplete (20.790534ms)
+✔ unclassified captured mail is explicitly unresolved, not a lead (13.302669ms)
+✔ shared destination stops before creating remote data (0.789399ms)
+✔ ambiguous upload preserves created objects and cannot advance completion (17.14949ms)
+✔ remote readback corruption prevents completion (24.463114ms)
+✔ later remote byte change fails independent recovery verification (26.988519ms)
+✔ watchdog ignores partial completion and exposes missed intervals/common-mode limit (8.583112ms)
+✔ native mail parser failure preserves both connector and raw RFC2822 evidence (1.34191ms)
+✔ tool-level export errors cannot become successful pagination (0.17632ms)
+✔ report makes missing attribution and unavailable employer explicit (0.105922ms)
+✔ analysis failure still archives acquired raw data without issuing completion (15.874544ms)
+✔ native read refuses a newly shared file even in the right archive folder (0.529862ms)
+✔ watchdog rejects a current run with a stale reporting window or wrong job identity (12.218533ms)
+✔ duplicate listed object with changed size makes source incomplete (6.272232ms)
+✔ unreviewed report run cannot satisfy an expected report job (14.336368ms)
+✔ frozen classifier refuses reviewed observations without archived review metadata (0.730656ms)
+✔ report JSON carries authority for direct consumers (18.109291ms)
+✔ reviewed rerun satisfies report interval without erasing earlier pending history (18.633402ms)
+✔ mid-archive failure records all known IDs and readback failure without inventing verification (11.858554ms)
+✔ ambiguous create outcome is retained explicitly for remote inventory recovery (12.94072ms)
+✔ native upload ID survives post-create metadata failure and enters pipeline failure evidence (4.662753ms)
+✔ reusing byte-verified automatic defaults does not silently become classification review (0.729333ms)
+✔ submillisecond future review is archived but cannot clear current pending gate (0.492304ms)
+✔ SHA256 matches independent Node crypto across block boundaries and binary inputs (41.238923ms)
+✔ UTF8 encoding matches native including astral Unicode and isolated surrogates (1.327945ms)
+✔ malformed UTF8 and invalid base64 fail closed (0.698628ms)
+✔ base64 roundtrips independent binary vectors (3.042533ms)
+✔ UUID stream requires supplied OS entropy and yields distinct correctly formed IDs (34.438577ms)
+✔ reviewed bundle loads without relying on host Web APIs (12.115291ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 476.865343

@@ -1,0 +1,31 @@
+{
+  "scope": "public website review; no collection or submission",
+  "source_sha256": {
+    "404.html": "48c6bbf2e1ac557fe86868ef90d5b22e2791d59e2c577dbb80ccbddda2e89814",
+    "Farpoint_Energy_Product_Catalog_2026.pdf": "5cd4fb8414867c6f1b3c5e08f0b20a6ca2907a893c62a4d2a17ab3740a523b7f",
+    "Farpoint_Energy_Product_Catalog_2026_Solar_Storage_Edition.pdf": "5cd4fb8414867c6f1b3c5e08f0b20a6ca2907a893c62a4d2a17ab3740a523b7f",
+    "about.html": "2889fe24199f76d74a7170696da4da46fcbe9d868958879ed1b6d3c9ead413cc",
+    "analytics-config.js": "743e8932436360a9e6a2c83fd050e1522cd8d12324fd52aa5b33f5040b447227",
+    "applications.html": "f6dafdea26668620bd09455006f33d9f79abf35f829361a219571ab3a8be5d12",
+    "contact.html": "1812ecc1010fb7be4aeebfad326bd290b7d2ae09a810b74a2a4b84c09daac2b6",
+    "data-centers.html": "2e19a52ec381ade84ab9e29b51b163cfdebd92caae7e11371c5bf9bc06c5c470",
+    "delivery.html": "a4c0d14ac5d432332b553f5ef32757a810f58e01de8cc5aa444aebe325730bbd",
+    "distribution-transformers.html": "6e7036033e233a9975389987c64a287c895844c96bb74d03fb1f8bdeba52f426",
+    "favicon.svg": "d439b36b4242f34739f25fd38cc744b50fa5e98a5216580ad6d00af6d9405224",
+    "index.html": "86ec8ede7bc17be5d926bf660f83513281921fcd965b14127815f4ce2244a59c",
+    "inquiry.js": "01195971d60692bf5000f78a60d65682afd35c6ee07551a43f7ff4cd7615453a",
+    "manufacturing.html": "7055626a2a2f9883722efdd8501d5361cff8c49341d285ecd60a72a05e2cdcb1",
+    "markets.html": "8b8d102ca23eaa6e3f1faba88305cbb9301a0f6b3c043db8b44699a7d28bad86",
+    "power-transformers.html": "f64ba8f4f807dd2d13da5bf67ee225e2890c8befd392de75702203a0066be188",
+    "privacy.html": "30a0cf857be0825161b53dd54625b9b0d92c14a34945e16a353e806115dc9d4a",
+    "products.html": "6eead51a1d0558b4e581dcf607d11a34bf9af7a8fc5446b770d147b80c6f207c",
+    "quality.html": "9e0452cd5e41236c3d435cf024a8e4157f13ec828ef28f52f71d33e438ecf6b4",
+    "quote.html": "90841bd5c4c3ff572eac1de663d13fe2dc0fcc24adba1dd0ec0a22aaf902f6fd",
+    "site.js": "42820f51a582050a8df0dc54ecb5c49b05614ef60d90868103f51965d9680759",
+    "social-card.png": "3fa27a4f16ed3e1f210db34ecf539fb8e10a133bbcae04732652874fde589805",
+    "solar-storage.html": "fd0d6566939a41e0d70087d3bfd62ca7f8014a79f3a9b974df8777209c8b0ead",
+    "style.css": "9010c9b2da782eb4c12e4a9f2e30bb3415b27ff296611ba71515355d4035f32c",
+    "thanks.html": "7e0639b1b865eb8d79b33d3ec1357035cd2907f4580dbeb6b4b1b6784f63564f",
+    "tracker.js": "95b58c93489d57cbcbbeb1efeff296b628ece1852dfb6807bd99f269bf8012b7"
+  }
+}

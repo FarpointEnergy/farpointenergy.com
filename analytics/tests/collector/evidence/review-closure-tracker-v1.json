@@ -1,0 +1,29 @@
+{
+  "reviewed_at": "2026-10-23T20:05:33.254961+00:00",
+  "reviewer": "/root/build_collector",
+  "disposition": "APPROVED",
+  "scope": "independent local tracker/form source review and mocked tests; not production acceptance",
+  "source_sha256": {
+    "tracker.js": "95b58c93489d57cbcbbeb1efeff296b628ece1852dfb6807bd99f269bf8012b7",
+    "inquiry.js": "d83b43a8801f63868fca6c73af17bfdfb46753b387d9531b135f93f7f2faac28",
+    "check_tracker.js": "6ea78ab6882da4b69c7b1628f89d8755888e285842c69aa1e1df824429347f4d",
+    "check_inquiry.js": "ef6a0b88bc04d64a5be5c1fb12fe161a2bcdc687e5717d6c116906ff719f8144",
+    "analytics-config.json": "7979464f69695b56c0bc25d251509618c5b729d95235405a8c3ec015b2985fe4",
+    "build.py": "30efda6f41e967edfaa2b3d209bd2f408f09e9119d2f8d171fcc729a504faf75"
+  },
+  "checks": [
+    "125 tracker assertions passed",
+    "inquiry mocked suite passed",
+    "actual tracker to collector to authenticated bounded export to Python smoke passed"
+  ],
+  "finding_closed": "Hidden campaign correlation now consistently uses frozen session-entry campaign; later registered campaign touches remain separate raw events, matching Python inquiry_session_touch semantics.",
+  "blocked_or_not_run": [
+    "hosted anti-spoof identity and trusted IP",
+    "actual browser persistence/multitab and required engines",
+    "mobile timing and rendering",
+    "actual FormSubmit inbox receipt",
+    "storage-enforced retention",
+    "scheduled unattended execution"
+  ],
+  "integration_evidence": "analytics/tests/collector/evidence/integration-786ea6d6-eb9f-4ae6-a4e9-a38c2857c4be/"
+}

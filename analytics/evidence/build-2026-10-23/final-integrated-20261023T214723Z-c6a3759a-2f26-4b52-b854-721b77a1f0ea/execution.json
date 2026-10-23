@@ -1,0 +1,203 @@
+{
+  "record_type": "final_integrated_local_verification",
+  "run_id": "final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea",
+  "source_head": "3e48ca35cf3414d40b677cac8839d052602ab1e9",
+  "implementation_committed": false,
+  "report_timezone": "America/New_York",
+  "environment": "local synthetic; no live collector, email submissions or external API requests in this run",
+  "node": "v24.19.0",
+  "python": "Python 3.12.14",
+  "source_inventory_scope": "git-visible website/configuration/implementation/tests excluding docs, evidence directories and independent review records",
+  "source_file_count": 83,
+  "source_unchanged": true,
+  "source_inventory_sha256": "ef7131e30859d744e25e489563e05d1e5e00bd2c5d41a42e9d40bb0b1123103e",
+  "cases_are_not_acceptance_case_count": true,
+  "runs": [
+    {
+      "test_suite": "collector",
+      "command": [
+        "node",
+        "--test",
+        "analytics/tests/collector/collector.test.mjs"
+      ],
+      "started_at": "2026-10-23T21:47:23.726645+00:00",
+      "ended_at": "2026-10-23T21:47:24.230603+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "521eb117c0990d45eb898095b1da187b8ed1eece1ac7e406363a0769bcdd3b0b",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "python",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "analytics/tests/python",
+        "-v"
+      ],
+      "started_at": "2026-10-23T21:47:24.230820+00:00",
+      "ended_at": "2026-10-23T21:47:24.987482+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "898fbd8153cd494f8b28fa422102a3cc2f70acd90bb885b39264cb7b7c704c7c"
+    },
+    {
+      "test_suite": "tracker",
+      "command": [
+        "node",
+        "check_tracker.js"
+      ],
+      "started_at": "2026-10-23T21:47:24.987649+00:00",
+      "ended_at": "2026-10-23T21:47:25.106960+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "e58d86d8668f794ececc12303b592480a8457bead6a53a86c766a1964ccc8a12",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "inquiry",
+      "command": [
+        "node",
+        "check_inquiry.js"
+      ],
+      "started_at": "2026-10-23T21:47:25.107161+00:00",
+      "ended_at": "2026-10-23T21:47:25.253336+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "1e6b4a7dfc718f886491308b8bb12626bda6069abfdce2f25f54301f75be368e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "context",
+      "command": [
+        "node",
+        "check_context.js"
+      ],
+      "started_at": "2026-10-23T21:47:25.253579+00:00",
+      "ended_at": "2026-10-23T21:47:25.375667+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "589e73144b93a3eb59061dd603a646a6fdcc84e0e8c69aa5f86d19e6910a8e38",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "wrapper",
+      "command": [
+        "node",
+        "--test",
+        "analytics/deploy/sites/wrapper.test.mjs"
+      ],
+      "started_at": "2026-10-23T21:47:25.375874+00:00",
+      "ended_at": "2026-10-23T21:47:25.628448+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "35091c4b2e6279480ccb441c05044f572abc704a2ae379dae9bbf5603479d06e",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "cross-language",
+      "command": [
+        "node",
+        "analytics/tests/collector/cross-language.mjs"
+      ],
+      "started_at": "2026-10-23T21:47:25.628650+00:00",
+      "ended_at": "2026-10-23T21:47:25.826569+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "c639398b0586fe71e4ec814cf4d31a458faad8397aac9a6cc9c09b0fef9c15da",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "work-javascript",
+      "command": [
+        "node",
+        "--test",
+        "analytics/work/tests/pipeline.test.mjs",
+        "analytics/work/tests/runtime.test.mjs"
+      ],
+      "started_at": "2026-10-23T21:47:25.826899+00:00",
+      "ended_at": "2026-10-23T21:47:26.442955+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "4229bc420d3c6c61d7ebc21b15f6247b3718dd77be33959973c9dc8d24e48e86",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "work-python",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "analytics/work/tests",
+        "-v"
+      ],
+      "started_at": "2026-10-23T21:47:26.443794+00:00",
+      "ended_at": "2026-10-23T21:47:27.116044+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "c16e68abe5ac1044963a0292713e857e8299fc1995549c1e0f78c31b95420d62"
+    },
+    {
+      "test_suite": "work-bundle-reproducible",
+      "command": [
+        "python3",
+        "-c",
+        "from pathlib import Path; import subprocess,hashlib; p=Path('analytics/work/work.bundle.js'); original=p.read_bytes(); subprocess.run(['node','analytics/work/build-bundle.mjs'],check=True); first=p.read_bytes(); subprocess.run(['node','analytics/work/build-bundle.mjs'],check=True); second=p.read_bytes(); assert original==first==second,'Bundle regeneration changed bytes'; print('PASS: existing generated Work bundle and two rebuilds match exactly; SHA256='+hashlib.sha256(second).hexdigest())"
+      ],
+      "started_at": "2026-10-23T21:47:27.116205+00:00",
+      "ended_at": "2026-10-23T21:47:27.396729+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "c00000c8c6ed5d04b53d0ebebf24111b4a83a3dc638d7279c4f1f190900209d0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "site",
+      "command": [
+        "python3",
+        "check_site.py"
+      ],
+      "started_at": "2026-10-23T21:47:27.396912+00:00",
+      "ended_at": "2026-10-23T21:47:27.604169+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "90ce28238c3198cdae19e3feb9cbdc9cc77e0202c6908695fe7f7e77d718a087",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "diff-whitespace",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "started_at": "2026-10-23T21:47:27.604336+00:00",
+      "ended_at": "2026-10-23T21:47:27.612401+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "test_suite": "preview-manifest",
+      "command": [
+        "python3",
+        "-c",
+        "from pathlib import Path; import json,hashlib,re; d=Path('../farpoint-website-preview/dist'); m=json.loads((d/'review-source-manifest.json').read_text()); s=m['source_sha256']; assert len(s)==26; assert all(hashlib.sha256(Path(n).read_bytes()).hexdigest()==h for n,h in s.items()); assert not json.loads(Path('analytics-config.json').read_text())['enabled']; assert (d/'robots.txt').read_text()=='User-agent: *\\nDisallow: /\\n'; assert 'preventDefault' in (d/'preview-guard.js').read_text(); pages=list(d.glob('*.html')); assert len(pages)==17; assert all('noindex,nofollow' in p.read_text() and 'preview-guard.js' in p.read_text() for p in pages); q=(d/'quote.html').read_text(); assert 'id=\"quote-submit\" disabled' in q; actions=re.findall(r'<form\\b[^>]*\\baction=\"([^\"]*)',q); assert actions and all(a=='#preview-disabled' for a in actions); assert not list(d.glob('*qa*')); print('PASS: 26 preview source assets exactly match current website, 17 pages guarded/noindex, quotation submission disabled, tracking disabled; hosted ACL/browser access is separate evidence')"
+      ],
+      "started_at": "2026-10-23T21:47:27.612530+00:00",
+      "ended_at": "2026-10-23T21:47:27.646454+00:00",
+      "exit_code": 0,
+      "status": "PASS",
+      "stdout_sha256": "0a364a31ae1231d5c335e862ffc95774f3324cfcca625ace90c477486b4c5ded",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

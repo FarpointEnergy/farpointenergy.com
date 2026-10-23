@@ -1,0 +1,14 @@
+✔ malformed discovery IDs preserve core errors and do not throw (14.82575ms)
+✔ bootstrap requires authenticated candidate context and never enrolls owner (4.826892ms)
+✔ bootstrap is absent when disabled (0.748119ms)
+✔ synthetic hosted-probe algorithm preserves three records and verifies readback (13.425747ms)
+✔ a broken conditional adapter fails with originals preserved and stage evidence (7.094871ms)
+Synthetic stores retained: /workspace/scratch/eb42d1bc91b8/farpoint-implementation/analytics/evidence/build-2026-10-23/wrapper-stores-3dc07eef-bc2e-4b6e-b1ab-3fceea01eabe.json
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 188.35394

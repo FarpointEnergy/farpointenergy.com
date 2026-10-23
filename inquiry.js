@@ -7,6 +7,7 @@
   const publicCampaigns = new Set(["power", "distribution", "data-center", "solar", "storage", "hybrid", "utility", "industrial", "other"]);
   const confirmationKey = "farpoint-inquiry-accepted";
   const form = document.getElementById("quote-form");
+  let inquiryId = null, submittedBusiness = null, inquiryMetadata = {};
   const path = location.pathname.split("/").pop();
   const productPages = { "power-transformers.html": "power", "distribution-transformers.html": "distribution" };
   const applicationPages = { "data-centers.html": "data-center" };
@@ -23,11 +24,52 @@
     };
   }
 
+  function track(name, detail = {}) {
+    if (!window.farpointTracker || typeof window.farpointTracker.record !== "function") return;
+    try {
+      const c = context();
+      window.farpointTracker.record(name, {product_id:c.product, application_id:c.application,
+        ...(inquiryId ? {inquiry_id:inquiryId} : {}), ...detail});
+    } catch (_) { /* Analytics never blocks an inquiry. */ }
+  }
+
   function emit(name) {
-    // Disabled unless an approved destination explicitly supplies this callback.
-    // No form contents, references, URL parameters, or contact details are sent.
+    const names = {product_path_view:"product_view", rfq_start:"quotation_start", rfq_submit_success:"quotation_provider_accepted", email_click:"email_click"};
+    if (names[name]) track(names[name]);
+    // Preserve the existing integration hook; never send any form contents.
     if (!eventNames.has(name) || typeof window.farpointAnalytics !== "function") return;
-    try { window.farpointAnalytics(name, context()); } catch (_) { /* Analytics never blocks an inquiry. */ }
+    try { window.farpointAnalytics(name, context()); } catch (_) { /* Isolated optional callback. */ }
+  }
+
+  function correlate(payload) {
+    // Compare business intent only in page memory. Never persist or track this text.
+    const business = Object.fromEntries(Object.entries(payload).filter(([key]) => !key.startsWith("_") && !key.startsWith("Farpoint ") && !["Source", "Campaign"].includes(key)).sort(([a],[b]) => a < b ? -1 : a > b ? 1 : 0));
+    const snapshot = JSON.stringify(business);
+    if (!inquiryId || submittedBusiness !== snapshot) {
+      inquiryId = null;
+      const c = window.crypto;
+      if (c && typeof c.getRandomValues === "function") {
+        if (typeof c.randomUUID === "function") inquiryId = c.randomUUID();
+        else {
+          const b = new Uint8Array(16); c.getRandomValues(b); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+          const h = Array.from(b, x => x.toString(16).padStart(2,"0")).join("");
+          inquiryId = `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+        }
+      }
+      submittedBusiness = snapshot;
+      inquiryMetadata = {};
+      try { inquiryMetadata = window.farpointTracker?.inquiryContext() || {}; } catch (_) { /* Submit without attribution. */ }
+    }
+    const metadata = inquiryMetadata;
+    const values = {"inquiry":inquiryId, "browser":metadata.browser_id, "session":metadata.session_id,
+      "source":metadata.campaign?.source, "medium":metadata.campaign?.medium, "campaign":metadata.campaign?.campaign};
+    for (const [key, value] of Object.entries(values)) {
+      const input = document.getElementById(`f-analytics-${key}`);
+      if (!input) continue;
+      input.disabled = !value; input.value = value || "";
+      if (value) payload[input.name] = value;
+      else delete payload[input.name];
+    }
   }
 
   function updateAttachmentLinks() {
@@ -109,8 +151,13 @@
   configuration.addEventListener("change", () => {
     if (references.has(configuration.value)) category.value = "power";
     syncConfiguration();
+    if (references.has(configuration.value)) track("reference_select", {reference_id:configuration.value});
   });
   syncConfiguration();
+  if (references.has(configuration.value)) track("reference_select", {reference_id:configuration.value});
+  form.querySelectorAll("details.optional-fields").forEach(details => details.addEventListener("toggle", () => {
+    if (details.open) track("technical_details_open", {location_code:"quotation"});
+  }));
 
   let started = false;
   function start() {
@@ -120,6 +167,7 @@
   form.addEventListener("input", start);
   form.addEventListener("invalid", (event) => {
     const input = event.target;
+    track("quotation_validation_error", {error_category:input.type === "number" ? "invalid_number" : "required_field", location_code:"quotation"});
     const details = input.closest("details");
     if (details) details.open = true;
     const error = document.getElementById(`${input.id}-error`);
@@ -169,15 +217,15 @@
     state = kind;
     form.removeAttribute("aria-busy");
     if (kind !== "accepted") restoreFields();
-    button.disabled = kind !== "failed";
-    button.textContent = kind === "accepted" ? "Request submitted" : kind === "uncertain" ? "Submission status uncertain" : "Send request";
+    button.disabled = kind === "accepted";
+    button.textContent = kind === "accepted" ? "Request submitted" : kind === "uncertain" ? "Retry request" : "Send request";
     setStatus(message, kind);
     status.focus();
   }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (state === "sending" || state === "accepted" || state === "uncertain") return;
+    if (state === "sending" || state === "accepted") return;
     for (const id of ["f-name", "f-company", "f-requirement"]) {
       const input = document.getElementById(id);
       input.setCustomValidity(input.value.trim() ? "" : "Please enter this required information.");
@@ -196,6 +244,8 @@
     }
     const reference = document.getElementById("f-reference").value.trim().replace(/[\r\n]/g, " ").slice(0, 160);
     if (reference) payload._subject = `Quotation request — ${reference}`;
+    try { correlate(payload); } catch (_) { /* Correlation must never prevent a request. */ }
+    track("quotation_attempt", {location_code:"quotation"});
     // Freeze only after taking the payload snapshot, so a successful response
     // cannot discard edits made while the request is in flight.
     freezeFields();
@@ -221,12 +271,15 @@
           location.assign(form.dataset.thanks);
         } catch (_) { /* The inline confirmation remains available. */ }
       } else if (accepted === false || accepted === "false") {
+        track("quotation_transport_error", {error_category:"provider_rejected", location_code:"quotation"});
         finish("failed", "The form service reported that it could not accept your request. Your entries are still here. You can try again.");
       } else {
-        finish("uncertain", "We could not confirm whether the form service accepted your request. Your entries are still here. To avoid a duplicate, do not submit again yet.");
+        track("quotation_transport_error", {error_category:"malformed_response", location_code:"quotation"});
+        finish("uncertain", "We could not confirm submission. Your request may still arrive. Your entries are still here, and you can retry.");
       }
-    } catch (_) {
-      finish("uncertain", "The connection ended before we could confirm the result. Your request may have reached the form service, and your entries are still here. To avoid a duplicate, do not submit again yet.");
+    } catch (error) {
+      track("quotation_transport_error", {error_category:error && error.name === "AbortError" ? "transport_timeout" : error instanceof SyntaxError ? "malformed_response" : "transport_error", location_code:"quotation"});
+      finish("uncertain", "The connection ended before we could confirm submission. Your request may still arrive. Your entries are still here, and you can retry.");
     } finally {
       clearTimeout(timer);
     }

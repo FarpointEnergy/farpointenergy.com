@@ -1,0 +1,14 @@
+{
+  "test_suite": "work-bundle-reproducible",
+  "command": [
+    "python3",
+    "-c",
+    "from pathlib import Path; import subprocess,hashlib; p=Path('analytics/work/work.bundle.js'); original=p.read_bytes(); subprocess.run(['node','analytics/work/build-bundle.mjs'],check=True); first=p.read_bytes(); subprocess.run(['node','analytics/work/build-bundle.mjs'],check=True); second=p.read_bytes(); assert original==first==second,'Bundle regeneration changed bytes'; print('PASS: existing generated Work bundle and two rebuilds match exactly; SHA256='+hashlib.sha256(second).hexdigest())"
+  ],
+  "started_at": "2026-10-23T21:47:27.116205+00:00",
+  "ended_at": "2026-10-23T21:47:27.396729+00:00",
+  "exit_code": 0,
+  "status": "PASS",
+  "stdout_sha256": "c00000c8c6ed5d04b53d0ebebf24111b4a83a3dc638d7279c4f1f190900209d0",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

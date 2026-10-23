@@ -1,0 +1,10 @@
+test_analysis_archives_frozen_source_and_timezone (test_local_bridge.BridgeTests.test_analysis_archives_frozen_source_and_timezone) ... ok
+test_arbitrary_remote_reference_not_downloaded (test_local_bridge.BridgeTests.test_arbitrary_remote_reference_not_downloaded) ... ok
+test_create_only_collision_preserves_original (test_local_bridge.BridgeTests.test_create_only_collision_preserves_original) ... ok
+test_encoded_path_traversal_and_symlink_rejected (test_local_bridge.BridgeTests.test_encoded_path_traversal_and_symlink_rejected) ... ok
+test_original_mail_and_duplicate_headers_and_attachment_hash_preserved (test_local_bridge.BridgeTests.test_original_mail_and_duplicate_headers_and_attachment_hash_preserved) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.188s
+
+OK

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "scope": "isolated actual Functions V8 + native Drive create/readback",
+  "checked_at": "2026-10-23T21:45:57.927Z",
+  "bundle_sha256": "db127601b87c2d44eed5e72345c9d549d1ca758f77b3f9f5db560688faa56d3b",
+  "source_sha256": "ec8817d558e131d0d63eb270dd94e2999c100bbf8323c12ae67ccfa59da4c599",
+  "owner_only_before": true,
+  "owner_only_file": true,
+  "parent_verified": true,
+  "byte_count": 244,
+  "sha256": "c97bdc0fc08b2989a4c75639f348de9e1e70dbd6c9343bf796bbd31eea753398",
+  "exact_readback": true,
+  "created_files": 1,
+  "collector_calls": 0,
+  "mail_calls": 0,
+  "rfq_submissions": 0,
+  "tracking_enabled": false,
+  "schedule_activated": false,
+  "limitations": [
+    "Does not certify collector authorization, IP provenance, retention locks, full pipeline execution, or production readiness."
+  ]
+}

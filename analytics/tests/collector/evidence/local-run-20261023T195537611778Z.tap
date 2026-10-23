@@ -1,0 +1,196 @@
+TAP version 13
+# Subtest: RAW-01 / ACK-01: exact raw body/hash only after completed storage write
+ok 1 - RAW-01 / ACK-01: exact raw body/hash only after completed storage write
+  ---
+  duration_ms: 22.771659
+  type: 'test'
+  ...
+# Subtest: RAW-02 / RAW-05 / RAW-06 / ACK-05: malformed and unsupported bytes retained without parsing or echoes
+ok 2 - RAW-02 / RAW-05 / RAW-06 / ACK-05: malformed and unsupported bytes retained without parsing or echoes
+  ---
+  duration_ms: 10.69659
+  type: 'test'
+  ...
+# Subtest: RAW-03: accepts and retains exactly 32767 body bytes
+ok 3 - RAW-03: accepts and retains exactly 32767 body bytes
+  ---
+  duration_ms: 8.052381
+  type: 'test'
+  ...
+# Subtest: RAW-03: accepts and retains exactly 32768 body bytes
+ok 4 - RAW-03: accepts and retains exactly 32768 body bytes
+  ---
+  duration_ms: 9.379718
+  type: 'test'
+  ...
+# Subtest: RAW-03: overflow is rejected without falsely retaining truncated bytes
+ok 5 - RAW-03: overflow is rejected without falsely retaining truncated bytes
+  ---
+  duration_ms: 3.101357
+  type: 'test'
+  ...
+# Subtest: RAW-03: chunked absent-length overflow checks received bytes
+ok 6 - RAW-03: chunked absent-length overflow checks received bytes
+  ---
+  duration_ms: 1.528461
+  type: 'test'
+  ...
+# Subtest: RAW-03: 49/50/51-event batches all preserved; analyst applies event-count boundary later
+ok 7 - RAW-03: 49/50/51-event batches all preserved; analyst applies event-count boundary later
+  ---
+  duration_ms: 2.951725
+  type: 'test'
+  ...
+# Subtest: RAW-03: unsupported compression retained as rejection metadata only
+ok 8 - RAW-03: unsupported compression retained as rejection metadata only
+  ---
+  duration_ms: 0.958274
+  type: 'test'
+  ...
+# Subtest: ACK-01 / STORE-03: storage failure returns retry and never leaks exception
+ok 9 - ACK-01 / STORE-03: storage failure returns retry and never leaks exception
+  ---
+  duration_ms: 2.420381
+  type: 'test'
+  ...
+# Subtest: ACK-01: ambiguous/unconfirmed adapter return cannot produce accepted acknowledgement
+ok 10 - ACK-01: ambiguous/unconfirmed adapter return cannot produce accepted acknowledgement
+  ---
+  duration_ms: 1.268683
+  type: 'test'
+  ...
+# Subtest: ACK-01: asynchronous write must resolve before response
+ok 11 - ACK-01: asynchronous write must resolve before response
+  ---
+  duration_ms: 10.973384
+  type: 'test'
+  ...
+# Subtest: ACK-02: lost response/retry leaves both raw receipts and equal body hashes
+ok 12 - ACK-02: lost response/retry leaves both raw receipts and equal body hashes
+  ---
+  duration_ms: 1.973847
+  type: 'test'
+  ...
+# Subtest: STORE-01: conditional collision preserves old object and allocates new key
+ok 13 - STORE-01: conditional collision preserves old object and allocates new key
+  ---
+  duration_ms: 2.244421
+  type: 'test'
+  ...
+# Subtest: STORE-01: repeated collisions return retry without replacing history
+ok 14 - STORE-01: repeated collisions return retry without replacing history
+  ---
+  duration_ms: 3.382339
+  type: 'test'
+  ...
+# Subtest: STORE-03 / HIST-02: a new handler instance preserves prior data; no mutation API exists
+ok 15 - STORE-03 / HIST-02: a new handler instance preserves prior data; no mutation API exists
+  ---
+  duration_ms: 4.655336
+  type: 'test'
+  ...
+# Subtest: AUTH-01/02: owner configuration and proven gateway identity are both mandatory
+ok 16 - AUTH-01/02: owner configuration and proven gateway identity are both mandatory
+  ---
+  duration_ms: 2.294101
+  type: 'test'
+  ...
+# Subtest: AUTH-01/02/03: anonymous, other owner, forged email, duplicate header and bypass token denied locally
+ok 17 - AUTH-01/02/03: anonymous, other owner, forged email, duplicate header and bypass token denied locally
+  ---
+  duration_ms: 4.064093
+  type: 'test'
+  ...
+# Subtest: AUTH-01: correctly configured simulated owner may list/read only allowed record namespaces
+ok 18 - AUTH-01: correctly configured simulated owner may list/read only allowed record namespaces
+  ---
+  duration_ms: 5.37343
+  type: 'test'
+  ...
+# Subtest: AUTH-03: guessed raw routes, owner arguments and wrong methods cannot read private data
+ok 19 - AUTH-03: guessed raw routes, owner arguments and wrong methods cannot read private data
+  ---
+  duration_ms: 2.356086
+  type: 'test'
+  ...
+# Subtest: AUTH-04: modified, wrong-scope, expired and different-owner cursors are denied
+ok 20 - AUTH-04: modified, wrong-scope, expired and different-owner cursors are denied
+  ---
+  duration_ms: 10.890611
+  type: 'test'
+  ...
+# Subtest: AUTH-04: chunk traversal, malformed keys and invalid offsets fail closed
+ok 21 - AUTH-04: chunk traversal, malformed keys and invalid offsets fail closed
+  ---
+  duration_ms: 3.404202
+  type: 'test'
+  ...
+# Subtest: AUTH-05: all successful and denied data responses are no-store and vary by identity
+ok 22 - AUTH-05: all successful and denied data responses are no-store and vary by identity
+  ---
+  duration_ms: 1.803355
+  type: 'test'
+  ...
+# Subtest: AUTH-06: explicit origins and preflight; CORS is not used as read authentication
+ok 23 - AUTH-06: explicit origins and preflight; CORS is not used as read authentication
+  ---
+  duration_ms: 3.304681
+  type: 'test'
+  ...
+# Subtest: IP-02/PRIV-01: unproven headers never become an address; sensitive headers never stored
+ok 24 - IP-02/PRIV-01: unproven headers never become an address; sensitive headers never stored
+  ---
+  duration_ms: 1.122589
+  type: 'test'
+  ...
+# Subtest: IP adapter failure degrades attribution only; never prevents durable receipt
+ok 25 - IP adapter failure degrades attribution only; never prevents durable receipt
+  ---
+  duration_ms: 0.920609
+  type: 'test'
+  ...
+# Subtest: EXPORT-01/03: provider short pages and 2P+7 keys across dates export exactly; resume works
+ok 26 - EXPORT-01/03: provider short pages and 2P+7 keys across dates export exactly; resume works
+  ---
+  duration_ms: 21.450917
+  type: 'test'
+  ...
+# Subtest: EXPORT-01: response budget fails explicitly; smaller-page rescan loses no objects
+ok 27 - EXPORT-01: response budget fails explicitly; smaller-page rescan loses no objects
+  ---
+  duration_ms: 28.844944
+  type: 'test'
+  ...
+# Subtest: EXPORT-02: near-limit receipt reconstructs exact bytes through multiple chunks
+ok 28 - EXPORT-02: near-limit receipt reconstructs exact bytes through multiple chunks
+  ---
+  duration_ms: 22.025086
+  type: 'test'
+  ...
+# Subtest: EXPORT-04: later records before prior cursor appear on complete reconciliation
+ok 29 - EXPORT-04: later records before prior cursor appear on complete reconciliation
+  ---
+  duration_ms: 6.302355
+  type: 'test'
+  ...
+# Subtest: EXPORT-05: storage faults, malformed pages and incomplete chunks never claim completion
+ok 30 - EXPORT-05: storage faults, malformed pages and incomplete chunks never claim completion
+  ---
+  duration_ms: 2.217136
+  type: 'test'
+  ...
+# Subtest: MCP discovery exposes only capability schemas before bootstrap; health exposes no identities
+ok 31 - MCP discovery exposes only capability schemas before bootstrap; health exposes no identities
+  ---
+  duration_ms: 1.2678
+  type: 'test'
+  ...
+1..31
+# tests 31
+# suites 0
+# pass 31
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 348.317276

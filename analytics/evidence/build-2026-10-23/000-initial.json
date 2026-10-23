@@ -1,0 +1,338 @@
+{
+  "record_type": "test_ledger_initialization",
+  "created_at": "2026-10-23T19:54:05.815782+00:00",
+  "design": "lead-intelligence-design-v1.1.md",
+  "plan_sha256": "493475fb97de809c4fd0eabfa1aff894a357b17be6e3092f8af5b134982c8806",
+  "source_baseline": "3e48ca35cf3414d40b677cac8839d052602ab1e9",
+  "build_authorization": "Owner approved build in the project conversation on 2026-10-23. No live production collection enabled.",
+  "cases": [
+    {
+      "case_id": "RAW-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "RAW-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "RAW-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "RAW-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "RAW-05",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "RAW-06",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "HASH-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "HASH-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "HASH-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ACK-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ACK-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ACK-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ACK-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ACK-05",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "BROWSER-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "BROWSER-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "BROWSER-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "BROWSER-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "STORE-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "STORE-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "STORE-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "HIST-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "HIST-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "EXPORT-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "EXPORT-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "EXPORT-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "EXPORT-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "EXPORT-05",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ARCHIVE-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ARCHIVE-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ARCHIVE-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ARCHIVE-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "RESTORE-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "RESTORE-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "RESTORE-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "AUTH-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "AUTH-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "AUTH-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "AUTH-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "AUTH-05",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "AUTH-06",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "IP-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "IP-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "IP-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "PRIV-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "PRIV-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "PRIV-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "PRIV-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "PRIV-05",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ENRICH-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ENRICH-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "ENRICH-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "GOLD-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "GOLD-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "GOLD-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "GOLD-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "FORM-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "FORM-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "FORM-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "FORM-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "FORM-05",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "FORM-06",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "MAIL-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "MAIL-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "MAIL-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "MAIL-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "MAIL-05",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "UX-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "UX-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "UX-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "UX-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "JOB-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "JOB-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "JOB-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "JOB-04",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "JOB-05",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "PERF-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "PERF-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "PERF-03",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "RELEASE-01",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "RELEASE-02",
+      "status": "NOT RUN"
+    },
+    {
+      "case_id": "RELEASE-03",
+      "status": "NOT RUN"
+    }
+  ]
+}

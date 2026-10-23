@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-10-23T21:34:42.151897+00:00",
+  "reviewer": "independent work pipeline reviewer",
+  "scope": "source correctness and synthetic tests only; no real service mutations",
+  "disposition": "changes_requested",
+  "source_hashes": {
+    "pipeline.mjs": "9e70ae98c6718448aa83d382138121de1274f3ee03e394a962f13c40e4a8238a",
+    "native-adapters.mjs": "c02c72e37856559525fcf677fe18e8a4383874ef9edf8a473c8d6833d33ce046",
+    "host-bridge.mjs": "8d5f95f8734ad0fde2eb0ac19a59db00286d6cae72f8273c8056e5e92c9531fb",
+    "local_bridge.py": "13bb81b045cb046ba8e72bc43a85bb4ce32100fac04cc37e60055a3631e1efa0",
+    "portable-runtime.mjs": "17d900448c1a3a49d355330f43a141abf98b808f43da1cdfbb96072cb5b47ae6",
+    "build-bundle.mjs": "a8fe6dcd8e77b3cb1203f802c6003289f60c8d74b0fc3c8aef766dd693027610",
+    "work.bundle.js": "b16e004d96d4b58eb6b33f6a1b0bd6c8761f12ab91ab710bf6644f46451c4d73",
+    "README.md": "01bb587634cf1deaba5f725545ef48da1c3d7e35d6d86f6e6d8d4820ad5f02ab"
+  },
+  "tests": {
+    "javascript": {
+      "passed": 19,
+      "failed": 0
+    },
+    "python": {
+      "passed": 5,
+      "failed": 0
+    }
+  },
+  "findings": [
+    {
+      "id": "WORK-REVIEW-01",
+      "severity": "high",
+      "file": "pipeline.mjs",
+      "issue": "Watchdog matches only started_at to interval and does not bind completion to intended job/report scope. Synthetic unrelated job with old report window returns healthy and suppresses expected warning.",
+      "expected": "Bind manifest/completion to stable job identity and intended report window; reject mismatched or absent identity/window; regression test."
+    },
+    {
+      "id": "WORK-REVIEW-02",
+      "severity": "medium",
+      "file": "native-adapters.mjs and README.md",
+      "issue": "Unseen messages auto-classify unresolved while complete=true permits a completed report. README says classification review needed before authoritative funnel but omits a complete Work classification recipe.",
+      "expected": "Clarify archive completeness versus funnel authority; version and document executable Work classification step with evidence-bound new observations and prompt/model provenance; preserve unresolved as uncertainty."
+    }
+  ],
+  "limitations": [
+    "No approval of production readiness, original-IP provenance, retention controls, hosted export auth, actual unattended scheduling, or full mailbox capture.",
+    "Author separately hardening per-file privacy and partial failure artifact archival."
+  ]
+}

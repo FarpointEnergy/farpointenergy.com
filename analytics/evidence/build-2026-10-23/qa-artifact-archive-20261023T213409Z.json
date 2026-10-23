@@ -1,0 +1,128 @@
+{
+  "record_type": "durable_qa_artifact_archive_evidence",
+  "date": "2026-10-23",
+  "status": "PASS",
+  "scope": "Owner-only Drive archive of specified QA artifacts; no release-gate expansion.",
+  "source_file_count": 16,
+  "source_byte_total": 2481459,
+  "category_counts": {
+    "browser_screenshot": 4,
+    "internal_qa_harness": 6,
+    "synthetic_collector_snapshot": 6
+  },
+  "source_inventory": [
+    {
+      "category": "browser_screenshot",
+      "bytes": 49477,
+      "sha256": "8ff945ee3c49e6ad2ec97dcc93ff9ce2debd946d201f4a90a037d7da305f011a"
+    },
+    {
+      "category": "browser_screenshot",
+      "bytes": 55303,
+      "sha256": "600acaa8507e149aba2671f9509f884b4d8d4011d6819ecdfe22134ddf05dd2c"
+    },
+    {
+      "category": "browser_screenshot",
+      "bytes": 99631,
+      "sha256": "9885cde814a7e68c7dfea0c60b8414d3662b39cb7f8c5dd0ea17fe50d6ed1e0b"
+    },
+    {
+      "category": "browser_screenshot",
+      "bytes": 114734,
+      "sha256": "70b0d70e12531d906511a6a930004e07d29602af51f0bb7c2e228f90fd819183"
+    },
+    {
+      "category": "internal_qa_harness",
+      "bytes": 421,
+      "sha256": "ff88ed08108b1c788e6f0547c7d4616ef8924a1c0b2d75346ec91fd49f911f59"
+    },
+    {
+      "category": "internal_qa_harness",
+      "bytes": 417,
+      "sha256": "0fc6c21d541efad5daabafda9840fdad45cdad43404ba3a6a90ad01e5819863e"
+    },
+    {
+      "category": "internal_qa_harness",
+      "bytes": 417,
+      "sha256": "69022d5e30e580fd1080da352e36d5ef7ea94c62857d0068323420c04b0ab30e"
+    },
+    {
+      "category": "internal_qa_harness",
+      "bytes": 417,
+      "sha256": "b069ccd895e8c18da06d8c74755e5bf6c1a48beb3ffb6b56bad429d2b4c871b6"
+    },
+    {
+      "category": "internal_qa_harness",
+      "bytes": 14691,
+      "sha256": "80aa9a7c2e363b07b2f54f9ecbc69a942d0d8f4c4e89a060afa28cf35c0259e1"
+    },
+    {
+      "category": "internal_qa_harness",
+      "bytes": 139,
+      "sha256": "12e451e49e7339b24f4b275c7e428d6f822c215f23ac965765c1ce56cad52dd6"
+    },
+    {
+      "category": "synthetic_collector_snapshot",
+      "bytes": 363755,
+      "sha256": "fac94cef5ff0d8dce51db2fc13533a54f6e6b45135e8d360320e660e09c4f93b"
+    },
+    {
+      "category": "synthetic_collector_snapshot",
+      "bytes": 345444,
+      "sha256": "e7d748ed516964aea7081d18a97de613f1febfc2780a80e02f4f4fb9731f94b8"
+    },
+    {
+      "category": "synthetic_collector_snapshot",
+      "bytes": 363755,
+      "sha256": "865669a1a5c64d4b2ae50d026c3f37f78421e55416655ce5331ecb182977587e"
+    },
+    {
+      "category": "synthetic_collector_snapshot",
+      "bytes": 345348,
+      "sha256": "d50493ffd29b6ec96159135b285b726027829d4e226c0e189f4bf33c235f05c4"
+    },
+    {
+      "category": "synthetic_collector_snapshot",
+      "bytes": 363755,
+      "sha256": "5ab120c2dae65a9e619524d3fc8f5d06820c9c72b85ead763fe099278a76d95d"
+    },
+    {
+      "category": "synthetic_collector_snapshot",
+      "bytes": 363755,
+      "sha256": "637f15de2275943b1a29f92e8c5253bc65eb1a1ae741be5820fa5805553667bb"
+    }
+  ],
+  "archive": {
+    "bytes": 369781,
+    "sha256": "1abe2755cb0d837118daaa47cb58415ae6ba71792b171a514ce6f00cb8eeea46",
+    "readback_byte_equal": true
+  },
+  "manifest": {
+    "bytes": 5527,
+    "sha256": "5509104d650d4adf7d75102fa0e591ecbcd40ce00651950c5d1754fb7b231e53",
+    "readback_byte_equal": true
+  },
+  "completion": {
+    "bytes": 1502,
+    "sha256": "332c8ac179c4704ed51b2555c1c16a8441ee7e97ae42ea1cc8c910797062df3a",
+    "readback_byte_equal": true,
+    "written_after_archive_and_manifest_readback": true
+  },
+  "permissions": {
+    "folder_sole_owner_verified": true,
+    "new_archived_files_sole_owner_verified": true
+  },
+  "preservation": {
+    "original_files_untouched": true,
+    "new_drive_files_only": true,
+    "included_site_credentials": false,
+    "included_local_config": false,
+    "included_raw_mail": false
+  },
+  "caveats": [
+    "Failure screenshot preserves earlier longer error copy that was subsequently revised.",
+    "CSS viewport checks do not establish real mobile Safari or independent browser-engine coverage.",
+    "Harness files reference website assets outside the archive; this is not a complete standalone website or disaster-recovery bundle."
+  ],
+  "public_redaction": "Counts and content hashes only; no Drive IDs, private URLs, signed download references, raw logs or mail content."
+}

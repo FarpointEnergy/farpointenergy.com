@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "reporting_extension_local_tests",
+  "recorded_at": "2026-10-23T21:25:02.008529+00:00",
+  "command": "PYTHONPATH=analytics/python python3 -m unittest discover -s analytics/tests/python -v",
+  "result": "PASS",
+  "tests": 40,
+  "new_tests": 8,
+  "prior_tests": 32,
+  "independent_review": "PENDING",
+  "golden_oracle_changed": false,
+  "source_hashes": {
+    "analytics/python/farpoint_analytics/analysis.py": "fa8326f64889337274714b89a6d1b8270f58ab05bb4144d56f3ca1e2f2ea51ef",
+    "analytics/python/farpoint_analytics/reporting.py": "e7e14fbc59d4d6c68d95245878070e5105c75fbf632a5681ed701e07ceaa31c6",
+    "analytics/python/farpoint_analytics/__main__.py": "298c7be6df3cb86684dc1247f8e8f5e352a028c22a3f0585812b8cc3c39075f2",
+    "analytics/python/README.md": "4a52fdaafb853aecf3718f1611a0fae0aa9098630cf2b271bf806c425f249cd0",
+    "analytics/tests/python/test_reporting.py": "0edc1ef2599ec3385b8d31f140b2133bfd4ce4279cbe8f8db146dd9dcd46dc16",
+    "analytics/tests/python/fixtures/golden-expected.json": "79f489c1133d82f42da9f356f4519a1dcb2dbbed31b76b60ae7351d614f97d9b"
+  },
+  "limits": [
+    "Local synthetic tests only",
+    "No network or provider calls",
+    "No claim of hosted IP provenance, remote archive or production readiness",
+    "Runtime replay uses already available matching interpreter; no disaster recovery proof"
+  ]
+}

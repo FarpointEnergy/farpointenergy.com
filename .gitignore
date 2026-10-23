@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+
+# Raw synthetic store evidence is retained in the private Drive QA archive.
+analytics/tests/collector/evidence/synthetic-store-snapshot-*.json

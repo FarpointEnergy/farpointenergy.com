@@ -1,0 +1,15 @@
+{
+  "scope": "Inquiry uncertainty wording changed after previous browser screenshot; targeted regression run",
+  "started_at": "2026-10-23T21:34:12.698226+00:00",
+  "finished_at": "2026-10-23T21:34:12.847010+00:00",
+  "command": [
+    "node",
+    "check_inquiry.js"
+  ],
+  "exit_code": 0,
+  "source_sha256": {
+    "inquiry.js": "18fd208b376722cbed30e7bf875d9896404acf16ab5b3c027495d0952834227a",
+    "check_inquiry.js": "ef6a0b88bc04d64a5be5c1fb12fe161a2bcdc687e5717d6c116906ff719f8144"
+  },
+  "claim": "Mocked form behavior only; no real provider request in this run"
+}

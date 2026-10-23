@@ -1,0 +1,13 @@
+{
+  "test_suite": "context",
+  "command": [
+    "node",
+    "check_context.js"
+  ],
+  "started_at": "2026-10-23T21:17:12.399616+00:00",
+  "ended_at": "2026-10-23T21:17:12.572131+00:00",
+  "exit_code": 0,
+  "status": "PASS",
+  "stdout_sha256": "589e73144b93a3eb59061dd603a646a6fdcc84e0e8c69aa5f86d19e6910a8e38",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

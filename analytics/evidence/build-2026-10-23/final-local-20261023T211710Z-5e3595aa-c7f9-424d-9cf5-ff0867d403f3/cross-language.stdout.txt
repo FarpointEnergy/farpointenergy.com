@@ -1,0 +1,2 @@
+{"status": "PASS", "counts": {"raw_receipts": 3, "valid_event_occurrences": 4, "unique_valid_event_ids": 2, "duplicate_occurrences": 2, "conflicted_event_ids": 0, "trusted_events": 2, "quarantined_events": 0, "quarantined_receipts": 1}, "scope": "local tracker-collector-chunk-Python integration"}
+Evidence: /workspace/scratch/eb42d1bc91b8/farpoint-implementation/analytics/tests/collector/evidence/integration-c217fa8a-962e-4a35-9a97-fd27b88ca20a/

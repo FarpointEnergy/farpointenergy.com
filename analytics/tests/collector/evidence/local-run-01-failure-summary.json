@@ -1,0 +1,9 @@
+{
+  "run": "local-run-01",
+  "scope": "synthetic node tests only",
+  "tests": 31,
+  "pass": 30,
+  "fail": 1,
+  "failure": "EXPORT-04 fixture moved export clock backward, invalidating future-issued cursor; fixture corrected to use separate late writer without moving export clock",
+  "hosted_tests": "NOT RUN"
+}

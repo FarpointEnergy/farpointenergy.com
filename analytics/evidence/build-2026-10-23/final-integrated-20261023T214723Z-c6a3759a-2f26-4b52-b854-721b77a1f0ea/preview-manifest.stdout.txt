@@ -1,0 +1,1 @@
+PASS: 26 preview source assets exactly match current website, 17 pages guarded/noindex, quotation submission disabled, tracking disabled; hosted ACL/browser access is separate evidence
