@@ -1,6 +1,6 @@
 # Farpoint website lead intelligence — technical design
 
-Version: 0.5, 22 October 2026 (America/New_York). Status: v0.4 approved before implementation; v0.5 implementation refinements awaiting final revision review.
+Version: 0.5, 22 October 2026 (America/New_York). Status: v0.4 approved before implementation; v0.5 independently approved. Implementation review and native CI passed; live deployment acceptance remains pending.
 Owner and sole authority over project goals: Karan Uppal.
 
 ## 1. Fixed goal and change control

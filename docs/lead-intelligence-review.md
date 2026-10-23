@@ -49,4 +49,12 @@ The independent staff reviewer identified four further issues while checking the
 3. Company-lookup failures and quota exhaustion could be hidden by a healthy collector status. Enrichment has independent health, conservative unknown-network classification, daily usage and serialized state transitions. A cached success cannot erase a newer provider failure; only a verified fresh lookup recovers it.
 4. A startup failure after binding could leave a partially initialized HTTP service alive. Required initialization now completes before binding, and all failure paths own and close their listener, pool, timer and signal handlers. Fault tests exercise actual ports, including post-bind failure and interruption during startup.
 
-The reviewer independently verified the restore and lifecycle corrections. Reporting/enrichment presentation review and a complete final-revision CI run remain pending at this record's revision. No production acceptance requirement or project goal has been waived.
+The reviewer independently verified all four correction groups, including reporting/enrichment presentation. Near-quota warnings remain visible without claiming lost data; unavailable enrichment remains incomplete. No implementation-source blocker remains. No production acceptance requirement or project goal has been waived.
+
+## Final design and implementation verdict
+
+Designv0.5 was independently approved at SHA256 `50a4466523307ec3c5f6ff1517397844624de9a6aec4863f603cad5729608b1a`. Its status header was subsequently updated to record approval; approved design mechanisms are unchanged.
+
+The staff reviewer independently matched the remote design and final-fix source blobs at commit `8f85b4677b9a9fa3169c56cb6f5be2f83826b393`, tree `6516aaa7103cf5e2b0e80d68ec48aeb167cd78e7`, to the reviewed clean checkout. Security review also approved that exact tree. [Final CI](https://github.com/FarpointEnergy/farpointenergy.com/actions/runs/39889841790) passed62 unit tests and28 native PostgreSQL checks, zero skips, the actual pinned Umami contract tests, restart persistence, dependency audit and production image build. The subsequent documentation-only commit records these results.
+
+This is approval of design and implementation readiness, not an assertion that the service is deployed. Northflank account access, effective free resource allocation, dedicated Gmail runtime OAuth, actual inbox delivery, verified proxy/source IP, private storage durability/CAS and live backup/restore remain required. Only Karan may change the project goal.
