@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import ipaddr from 'ipaddr.js';
-import { reserveQuota } from './db.mjs';
+import { reserveQuota, setHealth } from './db.mjs';
 
 export function normalizedIp(value) {
   if (typeof value !== 'string' || value.length > 64 || value.includes('%')) return null;
@@ -55,7 +55,7 @@ const flags = ['is_bogon', 'is_mobile', 'is_satellite', 'is_anycast', 'is_crawle
 /** Whitelist the provider's output; never retain an address, exact location or abuse contact. */
 export function normalizeNetwork(response, config = {}) {
   const unavailable = reason => ({ status: 'unknown', reason, provider: 'ipapi.is' });
-  if (!response || typeof response !== 'object' || response.error || response.docs || flags.some(k => !Object.hasOwn(response, k))) return unavailable('incomplete_response');
+  if (!response || typeof response !== 'object' || response.error || response.docs || flags.some(k => !Object.hasOwn(response, k))) return { ...unavailable('incomplete_response'), status: 'unavailable' };
   const exclusions = flags.filter(k => Boolean(response[k]));
   if (response.egress_service) exclusions.push('egress_service');
   if (response.datacenter) exclusions.push('datacenter');
@@ -74,17 +74,77 @@ export function normalizeNetwork(response, config = {}) {
     limitation: 'Network ownership is inferred; it does not identify a person or prove their employer.' };
 }
 
+/** Refresh quota/configuration without claiming that a cached result tested provider recovery. */
+export async function refreshEnrichmentHealth(client, config, { now = new Date(), observation, persist = true } = {}) {
+  if (!persist) return evaluateEnrichmentHealth(client, config, { now, observation, persist: false });
+  // Serialize read-modify-write transitions so a concurrent healthy cache hit
+  // cannot overwrite a newly recorded provider failure using an older snapshot.
+  const ownsConnection = typeof client.connect === 'function' && typeof client.release !== 'function';
+  const connection = ownsConnection ? await client.connect() : client;
+  let locked = false;
+  try {
+    await connection.query('SELECT pg_advisory_lock(7104,2)'); locked = true;
+    return await evaluateEnrichmentHealth(connection, config, { now, observation, persist: true });
+  } finally {
+    try { if (locked) await connection.query('SELECT pg_advisory_unlock(7104,2)'); }
+    finally { if (ownsConnection) connection.release(); }
+  }
+}
+
+async function evaluateEnrichmentHealth(client, config, { now, observation, persist }) {
+  const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const used = Number((await client.query("SELECT used FROM quotas WHERE scope='enrichment' AND bucket=$1", [day])).rows[0]?.used || 0);
+  const previous = (await client.query("SELECT detail FROM health_checks WHERE name='enrichment'")).rows[0]?.detail || {};
+  let condition = previous.condition || 'no_lookup_verified';
+  let lastVerifiedAt = previous.lastVerifiedAt || null;
+  let lastOutcome = previous.lastOutcome || null;
+  if (observation?.type === 'resolved') {
+    condition = 'healthy'; lastVerifiedAt = now.toISOString(); lastOutcome = observation.outcome;
+  } else if (['lookup_failed', 'incomplete_response', 'untrusted_source'].includes(observation?.type)) {
+    condition = observation.type; lastOutcome = 'unavailable';
+  }
+  const limit = config.limits.enrichmentPerDay;
+  const quotaState = used >= limit ? 'exhausted' : used > limit * 0.9 ? 'near_limit' : 'available';
+  let reason;
+  if (!config.enrichmentEnabled) reason = 'disabled';
+  else if (!config.trustProxyVerified || config.trustProxyMode === 'disabled') reason = 'untrusted_source';
+  else if (quotaState === 'exhausted') reason = 'quota_exhausted';
+  else if (condition !== 'healthy') reason = condition;
+  else if (quotaState === 'near_limit') reason = 'quota_near_limit';
+  else reason = 'available';
+  const status = reason === 'available' ? 'ok' : reason === 'quota_near_limit' ? 'warning' : 'degraded';
+  const detail = { reason, used, limit, remaining: Math.max(0, limit - used), quotaDay: day.toISOString().slice(0, 10), quotaState,
+    condition, lastVerifiedAt, lastOutcome };
+  // No addresses, cache hashes or provider error bodies are permitted in operational health.
+  if (persist) await setHealth(client, 'enrichment', status, detail, observation?.type === 'resolved');
+  return { status, detail };
+}
+
 export async function enrichNetwork(client, config, sourceIp, { fetchImpl = fetch, now = new Date() } = {}) {
-  if (!config.enrichmentEnabled) return { evidence: { status: 'unavailable', reason: 'disabled' }, key: null };
+  if (!config.enrichmentEnabled) {
+    await refreshEnrichmentHealth(client, config, { now });
+    return { evidence: { status: 'unavailable', reason: 'disabled' }, key: null };
+  }
   const ip = publicIp(sourceIp);
-  if (!ip || !config.trustProxyVerified) return { evidence: { status: 'unavailable', reason: 'untrusted_source' }, key: null };
+  if (!ip || !config.trustProxyVerified || config.trustProxyMode === 'disabled') {
+    await refreshEnrichmentHealth(client, config, { now, observation: { type: 'untrusted_source' } });
+    return { evidence: { status: 'unavailable', reason: 'untrusted_source' }, key: null };
+  }
   const key = networkHash(ip, config.hmacSecret);
   const cached = await client.query('SELECT evidence FROM network_cache WHERE key_hash=$1 AND expires_at>$2', [key, now]);
-  if (cached.rowCount) return { evidence: cached.rows[0].evidence, key };
+  if (cached.rowCount) {
+    const evidence = cached.rows[0].evidence;
+    await refreshEnrichmentHealth(client, config, { now,
+      observation: ['lookup_failed', 'incomplete_response'].includes(evidence.reason) ? { type: evidence.reason } : { type: 'cache_hit' } });
+    return { evidence, key };
+  }
   const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const end = new Date(+day + 86400000);
   const reserved = await reserveQuota(client, 'enrichment', day, config.limits.enrichmentPerDay, end);
-  if (!reserved) return { evidence: { status: 'unavailable', reason: 'quota_exhausted' }, key };
+  if (!reserved) {
+    await refreshEnrichmentHealth(client, config, { now });
+    return { evidence: { status: 'unavailable', reason: 'quota_exhausted' }, key };
+  }
   let evidence;
   let ttl = 7 * 86400000;
   try {
@@ -96,5 +156,7 @@ export async function enrichNetwork(client, config, sourceIp, { fetchImpl = fetc
   } catch { evidence = { status: 'unavailable', provider: 'ipapi.is', reason: 'lookup_failed' }; ttl = 900000; }
   await client.query(`INSERT INTO network_cache(key_hash,evidence,created_at,expires_at) VALUES($1,$2,$3,$4)
     ON CONFLICT(key_hash) DO UPDATE SET evidence=$2,created_at=$3,expires_at=$4`, [key, evidence, now, new Date(+now + ttl)]);
+  await refreshEnrichmentHealth(client, config, { now, observation:
+    ['lookup_failed', 'incomplete_response'].includes(evidence.reason) ? { type: evidence.reason } : { type: 'resolved', outcome: evidence.status } });
   return { evidence, key };
 }

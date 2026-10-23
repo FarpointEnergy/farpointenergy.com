@@ -38,3 +38,15 @@ Resolved journal installation/inventory recovery gap with CAS-protected manifest
 Independent staff review approved the corrections for reconciliation starvation, report byte limits, retention aggregates and importer pagination/coverage. The reviewer independently ran all16 reporting unit tests and reproduced the original oversized-report case; the bounded digest round-trips through the production parser with a matching digest. Development SQL regressions passed12 groups; native concurrency was explicitly skipped and remains a CI gate.
 
 Eligible reconciliation work is separated from the manual backlog; stale sending becomes uncertain without automatic resend. Reports cap SQL evidence and UTF-8 output, stating omitted counts. Aggregates below the atomic raw-retention watermark are frozen. Pagination resets only after a rejected Gmail listing token, while OAuth/transport failures preserve the position; completed coverage is recorded separately from successful job execution. Orphan conversion counts are explicit. Designv0.5 records these mechanisms without changing project goals. Exact final revision and live delivery remain separate gates.
+
+
+## Final combined review — correction loop
+
+The independent staff reviewer identified four further issues while checking the complete design against runtime behavior. Each is corrected with a focused regression:
+
+1. Restore cleanup could delete a pre-existing destination after exclusive-open failure. The restore now acquires exclusive ownership before entering its cleanup scope; existing valid or tampered destinations remain unchanged. Backup and restore also share one1GiB encrypted-size ceiling, enforced before a backup can be marked verified.
+2. A missed weekly send could disappear from health after the catch-up window. Health now derives the latest elapsed New York schedule from the delivery ledger, preserving separate missing, failed, uncertain, provider-accepted and inbox-verified states across DST.
+3. Company-lookup failures and quota exhaustion could be hidden by a healthy collector status. Enrichment has independent health, conservative unknown-network classification, daily usage and serialized state transitions. A cached success cannot erase a newer provider failure; only a verified fresh lookup recovers it.
+4. A startup failure after binding could leave a partially initialized HTTP service alive. Required initialization now completes before binding, and all failure paths own and close their listener, pool, timer and signal handlers. Fault tests exercise actual ports, including post-bind failure and interruption during startup.
+
+The reviewer independently verified the restore and lifecycle corrections. Reporting/enrichment presentation review and a complete final-revision CI run remain pending at this record's revision. No production acceptance requirement or project goal has been waived.

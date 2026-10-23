@@ -4,7 +4,7 @@ import {randomUUID} from 'node:crypto';
 import {createPool, migrate, privacyHash} from '../src/db.mjs';
 import {loadConfig} from '../src/config.mjs';
 import {importRfqReceipts} from '../src/rfq.mjs';
-import {countMetrics, reportInterval, recomputeDailyAggregates, periodCompleteness} from '../src/metrics.mjs';
+import {countMetrics, reportInterval, recomputeDailyAggregates, periodCompleteness, currentHealth, scheduledReportHealth} from '../src/metrics.mjs';
 import {buildReport, renderReport} from '../src/report.mjs';
 import {deliverReport, reconcileDeliveries, bodyDigest} from '../src/delivery.mjs';
 import {GmailError} from '../src/gmail.mjs';
@@ -210,6 +210,71 @@ test('PostgreSQL reporting: import fidelity/privacy, exact counts, rollup idempo
       await importRfqReceipts({pool, config, gmail: backfill, now: when});
       assert.match(queries.at(-1), new RegExp(`after:${Math.floor((oldBefore - 7 * 86_400_000) / 1000)}`));
       assert.equal((await pool.query("SELECT value FROM system_state WHERE key='rfq_import_coverage'")).rows[0].value.through, when.toISOString());
+    });
+    await t.test('overdue weekly delivery is visible at NY10AM and Tuesday despite healthy importer/probe', async () => {
+      await pool.query('DELETE FROM report_deliveries');
+      const seed = async (date, state) => {
+        const interval = reportInterval({period: 'weekly', date});
+        await pool.query(`INSERT INTO report_deliveries(delivery_key,period,period_start,period_end,recipient,message_id,subject,digest_hash,state)
+          VALUES($1,'weekly',$2,$3,$4,$5,'Synthetic schedule report',repeat('a',64),$6)
+          ON CONFLICT(delivery_key) DO UPDATE SET state=excluded.state`,
+        [`weekly:${date}:${config.reportRecipient}`, interval.start, interval.end, config.reportRecipient, `<${date}@farpointenergy.com>`, state]);
+      };
+      await seed('2026-10-05', 'provider_accepted');
+      const before = new Date('2026-10-19T13:59:00Z'), at = new Date('2026-10-19T14:00:00Z'), tuesday = new Date('2026-10-20T16:00:00Z');
+      assert.equal((await scheduledReportHealth(pool, config, before))[0].sendConfirmed, true);
+      assert.equal((await scheduledReportHealth(pool, config, at))[0].state, 'missing');
+      for (const name of ['rfq_import', 'synthetic_probe']) await pool.query(`INSERT INTO health_checks(name,last_success,last_attempt,status,detail)
+        VALUES($1,$2,$2,'ok','{}') ON CONFLICT(name) DO UPDATE SET last_success=$2,last_attempt=$2,status='ok',detail='{}'`, [name, tuesday]);
+      const missed = await currentHealth(pool, tuesday, config);
+      assert.equal(missed.healthy, false); assert.equal(missed.scheduledReports[0].localStart, '2026-10-12');
+      assert.equal(missed.scheduledReports[0].state, 'missing'); assert.ok(missed.reasons.some(reason => /latest elapsed weekly report/.test(reason)));
+      for (const state of ['failed', 'uncertain']) {
+        await seed('2026-10-12', state);
+        const schedule = (await scheduledReportHealth(pool, config, tuesday))[0];
+        assert.equal(schedule.sendConfirmed, false); assert.equal(schedule.state, state);
+        assert.match(schedule.reason, state === 'failed' ? /recorded send failure/ : /uncertain send outcome/);
+      }
+      for (const state of ['provider_accepted', 'inbox_verified']) {
+        await seed('2026-10-12', state);
+        const recovered = await currentHealth(pool, tuesday, config);
+        assert.equal(recovered.scheduledReports[0].sendConfirmed, true); assert.equal(recovered.scheduledReports[0].state, state);
+        assert.equal(recovered.reasons.some(reason => /latest elapsed weekly report|uncertain send outcome|recorded send failure/.test(reason)), false);
+      }
+      for (const [date, deadline] of [['2026-03-02', '2026-03-09T14:00:00Z'], ['2026-10-26', '2026-11-02T15:00:00Z']]) {
+        await seed(date, 'provider_accepted');
+        const schedule = (await scheduledReportHealth(pool, config, new Date(deadline)))[0];
+        assert.equal(schedule.localStart, date); assert.equal(schedule.sendConfirmed, true);
+      }
+    });
+    await t.test('read-only report health exposes enrichment availability and quota counts without writes', async () => {
+      const now = new Date('2026-10-19T12:17:00Z');
+      await pool.query(`INSERT INTO health_checks(name,status,detail) VALUES('enrichment','ok',$1)
+        ON CONFLICT(name) DO UPDATE SET status='ok',detail=$1`, [{condition: 'healthy', lastVerifiedAt: now.toISOString(), lastOutcome: 'unknown'}]);
+      await pool.query(`INSERT INTO quotas(scope,bucket,used,expires_at) VALUES('enrichment','2026-10-19T00:00:00Z',811,'2026-10-20T00:00:00Z')
+        ON CONFLICT(scope,bucket) DO UPDATE SET used=811`);
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN READ ONLY');
+        const health = await currentHealth(client, now, {...config, enrichmentEnabled: true, trustProxyVerified: true, trustProxyMode: 'direct'});
+        assert.ok(health.warnings.some(reason => /quota_near_limit.*811\/900.*89 remaining/.test(reason)));
+        assert.equal(health.reasons.some(reason => /quota_near_limit/.test(reason)), false);
+        const disabled = await currentHealth(client, now, config);
+        assert.ok(disabled.reasons.some(reason => /enrichment: disabled/.test(reason)));
+        await client.query('COMMIT');
+      } catch (error) { await client.query('ROLLBACK'); throw error; }
+      finally { client.release(); }
+    });
+    await t.test('near-quota history does not claim lost coverage; degraded enrichment does', async () => {
+      const interval = reportInterval({period: 'daily', date: '2026-10-18'});
+      await pool.query("DELETE FROM health_history WHERE name='enrichment'");
+      await pool.query("INSERT INTO health_history(name,status,detail,observed_at) VALUES('enrichment','warning',$1,$2)",
+        [{reason: 'quota_near_limit'}, interval.start]);
+      const warning = await periodCompleteness(pool, interval, when);
+      assert.equal(warning.reasons.includes('enrichment reported incomplete coverage.'), false);
+      await pool.query("UPDATE health_history SET status='degraded',detail=$1 WHERE name='enrichment'", [{reason: 'quota_exhausted'}]);
+      const degraded = await periodCompleteness(pool, interval, when);
+      assert.equal(degraded.reasons.includes('enrichment reported incomplete coverage.'), true);
     });
   } finally {
     if (!localPglite) await pool.end();

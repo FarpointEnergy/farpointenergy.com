@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseRfq, extractHtml} from '../src/rfq.mjs';
 import {createGmailClient, GmailError, sendFailureState, MAILBOX} from '../src/gmail.mjs';
-import {reportInterval, duePeriods} from '../src/metrics.mjs';
+import {reportInterval, duePeriods, elapsedReportSchedules} from '../src/metrics.mjs';
 import {renderReport, REPORT_BUDGET} from '../src/report.mjs';
 import {deliveryIdentity, encodeReportMessage, bodyDigest} from '../src/delivery.mjs';
 import {syntheticFields, syntheticRfq, reportModel, INQUIRY} from './reporting-fixtures.mjs';
@@ -70,12 +70,34 @@ test('schedule is Monday 8 AM New York with six-hour catchup, not fixed UTC', ()
   assert.deepEqual(duePeriods({}, new Date('2026-10-20T12:17:00Z')), []);
   assert.deepEqual(duePeriods({reportCadences: ['daily']}, new Date('2026-10-20T12:17:00Z')), ['daily']);
 });
+test('elapsed schedule health keeps missed slots visible outside catchup and uses NY10AM deadline', () => {
+  const before = elapsedReportSchedules({}, new Date('2026-10-19T13:59:00Z'))[0];
+  const at = elapsedReportSchedules({}, new Date('2026-10-19T14:00:00Z'))[0];
+  assert.equal(before.localStart, '2026-10-05'); assert.equal(at.localStart, '2026-10-12');
+  assert.equal(at.dueAt, '2026-10-19T12:00:00.000Z'); assert.equal(at.overdueAt, '2026-10-19T14:00:00.000Z');
+  assert.equal(elapsedReportSchedules({}, new Date('2026-10-20T16:00:00Z'))[0].localStart, '2026-10-12');
+  assert.equal(elapsedReportSchedules({reportCadences: ['daily']}, new Date('2026-10-20T13:59:00Z'))[0].localStart, '2026-10-18');
+  assert.equal(elapsedReportSchedules({reportCadences: ['daily']}, new Date('2026-10-20T14:00:00Z'))[0].localStart, '2026-10-19');
+});
+test('elapsed schedule UTC deadlines and report boundaries follow both DST transitions', () => {
+  const spring = elapsedReportSchedules({}, new Date('2026-03-09T14:00:00Z'))[0];
+  const fall = elapsedReportSchedules({}, new Date('2026-11-02T15:00:00Z'))[0];
+  assert.equal(spring.overdueAt, '2026-03-09T14:00:00.000Z'); assert.equal((spring.end - spring.start) / 3_600_000, 167);
+  assert.equal(fall.overdueAt, '2026-11-02T15:00:00.000Z'); assert.equal((fall.end - fall.start) / 3_600_000, 169);
+});
 test('report separates accepted, received and clicked; escapes every supplied field', () => {
   const model = reportModel(); model.completeness = {complete: false, reasons: ['Synthetic probe missing']};
   model.leads = [{fields: {...syntheticFields, Name: '<script>alert(1)</script>'}, received_at: '2026-10-15T12:00:00Z', attribution: 'Unlinked', receipt_count: 1, gmailUrl: 'https://mail.google.com/', linked: false}];
   const report = renderReport(model);
   assert.match(report.text, /DATA INCOMPLETE/); assert.match(report.text, /accepted by FormSubmit/); assert.match(report.text, /authenticated RFQ email receipts/);
   assert.match(report.text, /not proof of sent email/); assert.doesNotMatch(report.html, /<script>/); assert.match(report.html, /&lt;script&gt;/);
+});
+test('quota operating warnings are visible without claiming incomplete data', () => {
+  const model = reportModel();
+  model.health.warnings = ['enrichment: quota_near_limit (811/900 lookups used; 89 remaining today)'];
+  const report = renderReport(model);
+  assert.match(report.text, /OPERATING WARNING: enrichment: quota_near_limit.*811\/900.*89 remaining/);
+  assert.doesNotMatch(report.text, /DATA INCOMPLETE/);
 });
 test('maximum-row Unicode/escaping digest stays within its production verification byte limits', () => {
   const model = reportModel(); const expansion = '<&"\'💡';

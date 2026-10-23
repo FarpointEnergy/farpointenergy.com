@@ -4,6 +4,8 @@ Open-source website measurement and private lead reporting. The static site rema
 
 The approved [design](../docs/lead-intelligence-design.md), [review record](../docs/lead-intelligence-review.md), [deployment runbook](../docs/northflank-deployment.md) and [acceptance evidence](../docs/lead-intelligence-acceptance.md) are authoritative. Production analytics is disabled until live release gates pass. An accepted form, a received RFQ, an email-link click and a delivered digest are separate states.
 
+A [synthetic weekly report example](../docs/sample-lead-report.html) shows the output format using invented activity and contacts; it is not live traffic.
+
 ## Development checks
 
 ```sh

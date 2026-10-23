@@ -4,7 +4,7 @@ import { mkdtemp, readFile, writeFile, rm, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
-import { encryptStream, decryptSnapshot, pgEnvironment } from '../src/backup.mjs';
+import { encryptStream, decryptSnapshot, downloadVerifiedSnapshot, pgEnvironment } from '../src/backup.mjs';
 
 test('encrypted snapshot roundtrip authenticates bytes and rejects tampering without leaving plaintext', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'backup-test-'));
@@ -42,5 +42,23 @@ test('snapshot decryption never deletes or overwrites an existing destination', 
     const damaged = await readFile(encrypted); damaged[25] ^= 1; await writeFile(encrypted, damaged);
     await assert.rejects(decryptSnapshot(encrypted, destination, 'ab'.repeat(32)), { code: 'EEXIST' });
     assert.deepEqual(await readFile(destination), existing);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+
+test('backup encryption and restore enforce the same complete encrypted size budget', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'backup-budget-test-'));
+  try {
+    const encrypted = join(directory, 'exact.enc'), oversized = join(directory, 'oversized.enc');
+    const destination = join(directory, 'restored.dump'), rejected = join(directory, 'rejected.dump');
+    const bytes = Buffer.alloc(30, 65), maxBytes = 64; // Includes34bytes of encryption framing.
+    await encryptStream(Readable.from([bytes]), encrypted, 'ab'.repeat(32), { maxBytes });
+    const saved = await readFile(encrypted); assert.equal(saved.length, maxBytes);
+    const store = { readSnapshot: async () => Readable.from([saved]) };
+    await downloadVerifiedSnapshot({ store, key: 'synthetic', destination, encryptionKey: 'ab'.repeat(32), maxBytes });
+    assert.deepEqual(await readFile(destination), bytes);
+    await assert.rejects(encryptStream(Readable.from([Buffer.alloc(31)]), oversized, 'ab'.repeat(32), { maxBytes }), /size limit/);
+    await assert.rejects(downloadVerifiedSnapshot({ store, key: 'synthetic', destination: rejected, encryptionKey: 'ab'.repeat(32), maxBytes: maxBytes - 1 }), /size limit/);
+    await assert.rejects(access(rejected));
   } finally { await rm(directory, { recursive: true, force: true }); }
 });

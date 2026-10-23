@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { loadConfig } from './config.mjs';
 import { createPool, migrate, setHealth } from './db.mjs';
-import { createServer } from './server.mjs';
 import { drainOutbox } from './outbox.mjs';
-import { createReportHandlers, runHourlyJob } from './jobs.mjs';
+import { runHourlyJob } from './jobs.mjs';
+import { startCollector } from './serve.mjs';
 import { createDeletionJournal } from './journal.mjs';
 import { runRetention, eraseIdentifiers, replayDeletionJournal } from './maintenance.mjs';
 import { recomputeDailyAggregates } from './metrics.mjs';
@@ -49,29 +49,7 @@ async function main() {
   const config = loadConfig();
   const pool = createPool(config, { max: command === 'serve' ? 5 : 2 });
   if (command === 'serve') {
-    const schema = await pool.query('SELECT max(version)::int AS version FROM schema_migrations');
-    if (schema.rows[0]?.version !== 1) throw new Error('Migrate before startup');
-    const server = createServer({ pool, config, reportHandlers: createReportHandlers({ pool, config }) });
-    let draining = false, closing = false;
-    const drain = async () => {
-      if (draining || closing) return;
-      draining = true;
-      try { await drainOutbox(pool, config); }
-      catch { await setHealth(pool, 'outbox', 'degraded', { reason: 'worker_failed' }).catch(() => {}); }
-      finally { draining = false; }
-    };
-    await new Promise((resolve, reject) => { server.once('error', reject); server.listen(config.port, config.host, resolve); });
-    await setHealth(pool, 'collector', 'ok', { ready: true }, true);
-    const timer = setInterval(drain, 30000); timer.unref(); void drain();
-    const shutdown = async () => {
-      if (closing) return; closing = true; clearInterval(timer);
-      const deadline = setTimeout(() => process.exit(1), 15000); deadline.unref();
-      await new Promise(resolve => server.close(resolve));
-      await setHealth(pool, 'collector', 'degraded', { reason: 'shutdown' }).catch(() => {});
-      await pool.end(); clearTimeout(deadline);
-    };
-    process.once('SIGTERM', shutdown); process.once('SIGINT', shutdown);
-    safeLog('serve', 'ready');
+    await startCollector({ pool, config, onReady: () => safeLog('serve', 'ready') });
     return;
   }
   let umamiPool;

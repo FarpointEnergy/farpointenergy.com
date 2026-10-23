@@ -12,12 +12,16 @@ This record distinguishes executed checks from required live verification. No an
 - Combined implementation:49 unit/adversarial tests pass. Reporting development SQL:12 pass with1 native-concurrency skip. These counts do not substitute for native CI or live-provider acceptance.
 - Dependencies are version pinned. Initial audit reported zero known vulnerabilities; CI repeats the audit at the tested revision.
 
-## CI and production gates still to record
+## Native CI evidence
+
+GitHub Actions run [39888925477](https://github.com/FarpointEnergy/farpointenergy.com/actions/runs/39888925477) passed at revision `1fa63018afd7de0f619052e36bc0b5570f0dc73c`: 50 unit tests, 25 native PostgreSQL checks with zero skips, real PostgreSQL restart persistence, official pinned Umami ingestion/identity/sanitization/QA isolation/outage/purge checks, zero dependency advisories and the production Docker build. This run closes A7/A8 for that revision only. Subsequent final-review fixes require a fresh complete run before final approval.
+
+## Production gates and final revision verification still to record
 
 | Gate | Required evidence |
 | --- | --- |
-| A7 | Native PostgreSQL migrations, constraints, concurrency, outbox/report/privacy locks and restart persistence. |
-| A8 | Exact Umami image receives sanitized events; QA separation, missing geography/browser/OS, outage isolation and purge verified. |
+| A7 | Passed in native CI above; repeat on the final revision. |
+| A8 | Passed against exact Umami image above; repeat on the final revision. |
 | A10 | Actual Northflank edge/proxy spoof tests and verified enrichment source. |
 | A11 | New QA RFQ sent through deployed page, all fields received, random inquiry ID joined, unattended importer authorized. |
 | A14 | Actual hosted job sends one digest; matching recipient INBOX message verified; scheduler and duplicate suppression read back. |

@@ -2,19 +2,23 @@ import {withPrivacyLock, setHealth} from './db.mjs';
 import {createGmailClient} from './gmail.mjs';
 import {importRfqReceipts} from './rfq.mjs';
 import {buildReport, renderReport} from './report.mjs';
-import {currentHealth, duePeriods} from './metrics.mjs';
+import {currentHealth, duePeriods, scheduledReportHealth} from './metrics.mjs';
 import {deliverReport, reconcileDeliveries} from './delivery.mjs';
+import {refreshEnrichmentHealth} from './enrichment.mjs';
 
 export async function runHourlyJob({pool, config, gmail = createGmailClient(config), now = new Date()}) {
   // Cron and manual execution share delivery keys and DB locks. A failed import is
   // visible in the digest, rather than being mistaken for an empty sales period.
+  await refreshEnrichmentHealth(pool, config, {now});
   const imported = await importRfqReceipts({pool, config, gmail, now});
   const reconciled = await reconcileDeliveries({pool, config, gmail, now});
   const reports = [];
   for (const period of duePeriods(config, now)) reports.push(await deliverReport({pool, config, gmail, period, now}));
+  const overdue = (await scheduledReportHealth(pool, config, now)).filter(schedule => !schedule.sendConfirmed);
   await setHealth(pool, 'report_job', imported.complete && reports.every(r => ['provider_accepted', 'inbox_verified', 'locked'].includes(r.state)) ? 'ok' : 'degraded',
-    {importComplete: imported.complete, reports: reports.map(r => ({period: r.period, state: r.state}))}, imported.complete);
-  return {import: imported, reconciliation: reconciled, reports};
+    {importComplete: imported.complete, reports: reports.map(r => ({period: r.period, state: r.state})),
+      overdueReports: overdue.map(({period, localStart, state}) => ({period, localStart, state}))}, imported.complete);
+  return {import: imported, reconciliation: reconciled, reports, overdueReports: overdue};
 }
 
 export function createReportHandlers({pool, config, gmail = createGmailClient(config)}) {
@@ -33,11 +37,11 @@ export function createReportHandlers({pool, config, gmail = createGmailClient(co
     },
     runJob: ({now = new Date()} = {}) => runHourlyJob({pool, config, gmail, now}),
     async status() {
-      const health = await currentHealth(pool);
+      const health = await currentHealth(pool, new Date(), config);
       const deliveries = (await pool.query(`SELECT period,period_start,period_end,state,attempt_count,reconcile_count,last_error,updated_at
         FROM report_deliveries ORDER BY period_start DESC LIMIT 20`)).rows;
       const rfqCoverageThrough = (await pool.query("SELECT value FROM system_state WHERE key='rfq_import_coverage'")).rows[0]?.value?.through ?? null;
-      return {reportHealth: {healthy: health.healthy, reasons: health.reasons}, rfqCoverageThrough, deliveries};
+      return {reportHealth: {healthy: health.healthy, reasons: health.reasons, warnings: health.warnings, scheduledReports: health.scheduledReports}, rfqCoverageThrough, deliveries};
     }
   };
 }

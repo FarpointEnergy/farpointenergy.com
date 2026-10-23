@@ -9,7 +9,7 @@ export async function buildReport(client, config, {period = 'weekly', date, now 
   if (+interval.end > +new Date(now) || +interval.start < +new Date(now) - 90 * 86_400_000) throw new Error('report_interval_outside_retention');
   const metrics = await countMetrics(client, interval);
   const completeness = await periodCompleteness(client, interval, now);
-  const health = await currentHealth(client, now);
+  const health = await currentHealth(client, now, config);
   const newBrowsers = (await client.query(`SELECT count(DISTINCT e.browser_id) count FROM events e
     WHERE e.received_at >= $1 AND e.received_at < $2 AND NOT e.is_qa AND NOT e.is_bot
     AND NOT EXISTS(SELECT 1 FROM events p WHERE p.browser_id=e.browser_id AND p.received_at < $1 AND NOT p.is_qa AND NOT p.is_bot)`, [interval.start, interval.end])).rows[0];
@@ -78,7 +78,8 @@ export function renderReport(model) {
   // The resulting HTML fits the same production read path used for verification.
   const limited = {...model,
     completeness: {...model.completeness, reasons: model.completeness.reasons.slice(0, 20).map(reason => shorten(reason, 240))},
-    health: {...model.health, reasons: model.health.reasons.slice(0, 20).map(reason => shorten(reason, 240))},
+    health: {...model.health, reasons: model.health.reasons.slice(0, 20).map(reason => shorten(reason, 240)),
+      warnings: (model.health.warnings ?? []).slice(0, 20).map(reason => shorten(reason, 240))},
     leads: model.leads.slice(0, 100), candidates: model.candidates.slice(0, 50).map(candidate => ({...candidate,
       networks: candidate.networks.slice(0, REPORT_BUDGET.networksPerBrowser).map(network => ({...network,
         company: shorten(network.company ?? network.name ?? network.domain ?? 'an unnamed business', 160), buyerFit: shorten(network.buyerFit, 200)})),
@@ -104,6 +105,7 @@ function renderReportUnchecked(model) {
   const lines = [`${subject}`, `${interval.localStart} to ${interval.localEnd} (end exclusive), America/New_York.`, ''];
   const warnings = [...new Set([...model.completeness.reasons, ...model.health.reasons])];
   if (warnings.length) lines.push('DATA INCOMPLETE: ' + warnings.join(' '), '');
+  if (model.health.warnings.length) lines.push('OPERATING WARNING: ' + model.health.warnings.join(' '), '');
   lines.push(`${m.sessions} measured visits; ${m.browsers} consenting browsers (${m.new_browsers} new, ${m.returning_browsers} returning within the retained identifier window).`,
     `${m.page_views} page views; ${m.rfq_start_sessions} sessions with quotation-form interaction.`,
     `${m.accepted_inquiry_ids} distinct inquiries accepted by FormSubmit; ${m.unlinked_acceptances} acceptance events without a link ID.`,

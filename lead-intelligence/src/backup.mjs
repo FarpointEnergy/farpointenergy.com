@@ -8,6 +8,12 @@ import { pipeline } from 'node:stream/promises';
 import { Transform } from 'node:stream';
 
 const MAGIC = Buffer.from('FPBK01');
+export const MAX_SNAPSHOT_BYTES = 1024 * 1024 * 1024;
+function sizeCap(maxBytes, initial = 0) {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 35 || maxBytes > MAX_SNAPSHOT_BYTES) throw new Error('Invalid snapshot size limit');
+  let count = initial;
+  return new Transform({ transform(chunk, encoding, callback) { count += chunk.length; callback(count > maxBytes ? new Error('Snapshot exceeds restore size limit') : null, chunk); } });
+}
 function secretKey(value) {
   if (!/^[a-f0-9]{64}$/i.test(value || '')) throw new Error('Backup encryption key must be 32 bytes encoded as hex');
   return Buffer.from(value, 'hex');
@@ -18,14 +24,15 @@ export function pgEnvironment(connectionString, env = process.env) {
   // Credentials never appear in argv, output, object names or manifests.
   return { PATH: env.PATH, PGHOST: url.hostname, PGPORT: url.port || '5432', PGDATABASE: decodeURIComponent(url.pathname.slice(1)), PGUSER: decodeURIComponent(url.username), PGPASSWORD: decodeURIComponent(url.password), PGSSLMODE: url.searchParams.get('sslmode') || 'require', PGCONNECT_TIMEOUT: '10' };
 }
-export async function encryptStream(source, file, hexKey) {
+export async function encryptStream(source, file, hexKey, { maxBytes = MAX_SNAPSHOT_BYTES } = {}) {
+  const cap = sizeCap(maxBytes, MAGIC.length + 12 + 16);
   const nonce = randomBytes(12);
   const header = Buffer.concat([MAGIC, nonce]);
   const cipher = createCipheriv('aes-256-gcm', secretKey(hexKey), nonce);
   cipher.setAAD(MAGIC);
   const handle = await open(file, 'wx', 0o600);
   await handle.write(header); await handle.close();
-  await pipeline(source, cipher, createWriteStream(file, { flags: 'a', mode: 0o600 }));
+  await pipeline(source, cipher, cap, createWriteStream(file, { flags: 'a', mode: 0o600 }));
   await appendFile(file, cipher.getAuthTag());
   const saved = await open(file, 'r'); await saved.sync(); await saved.close();
 }
@@ -93,11 +100,10 @@ export async function backupDatabases({ store, databases, encryptionKey, now = n
 
 // Explicit operator command only: download and authenticate before pg_restore.
 // Never stream unauthenticated plaintext into a database.
-export async function downloadVerifiedSnapshot({ store, key, destination, encryptionKey }) {
+export async function downloadVerifiedSnapshot({ store, key, destination, encryptionKey, maxBytes = MAX_SNAPSHOT_BYTES }) {
   const directory = await mkdtemp(join(tmpdir(), 'farpoint-restore-'));
   const encrypted = join(directory, 'snapshot.enc');
-  let count = 0;
-  const cap = new Transform({ transform(chunk, encoding, callback) { count += chunk.length; callback(count > 1024 * 1024 * 1024 ? new Error('Snapshot exceeds 1 GiB restore limit') : null, chunk); } });
+  const cap = sizeCap(maxBytes);
   try {
     await pipeline(await store.readSnapshot(key), cap, createWriteStream(encrypted, { flags: 'wx', mode: 0o600 }));
     await decryptSnapshot(encrypted, destination, encryptionKey);

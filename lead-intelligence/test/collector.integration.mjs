@@ -7,7 +7,7 @@ import { validateEvent } from '../src/validation.mjs';
 import { ingestEvent } from '../src/collector.mjs';
 import { drainOutbox } from '../src/outbox.mjs';
 import { createServer } from '../src/server.mjs';
-import { enrichNetwork } from '../src/enrichment.mjs';
+import { enrichNetwork, refreshEnrichmentHealth } from '../src/enrichment.mjs';
 import { testConfig, event } from './collector-helpers.mjs';
 
 const enabled = Boolean(process.env.DATABASE_URL);
@@ -71,6 +71,10 @@ test('PostgreSQL collector integration: durable canonical store, privacy, limits
     const storedQa = (await pool.query('SELECT e.is_qa,o.payload FROM events e JOIN analytics_outbox o USING(event_id) WHERE event_id=$1', [qaSubmission.eventId])).rows[0];
     assert.equal(storedQa.is_qa, true); assert.equal(storedQa.payload.payload.website, cfg.umamiQaWebsiteId);
     assert.equal(storedQa.payload.payload.browser, ''); assert.equal(storedQa.payload.payload.os, '');
+    const privateStatus = await fetch(`${base}/v1/status`, { headers: { Authorization: `Bearer ${cfg.adminToken}` } });
+    assert.equal(privateStatus.status, 200);
+    const enrichmentStatus = (await privateStatus.json()).checks.find(check => check.name === 'enrichment');
+    assert.equal(enrichmentStatus.status, 'degraded'); assert.equal(enrichmentStatus.detail.reason, 'disabled');
   } finally { await new Promise(resolve => server.close(resolve)); }
   // Parametric values cannot execute SQL; DB checks also protect direct accidental callers.
   if (native) await assert.rejects(pool.query('UPDATE events SET product=$1 WHERE event_id=$2', ["power');DROP TABLE events;--", data.eventId]));
@@ -106,7 +110,7 @@ test('PostgreSQL outbox recovers expired leases, suppresses tombstones, bounds a
 });
 
 test('PostgreSQL enrichment quota persists before lookup; errors are cached and safe fields survive', { skip: !enabled }, async t => {
-  const { cfg, pool } = await database(t, { enrichmentEnabled: true, trustProxyVerified: true, ipapiKey: 'synthetic-key', limits: { ...testConfig().limits, enrichmentPerDay: 900 } }); await migrate(pool);
+  const { cfg, pool } = await database(t, { enrichmentEnabled: true, trustProxyVerified: true, trustProxyMode: 'direct', ipapiKey: 'synthetic-key', limits: { ...testConfig().limits, enrichmentPerDay: 900 } }); await migrate(pool);
   await pool.query('DELETE FROM network_cache'); await pool.query("DELETE FROM quotas WHERE scope='enrichment'");
   const client = await pool.connect();
   try {
@@ -114,11 +118,53 @@ test('PostgreSQL enrichment quota persists before lookup; errors are cached and 
     const fetchImpl = async () => { calls++; throw new Error('provider failed private data must not log'); };
     const first = await enrichNetwork(client, cfg, '8.8.8.8', { fetchImpl });
     assert.equal(first.evidence.reason, 'lookup_failed');
+    const current = async () => (await client.query("SELECT status,detail,last_success FROM health_checks WHERE name='enrichment'")).rows[0];
+    assert.equal((await current()).status, 'degraded'); assert.equal((await current()).detail.reason, 'lookup_failed');
     await enrichNetwork(client, cfg, '8.8.8.8', { fetchImpl }); assert.equal(calls, 1);
     assert.equal((await client.query("SELECT used FROM quotas WHERE scope='enrichment'")).rows[0].used, 1);
     const quota = await enrichNetwork(client, { ...cfg, limits: { ...cfg.limits, enrichmentPerDay: 1 } }, '9.9.9.9', { fetchImpl });
     assert.equal(quota.evidence.reason, 'quota_exhausted'); assert.equal(calls, 1);
+    assert.equal((await current()).detail.reason, 'quota_exhausted'); assert.equal((await current()).detail.used, 1);
+    const knownUnknown = { is_bogon: false, is_mobile: true, is_satellite: false, is_anycast: false, is_crawler: false,
+      is_datacenter: false, is_tor: false, is_proxy: false, is_vpn: false, company: { type: 'isp' } };
+    const resolved = async () => new Response(JSON.stringify(knownUnknown), { status: 200 });
+    const recovery = await enrichNetwork(client, cfg, '9.9.9.9', { fetchImpl: resolved });
+    assert.equal(recovery.evidence.status, 'unknown');
+    assert.equal((await current()).status, 'ok'); assert.equal((await current()).detail.lastOutcome, 'unknown');
+    const verifiedAt = (await current()).detail.lastVerifiedAt;
+    assert(verifiedAt); assert((await current()).last_success);
+    // A fresh provider failure remains visible even when another IP hits a known-good cache.
+    await enrichNetwork(client, cfg, '1.1.1.1', { fetchImpl });
+    await enrichNetwork(client, cfg, '9.9.9.9', { fetchImpl: resolved });
+    assert.equal((await current()).detail.reason, 'lookup_failed'); assert.equal((await current()).detail.lastVerifiedAt, verifiedAt);
+    const untrusted = await enrichNetwork(client, cfg, null, { fetchImpl: resolved });
+    assert.equal(untrusted.evidence.reason, 'untrusted_source'); assert.equal((await current()).detail.reason, 'untrusted_source');
+    await enrichNetwork(client, { ...cfg, enrichmentEnabled: false }, '9.9.9.9', { fetchImpl: resolved });
+    assert.equal((await current()).detail.reason, 'disabled');
+    const incomplete = await enrichNetwork(client, cfg, '8.8.4.4', { fetchImpl: async () => new Response('{"company":"minimal response"}') });
+    assert.equal(incomplete.evidence.status, 'unavailable'); assert.equal((await current()).detail.reason, 'incomplete_response');
+    await enrichNetwork(client, cfg, '1.0.0.1', { fetchImpl: resolved });
+    assert.equal((await current()).status, 'ok');
+    const day = new Date(); day.setUTCHours(0, 0, 0, 0);
+    await client.query("UPDATE quotas SET used=810 WHERE scope='enrichment' AND bucket=$1", [day]);
+    assert.equal((await refreshEnrichmentHealth(client, cfg)).status, 'ok');
+    await client.query("UPDATE quotas SET used=811 WHERE scope='enrichment' AND bucket=$1", [day]);
+    const warning = await refreshEnrichmentHealth(client, cfg);
+    assert.equal(warning.status, 'warning'); assert.equal(warning.detail.reason, 'quota_near_limit'); assert.equal(warning.detail.remaining, 89);
+    await client.query("UPDATE quotas SET used=900 WHERE scope='enrichment' AND bucket=$1", [day]);
+    assert.equal((await refreshEnrichmentHealth(client, cfg)).detail.reason, 'quota_exhausted');
+    await enrichNetwork(client, cfg, '9.9.9.9', { fetchImpl: resolved });
+    assert.equal((await current()).detail.reason, 'quota_exhausted');
+    // Calendar reset can recover an exhausted budget, but readonly report evaluation changes no persisted state.
+    const tomorrow = new Date(+day + 86400000);
+    const readonlyReset = await refreshEnrichmentHealth(client, cfg, { now: tomorrow, persist: false });
+    assert.equal(readonlyReset.status, 'ok'); assert.equal(readonlyReset.detail.used, 0);
+    assert.equal((await current()).detail.used, 900);
+    await refreshEnrichmentHealth(client, cfg, { now: tomorrow });
+    assert.equal((await current()).status, 'ok'); assert.equal((await current()).detail.used, 0);
     assert(!JSON.stringify((await client.query('SELECT * FROM network_cache')).rows).includes('8.8.8.8'));
+    const health = JSON.stringify((await client.query("SELECT * FROM health_history WHERE name='enrichment'")).rows);
+    assert(!health.includes('8.8.8.8')); assert(!health.includes('synthetic-key')); assert(!health.includes('provider failed private data'));
   } finally { client.release(); }
 });
 
@@ -138,6 +184,11 @@ test('native PostgreSQL concurrency: one event/outbox, atomic quota and session 
   await ready;
   assert.equal((await withAdvisoryLock(pool, key, async () => 'second')).locked, false);
   release(); assert.equal((await first).value, 'first');
+  const enrichmentConfig = { ...cfg, enrichmentEnabled: true, trustProxyVerified: true, trustProxyMode: 'direct' };
+  await Promise.all(Array.from({ length: 8 }, (_, index) => refreshEnrichmentHealth(pool, enrichmentConfig,
+    { observation: { type: index === 3 ? 'lookup_failed' : 'cache_hit' } })));
+  assert.equal((await pool.query("SELECT detail FROM health_checks WHERE name='enrichment'")).rows[0].detail.reason, 'lookup_failed', 'Concurrent cache hits cannot erase a recorded provider failure');
+  assert.equal((await refreshEnrichmentHealth(pool, enrichmentConfig, { observation: { type: 'resolved', outcome: 'unknown' } })).status, 'ok');
   // A failed transaction restores its quota reservation.
   await assert.rejects(transaction(pool, async client => { await reserveQuota(client, `rollback:${scope}`, now, 3, new Date(+now + 60000)); throw new Error('synthetic crash'); }));
   assert.equal((await pool.query('SELECT 1 FROM quotas WHERE scope=$1', [`rollback:${scope}`])).rowCount, 0);

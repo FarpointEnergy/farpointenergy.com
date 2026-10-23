@@ -1,7 +1,7 @@
 import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { HttpError, validateEvent } from './validation.mjs';
-import { extractSourceIp } from './enrichment.mjs';
+import { extractSourceIp, refreshEnrichmentHealth } from './enrichment.mjs';
 import { ingestEvent } from './collector.mjs';
 import { outboxHealth } from './outbox.mjs';
 import { privacyGate } from './db.mjs';
@@ -67,6 +67,7 @@ export function createServer({ pool, config, reportHandlers = {}, ingest = inges
       if (!authorized(request, config)) throw new HttpError(401, 'unauthorized');
       if ([...url.searchParams.keys()].some(k => url.pathname !== '/v1/report' || !['period', 'date'].includes(k))) throw new HttpError(400, 'invalid_parameters');
       if (url.pathname === '/v1/status' && request.method === 'GET') {
+        await refreshEnrichmentHealth(pool, config);
         const checks = await pool.query('SELECT name,last_success,last_attempt,status,detail FROM health_checks ORDER BY name');
         return send(response, 200, { checks: safeHealth(checks.rows), outbox: await outboxHealth(pool), ...(reportHandlers.status ? await reportHandlers.status() : {}) });
       }

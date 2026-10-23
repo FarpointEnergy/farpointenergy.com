@@ -1,5 +1,6 @@
 import {DateTime} from 'luxon';
 import {withPrivacyLock} from './db.mjs';
+import {refreshEnrichmentHealth} from './enrichment.mjs';
 
 export const REPORT_ZONE = 'America/New_York';
 export function reportInterval({period = 'weekly', date, now = new Date()} = {}) {
@@ -23,6 +24,45 @@ export function duePeriods(config, now = new Date()) {
   if (local.hour < 8 || local.hour >= 14) return [];
   const enabled = config.reportCadences ?? ['weekly'];
   return ['daily', 'weekly'].filter(period => enabled.includes(period) && (period !== 'weekly' || local.weekday === 1));
+}
+
+export function elapsedReportSchedules(config = {}, now = new Date()) {
+  const local = DateTime.fromJSDate(new Date(now), {zone: REPORT_ZONE});
+  if (!local.isValid) throw new Error('invalid_now');
+  return (config.reportCadences ?? ['weekly']).map(period => {
+    if (!['daily', 'weekly'].includes(period)) throw new Error('invalid_period');
+    let deadline = (period === 'weekly' ? local.startOf('week') : local.startOf('day')).set({hour: 10});
+    // Retain the previous elapsed slot during the next slot's two-hour grace.
+    // A missed schedule remains observable after its six-hour send window ends.
+    if (local < deadline) deadline = period === 'weekly' ? deadline.minus({weeks: 1}) : deadline.minus({days: 1});
+    const due = deadline.set({hour: 8});
+    const interval = reportInterval({period, now: due.toJSDate()});
+    return {...interval, dueAt: due.toUTC().toISO(), overdueAt: deadline.toUTC().toISO()};
+  });
+}
+
+export async function scheduledReportHealth(client, config = {}, now = new Date()) {
+  const recipient = config.reportRecipient ?? 'karan@farpointenergy.com';
+  const schedules = [];
+  for (const schedule of elapsedReportSchedules(config, now)) {
+    const key = `${schedule.period}:${schedule.localStart}:${recipient}`;
+    const row = (await client.query(`SELECT state FROM report_deliveries WHERE delivery_key=$1
+      AND period=$2 AND period_start=$3 AND period_end=$4 AND recipient=$5`,
+    [key, schedule.period, schedule.start, schedule.end, recipient])).rows[0];
+    const state = row?.state ?? 'missing';
+    const sendConfirmed = ['provider_accepted', 'inbox_verified'].includes(state);
+    let reason = null;
+    if (!sendConfirmed) {
+      const prefix = `${schedule.period} report for period beginning ${schedule.localStart}`;
+      if (state === 'missing') reason = `No recorded delivery for the latest elapsed ${prefix}; delivery is unverified more than two hours after its scheduled send.`;
+      else if (state === 'uncertain') reason = `The ${prefix} has an uncertain send outcome more than two hours after its scheduled send; no automatic resend is permitted.`;
+      else if (state === 'failed') reason = `The ${prefix} has a recorded send failure and is more than two hours overdue.`;
+      else reason = `The ${prefix} remains ${state} more than two hours after its scheduled send; provider acceptance is unverified.`;
+    }
+    schedules.push({period: schedule.period, localStart: schedule.localStart, localEnd: schedule.localEnd,
+      dueAt: schedule.dueAt, overdueAt: schedule.overdueAt, state, sendConfirmed, reason});
+  }
+  return schedules;
 }
 
 export async function countMetrics(client, interval, campaignCode = null) {
@@ -69,7 +109,7 @@ export async function periodCompleteness(client, interval, now = new Date()) {
   const importRows = rows.filter(r => r.name === 'rfq_import');
   if (!importRows.length) reasons.add('RFQ mailbox coverage is unverified.');
   for (const row of rows) {
-    if (['collector', 'rfq_import', 'synthetic_probe', 'outbox', 'enrichment'].includes(row.name) && row.status !== 'ok') {
+    if (['collector', 'rfq_import', 'synthetic_probe', 'outbox', 'enrichment'].includes(row.name) && !['ok', 'warning'].includes(row.status)) {
       reasons.add(`${row.name.replaceAll('_', ' ')} reported incomplete coverage.`);
     }
   }
@@ -91,15 +131,26 @@ export async function periodCompleteness(client, interval, now = new Date()) {
   return {complete: reasons.size === 0, reasons: [...reasons]};
 }
 
-export async function currentHealth(client, now = new Date()) {
+export async function currentHealth(client, now = new Date(), config = {}) {
   const checks = (await client.query('SELECT name,last_success,last_attempt,status,detail FROM health_checks ORDER BY name')).rows;
+  const enrichment = await refreshEnrichmentHealth(client, {...config, limits: config.limits ?? {enrichmentPerDay: 900}}, {now, persist: false});
+  const enrichmentIndex = checks.findIndex(check => check.name === 'enrichment');
+  const enrichmentCheck = {name: 'enrichment', ...(enrichmentIndex >= 0 ? checks[enrichmentIndex] : {}), ...enrichment};
+  if (enrichmentIndex >= 0) checks[enrichmentIndex] = enrichmentCheck;
+  else checks.push(enrichmentCheck);
   const reasons = new Set();
-  for (const check of checks) if (check.status !== 'ok') reasons.add(`${check.name}: ${check.detail?.reason ?? check.status}`);
+  const warnings = new Set();
+  for (const check of checks) if (check.status !== 'ok') {
+    const quota = check.name === 'enrichment' ? ` (${check.detail.used}/${check.detail.limit} lookups used; ${check.detail.remaining} remaining today)` : '';
+    (check.status === 'warning' ? warnings : reasons).add(`${check.name}: ${check.detail?.reason ?? check.status}${quota}`);
+  }
   const importer = checks.find(c => c.name === 'rfq_import');
   if (!importer?.last_success || +new Date(now) - +new Date(importer.last_success) > 2 * 3_600_000) reasons.add('RFQ import is missing or more than two hours old.');
   const probe = checks.find(c => c.name === 'synthetic_probe');
   if (!probe?.last_success || +new Date(now) - +new Date(probe.last_success) > 26 * 3_600_000) reasons.add('Synthetic collection probe is missing or more than 26 hours old.');
-  return {healthy: reasons.size === 0, reasons: [...reasons], checks};
+  const scheduledReports = await scheduledReportHealth(client, config, now);
+  for (const schedule of scheduledReports) if (!schedule.sendConfirmed) reasons.add(schedule.reason);
+  return {healthy: reasons.size === 0, reasons: [...reasons], warnings: [...warnings], checks, scheduledReports};
 }
 
 export async function recomputeDailyAggregates(pool, config, now = new Date(), options = {}) {

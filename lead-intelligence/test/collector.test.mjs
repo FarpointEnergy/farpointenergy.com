@@ -60,7 +60,7 @@ test('network matches are conservative and provider private fields cannot escape
   assert(!JSON.stringify(match).includes('8.8.8.8')); assert(!JSON.stringify(match).includes('private@example')); assert(!JSON.stringify(match).includes('Private city'));
   for (const override of [{ is_vpn: 'true' }, { is_crawler: 'Bot' }, { is_mobile: true }, { is_datacenter: true }, { egress_service: { type: 'secure_web_gateway' } },
     { company: { name: 'ISP', domain: 'isp.example', type: 'isp' } }, { asn: { type: 'hosting' } }]) assert.equal(normalizeNetwork({ ...response, ...override }).status, 'unknown');
-  assert.equal(normalizeNetwork({ company: 'Anonymous minimal response' }).status, 'unknown');
+  assert.equal(normalizeNetwork({ company: 'Anonymous minimal response' }).status, 'unavailable');
 });
 
 test('Umami payload preserves sanitized categories, anonymous identity, original timestamp and response meaning', () => {

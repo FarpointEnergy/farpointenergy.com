@@ -30,7 +30,6 @@ flowchart TD
   B --> D["Private Umami ingestion"]
   E["Gmail RFQ receipts"] --> F["Report job"]
   C --> F
-  D --> F
   F --> G["Karan's private digest"]
 ```
 
@@ -189,7 +188,7 @@ Delivery key=`cadence:local-period-start:recipient`; unique DB row and session a
 
 ### 15.4 Runtime, health, retention and recovery
 
-Initial allocation target: each of Umami, collector and Postgres512MiB, small shared CPU; jobs limited to512MiB. This is a measured proposal, not a claim of free capacity. Record account quote before deployment; keep no-card/free configuration and refuse paid upgrades. One Postgres instance, two databases/roles, initialized by a one-time owner provisioning step; application secrets contain only own database credentials. Run migration job once with advisory lock before service rollout; do not have replicas racing startup migrations. Backups: encrypted daily snapshot, seven daily copies, off-instance storage subject to verified free allowance; restore to isolated database and compare row counts/constraints before release. OAuth and host secrets are set only through secure provider controls.
+Initial allocation target: each of Umami, collector and Postgres512MiB, small shared CPU; jobs limited to512MiB. This is a measured proposal, not a claim of free capacity. Record account quote before deployment; keep no-card/free configuration and refuse paid upgrades. One Postgres instance, two databases/roles, initialized by a one-time owner provisioning step; application secrets contain only own database credentials. Run migration job once with advisory lock before service rollout; do not have replicas racing startup migrations. Backups: encrypted daily snapshot, a strict seven-day retention cutoff (8 daily sets at the boundary;9-set transient peak before pruning), off-instance storage subject to measured aggregate free allowance; restore to isolated database and compare row counts/constraints before release. OAuth and host secrets are set only through secure provider controls.
 
 Scheduler wakes hourly at minute17 UTC, then job checks NY local weekday/hour and last delivery key; weekly due Monday08:00 NY, daily due08:00 NY, with six-hour catchup window. Initial WEEKLY enabled; daily configurable without code changes. This handles DST without shifting local morning. Maintenance daily at05:17UTC. Outbox drain runs every30seconds with lease guard. RFQ importer runs before each report and on hourly job, so missing inbox authorization is visible. Status thresholds: outbox oldest pending>15minutes degraded; deadletter>0 degraded; RFQ last successful import>2hours degraded; scheduled report due+2hours unsent degraded; daily synthetic probe older26hours degraded; DB unavailable unhealthy; enrichment quota>90% warning. No visits alone never marks service unhealthy. Digest must include degraded reasons and never equate missing data with zero visitors.
 
