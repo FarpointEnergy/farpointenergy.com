@@ -1,0 +1,125 @@
+{
+  "record_type": "local_python_test_and_review_result",
+  "created_at": "2026-10-23T20:06:32.344272+00:00",
+  "python_version": "3.12.14",
+  "command": "PYTHONPATH=analytics/python python3 -m unittest discover -s analytics/tests/python -v",
+  "result": "PASS",
+  "test_methods": 32,
+  "environment": "local synthetic; no network or live customer data",
+  "reviewer": "independent AI technical reviewer /root/review_analysis_code",
+  "review_disposition": "APPROVED after corrections and independent 32-test rerun",
+  "reviewer_inventory_sha256": "e3b1e5cbf1385f722d7e9d2a41cae6da5bd8e91db95c84e190560d4321dde061",
+  "source_inventory": [
+    {
+      "path": "analytics/python/.gitignore",
+      "sha256": "62300dcdb3c9da05931f571458e017173e2cfb7d2ca41529c905541768092168",
+      "bytes": 45
+    },
+    {
+      "path": "analytics/python/README.md",
+      "sha256": "03a55774538dd0897b9910c63f84e0d535db819610f3083b789bbe77ec3660c6",
+      "bytes": 5069
+    },
+    {
+      "path": "analytics/python/farpoint_analytics/__init__.py",
+      "sha256": "70db6fe180dafe5b6ef2c546ade235ccf7f74587bb1c47230995667aaa2a96d4",
+      "bytes": 103
+    },
+    {
+      "path": "analytics/python/farpoint_analytics/__main__.py",
+      "sha256": "4a588cb9c6a8f13d4259835867902e9640768083816aba18621e8f876646836e",
+      "bytes": 5854
+    },
+    {
+      "path": "analytics/python/farpoint_analytics/analysis.py",
+      "sha256": "02efd5130d77e11a6cefa24f6704baaac75f0d35fc1492fe7c24c42cf6e055d4",
+      "bytes": 29059
+    },
+    {
+      "path": "analytics/python/farpoint_analytics/archive.py",
+      "sha256": "2e7989e938c984dcf57a8015cae0bf83113bb8b6c3ecc417da6651c232e14a5d",
+      "bytes": 8991
+    },
+    {
+      "path": "analytics/python/farpoint_analytics/canonical.py",
+      "sha256": "071848527aab09ff872495e490bf03c67e6700ecf867cb5f3c37b2bb82a18b0b",
+      "bytes": 3098
+    },
+    {
+      "path": "analytics/python/farpoint_analytics/enrichment.py",
+      "sha256": "154e0d5b1c899b8add27a7abbdcc272fb33d854277ba9acaf4c24cdb98b76e42",
+      "bytes": 3636
+    },
+    {
+      "path": "analytics/python/farpoint_analytics/schema-v1.json",
+      "sha256": "a52093f169de79742e72d527f54b2b91a8f07ad06b9cea0d5a1ebc29db7f7c7e",
+      "bytes": 1809
+    },
+    {
+      "path": "analytics/python/farpoint_analytics/schema.py",
+      "sha256": "48b37dd0b1d86fab13572f3bd9c5df3cdeb37287f53bb313fae77db600d73da6",
+      "bytes": 3434
+    },
+    {
+      "path": "analytics/tests/python/.gitignore",
+      "sha256": "06c8f725853bd8d02fb61ec32e17073a5d30881c3c20d4c17c5232140b694cca",
+      "bytes": 46
+    },
+    {
+      "path": "analytics/tests/python/fixtures/__init__.py",
+      "sha256": "43b557cd53b4241272f60741ed7e83b4365399b57eea102d8c0f82fca90bd59d",
+      "bytes": 54
+    },
+    {
+      "path": "analytics/tests/python/fixtures/canonical-vectors-v1.json",
+      "sha256": "54ef2ebab7a123403d903541c712d689d33b7984f1748bd1d6a823f71dc838f0",
+      "bytes": 2656
+    },
+    {
+      "path": "analytics/tests/python/fixtures/golden-expected.json",
+      "sha256": "79f489c1133d82f42da9f356f4519a1dcb2dbbed31b76b60ae7351d614f97d9b",
+      "bytes": 2046
+    },
+    {
+      "path": "analytics/tests/python/fixtures/golden.py",
+      "sha256": "f4d7057d548ea274c7a844f89a8ec810545a938fc20f9bd8dc394ed496e7d45d",
+      "bytes": 7083
+    },
+    {
+      "path": "analytics/tests/python/test_analysis.py",
+      "sha256": "05ac31ff2bb326cdad0bd262f10b50f35b77387341e10f6c74c9923628810243",
+      "bytes": 21557
+    },
+    {
+      "path": "analytics/tests/python/test_archive.py",
+      "sha256": "a5343c15581b62ea5e9b51247f58ab2c640be43938ac8bea36c31c46252f857c",
+      "bytes": 9197
+    }
+  ],
+  "prior_attempts": [
+    {
+      "result": "FAIL",
+      "description": "Initial 19-test run: two golden assertions selected the top-level unattributed inquiry table instead of mail_counts. Test field-selection corrected; independent oracle counts unchanged. Prior failed test output retained in execution history."
+    }
+  ],
+  "scoped_coverage": [
+    "RAW-02/03/04/06 analytical components",
+    "HASH-01/02/03 including shared JS/Python vectors",
+    "GOLD-01/02/03/04 deterministic fixture components",
+    "MAIL-05 fixture classifications",
+    "ENRICH-01/02 offline negative classifications",
+    "ARCHIVE-01/02/04 local-byte verification components",
+    "RESTORE-01/03 local isolated restore",
+    "RESTORE-02 numerical replay with existing matching interpreter",
+    "PRIV-03 safe path handling"
+  ],
+  "not_proven": [
+    "Hosted collector admission, R2 retention and gateway identity",
+    "Actual inbox routing/fields/attachment capture",
+    "Remote Drive privacy/readback/complete export",
+    "Scheduled unattended execution and monitoring",
+    "Portable runtime/OS bundle disaster recovery",
+    "Employer matching usefulness on real consenting networks"
+  ],
+  "fixture_erratum": "S8 explicit reload page_view after transport_error supplies six declared events; 35 unique/42 valid occurrences and all stage counts preserved, root approved and reviewer independently verified."
+}

@@ -1,0 +1,1 @@
+PASS: 149 tracker assertions; raw ACK binding, retries, overlapping snapshots, lifecycle persistence, cross-tab isolation, quota fallback without eviction, privacy sentinels, bounded batches, canonical vectors; tracker 4967 bytes gzip. Mocked browser/network only; hosted and engine QA still required.

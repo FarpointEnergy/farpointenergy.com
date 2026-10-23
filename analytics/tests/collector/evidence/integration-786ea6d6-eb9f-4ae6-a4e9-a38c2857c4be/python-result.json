@@ -1,0 +1,87 @@
+{
+  "conflicts": [],
+  "counts": {
+    "conflicted_event_ids": 0,
+    "duplicate_occurrences": 2,
+    "quarantined_events": 0,
+    "quarantined_receipts": 1,
+    "raw_receipts": 3,
+    "trusted_events": 2,
+    "unique_valid_event_ids": 2,
+    "valid_event_occurrences": 4
+  },
+  "events": [
+    {
+      "effective_at": "2026-10-23T12:00:00.000Z",
+      "event": {
+        "browser_id": "c614ce4a-a322-44de-a4e1-3a364df7a77d",
+        "client_timestamp": "2026-10-23T12:00:00.000Z",
+        "event_id": "1f29b466-4224-4482-9702-52372d5885d0",
+        "event_name": "quotation_view",
+        "page_id": "quote",
+        "referrer_category": "direct_unknown",
+        "schema_version": 1,
+        "sequence": 1,
+        "session_id": "789ca12e-72d1-4886-84bf-4b6d5e45246c",
+        "storage_status": "persistent",
+        "synthetic": true,
+        "tracker_version": "1.0.0"
+      },
+      "first_received_at": "2026-10-23T12:00:00.000Z",
+      "payload_sha256": "d7337fe9994379012047a083f40ab71ab4d70061431da0fe157dd40874e07f36",
+      "receipt_ids": [
+        "synthetic-cross-001",
+        "synthetic-cross-002"
+      ],
+      "time_anomaly": null
+    },
+    {
+      "effective_at": "2026-10-23T12:00:00.000Z",
+      "event": {
+        "browser_id": "c614ce4a-a322-44de-a4e1-3a364df7a77d",
+        "client_timestamp": "2026-10-23T12:00:00.000Z",
+        "event_id": "cfe57271-a1f1-40e6-b914-bdfe3b366404",
+        "event_name": "page_view",
+        "page_id": "quote",
+        "referrer_category": "direct_unknown",
+        "schema_version": 1,
+        "sequence": 0,
+        "session_id": "789ca12e-72d1-4886-84bf-4b6d5e45246c",
+        "storage_status": "persistent",
+        "synthetic": true,
+        "tracker_version": "1.0.0"
+      },
+      "first_received_at": "2026-10-23T12:00:00.000Z",
+      "payload_sha256": "584e66d1c711e83d906f4c9b860b8fb37c768ca3f35977cd624d3105e5d00a4c",
+      "receipt_ids": [
+        "synthetic-cross-001",
+        "synthetic-cross-002"
+      ],
+      "time_anomaly": null
+    }
+  ],
+  "exclusions": [],
+  "integrity_errors": [],
+  "quarantined_events": [],
+  "receipt_results": [
+    {
+      "invalid_events": 0,
+      "receipt_id": "synthetic-cross-001",
+      "status": "valid",
+      "valid_events": 2
+    },
+    {
+      "invalid_events": 0,
+      "receipt_id": "synthetic-cross-002",
+      "status": "valid",
+      "valid_events": 2
+    },
+    {
+      "invalid_events": 0,
+      "reason": "malformed_json_or_utf8",
+      "receipt_id": "synthetic-cross-003",
+      "status": "quarantined",
+      "valid_events": 0
+    }
+  ]
+}

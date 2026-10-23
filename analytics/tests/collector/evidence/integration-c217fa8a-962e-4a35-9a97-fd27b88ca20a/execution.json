@@ -1,0 +1,8 @@
+{
+  "scope": "synthetic_local_only",
+  "node": "v24.19.0",
+  "stdout": "{\"status\": \"PASS\", \"counts\": {\"raw_receipts\": 3, \"valid_event_occurrences\": 4, \"unique_valid_event_ids\": 2, \"duplicate_occurrences\": 2, \"conflicted_event_ids\": 0, \"trusted_events\": 2, \"quarantined_events\": 0, \"quarantined_receipts\": 1}, \"scope\": \"local tracker-collector-chunk-Python integration\"}\n",
+  "stderr": "",
+  "exit_code": 0,
+  "source_sha256": "983f7833dd1b9c49c025672d0d7bf4cc333cde5edfeaf79bf476e40322cfe610"
+}

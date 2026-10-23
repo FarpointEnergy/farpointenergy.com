@@ -1,0 +1,18 @@
+{
+  "test_suite": "python",
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "analytics/tests/python",
+    "-v"
+  ],
+  "started_at": "2026-10-23T21:17:11.247461+00:00",
+  "ended_at": "2026-10-23T21:17:11.991928+00:00",
+  "exit_code": 0,
+  "status": "PASS",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_sha256": "5b4878af56e8bbb2f6f1dfde1452bf1544b545487f7f22c6279486aa3f8d7663"
+}

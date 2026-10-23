@@ -1,0 +1,9 @@
+{
+  "tracker.js": "95b58c93489d57cbcbbeb1efeff296b628ece1852dfb6807bd99f269bf8012b7",
+  "analytics/collector/core.mjs": "86a0775591bc49aa999e01b674b52bf2b1534d0333389643c9f9a1bff0690e8f",
+  "analytics/tests/collector/cross-language.mjs": "55308ec8d26bb80c531be84edc0a7304dfee3728ce1a1631bcd5dfe532e1db3e",
+  "analytics/python/farpoint_analytics/analysis.py": "02efd5130d77e11a6cefa24f6704baaac75f0d35fc1492fe7c24c42cf6e055d4",
+  "analytics/python/farpoint_analytics/schema.py": "48b37dd0b1d86fab13572f3bd9c5df3cdeb37287f53bb313fae77db600d73da6",
+  "analytics/python/farpoint_analytics/canonical.py": "071848527aab09ff872495e490bf03c67e6700ecf867cb5f3c37b2bb82a18b0b",
+  "analytics/python/farpoint_analytics/schema-v1.json": "a52093f169de79742e72d527f54b2b91a8f07ad06b9cea0d5a1ebc29db7f7c7e"
+}

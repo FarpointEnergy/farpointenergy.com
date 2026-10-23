@@ -1,0 +1,1142 @@
+{
+  "record_type": "append_only_acceptance_checkpoint",
+  "record_id": "build-2026-10-23-checkpoint-001",
+  "created_at": "2026-10-23T21:21:09.982841+00:00",
+  "timezone": "America/New_York",
+  "previous_record": "000-initial.json",
+  "previous_record_sha256": "06f00d8927122e420745cb463a8507c740b7bf13f8960e9d81481055e7e9f91a",
+  "normative_design": "docs/technical/lead-intelligence-design-v1.1.md",
+  "normative_plan": "docs/technical/lead-intelligence-test-plan-v1.md",
+  "plan_sha256": "493475fb97de809c4fd0eabfa1aff894a357b17be6e3092f8af5b134982c8806",
+  "source_baseline": "3e48ca35cf3414d40b677cac8839d052602ab1e9",
+  "implementation_commit_at_execution": null,
+  "source_inventory": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/source-before.json",
+  "source_inventory_sha256": "36a1d02888c023b3bfc9287ee0cc5fd84600b38a4ccfaf9bb2fad9a7233ba330",
+  "local_execution": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+  "build_authorization": "Owner approved build in the project conversation on 2026-10-23. No live production collection enabled.",
+  "production_tracking_enabled": false,
+  "release_approved": false,
+  "interpretation": "Local suite counts and hosted primitive results do not equal complete acceptance gates. This record adds evidence; it does not replace 000-initial, frozen design, earlier failures or review records. Later evidence must append a new uniquely named record.",
+  "gate_status": {
+    "G1": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G2": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G3": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G4": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G5": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G6": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G7": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G8": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    }
+  },
+  "summary": {
+    "PASS": 5,
+    "FAIL": 0,
+    "BLOCKED": 30,
+    "NOT RUN": 47
+  },
+  "cases": [
+    {
+      "case_id": "RAW-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "python",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "RAW-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "python",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "RAW-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "python",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "RAW-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "python",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "RAW-05",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "python",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "RAW-06",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "python",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "HASH-01",
+      "status": "PASS",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Shared canonical bytes and hashes agree in JS/Python against independently specified vectors.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "tracker",
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "HASH-02",
+      "status": "PASS",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Invalid raw/canonical numeric/string/key/schema cases are rejected in the tested strict analytical path, with raw preservation separately exercised.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "tracker",
+        "python",
+        "collector"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "HASH-03",
+      "status": "PASS",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Rebatched identical events retain distinct receipt hashes and one analytical identity; changed payload variants remain conflicted.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ACK-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable integrated hosted acknowledgement/browser failure sequence before full acceptance.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "tracker",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ACK-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable integrated hosted acknowledgement/browser failure sequence before full acceptance.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "tracker",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ACK-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable integrated hosted acknowledgement/browser failure sequence before full acceptance.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "tracker",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ACK-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable integrated hosted acknowledgement/browser failure sequence before full acceptance.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "tracker",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ACK-05",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable integrated hosted acknowledgement/browser failure sequence before full acceptance.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "tracker",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "BROWSER-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Run the actual supported browser lifecycle, tabs, denied-storage and absent-instrumentation paths; mocks are components only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "tracker",
+        "inquiry"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "BROWSER-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Run the actual supported browser lifecycle, tabs, denied-storage and absent-instrumentation paths; mocks are components only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "tracker",
+        "inquiry"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "BROWSER-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Run the actual supported browser lifecycle, tabs, denied-storage and absent-instrumentation paths; mocks are components only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "tracker",
+        "inquiry"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "BROWSER-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Run the actual supported browser lifecycle, tabs, denied-storage and absent-instrumentation paths; mocks are components only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "tracker",
+        "inquiry"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "STORE-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted collector collision-allocation/redeploy/capacity sequence; the hosted primitive probe alone does not exercise every case step.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "wrapper"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": {
+        "status": "PASS",
+        "scope": "R2 conditional-create collision and readback only",
+        "evidence": "002-hosted-storage-check.json"
+      }
+    },
+    {
+      "case_id": "STORE-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Available Sites controls have not enabled verification of actual bucket lifecycle, expiry and retention-lock policy.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "wrapper"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "STORE-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted collector collision-allocation/redeploy/capacity sequence; the hosted primitive probe alone does not exercise every case step.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "wrapper"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "HIST-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete the cross-system history/correction/deployment inspection and retained originals evidence.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "HIST-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete the cross-system history/correction/deployment inspection and retained originals evidence.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "EXPORT-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete actual authenticated hosted multi-page/chunk export and remote reconciliation evidence; local simulated provider coverage only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "EXPORT-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete actual authenticated hosted multi-page/chunk export and remote reconciliation evidence; local simulated provider coverage only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "EXPORT-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete actual authenticated hosted multi-page/chunk export and remote reconciliation evidence; local simulated provider coverage only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "EXPORT-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete actual authenticated hosted multi-page/chunk export and remote reconciliation evidence; local simulated provider coverage only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "EXPORT-05",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete actual authenticated hosted multi-page/chunk export and remote reconciliation evidence; local simulated provider coverage only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ARCHIVE-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Remote export-to-Drive byte/count/hash readback and separate completion not proved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ARCHIVE-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Remote ambiguous/partial upload reconciliation not proved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ARCHIVE-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Dedicated private customer archive destination and unauthorized-access test not established; shared documentation folder is unsuitable.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ARCHIVE-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish applicable independently retained remote archive and failure evidence.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "RESTORE-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish isolated archive-only recovery with all required source/runtime/evidence inputs.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "RESTORE-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Only existing-interpreter local numerical replay passed; retained portable runtime/OS artifacts and isolated offline reconstruction remain unproved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "RESTORE-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish isolated archive-only recovery with all required source/runtime/evidence inputs.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "AUTH-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted owner/anonymous/other-user/revoked caller matrix pending; ordinary export remains fail-closed.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "wrapper"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "AUTH-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted trusted-gateway anti-spoofing and initialization boundary not proved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "wrapper"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "AUTH-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted bypass-token/guessing/direct-route negatives not proved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "wrapper"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "AUTH-04",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted authenticated cursor/chunk operation matrix not proved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "wrapper"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "AUTH-05",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted owner-to-anonymous cache-isolation sequence not proved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "wrapper"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "AUTH-06",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Run actual intended hosted path against the case matrix; local authorization tests are not gateway proof.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "wrapper"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "IP-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Two independent controlled egress networks and supported IPv4/IPv6 comparisons not available as verified evidence.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "IP-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual gateway forwarding/spoof tests not proved; source IP remains unavailable.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "IP-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Exact deployment path source-IP provenance not proved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "PRIV-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete release/configuration/sentinel/hostile-data review across actual browser, hosted, archive and processing paths as applicable.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "tracker",
+        "inquiry",
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "PRIV-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete release/configuration/sentinel/hostile-data review across actual browser, hosted, archive and processing paths as applicable.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "tracker",
+        "inquiry",
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "PRIV-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete release/configuration/sentinel/hostile-data review across actual browser, hosted, archive and processing paths as applicable.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "tracker",
+        "inquiry",
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "PRIV-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete release/configuration/sentinel/hostile-data review across actual browser, hosted, archive and processing paths as applicable.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "tracker",
+        "inquiry",
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "PRIV-05",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete release/configuration/sentinel/hostile-data review across actual browser, hosted, archive and processing paths as applicable.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "collector",
+        "tracker",
+        "inquiry",
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ENRICH-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable approved-provider and research-boundary evidence; offline classifications do not prove employer matching.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ENRICH-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Selected real provider retention/account terms and live provider path not approved; local failure classification only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "ENRICH-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Trustworthy visitor IP and consenting known corporate/noncorporate comparison unavailable; company-identification goal remains open.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "GOLD-01",
+      "status": "PASS",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Corrected explicit S8 fixture matches the fixed oracle counts, attribution and outcomes at both cutoffs.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "GOLD-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish case-level evidence/independent acceptance for every prescribed ambiguity, exclusion and frozen replay condition.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "GOLD-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish case-level evidence/independent acceptance for every prescribed ambiguity, exclusion and frozen replay condition.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "GOLD-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish case-level evidence/independent acceptance for every prescribed ambiguity, exclusion and frozen replay condition.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "FORM-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual controlled minimal-inquiry delivery/route/correlation evidence not captured.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "inquiry",
+        "tracker",
+        "context"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "FORM-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual all-fields and reference-prefilled inquiry receipt comparisons not captured.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "inquiry",
+        "tracker",
+        "context"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "FORM-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish real browser and integrated controlled form case with preserved fields/reference/fallback and required inbox evidence.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "inquiry",
+        "tracker",
+        "context"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "FORM-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish real browser and integrated controlled form case with preserved fields/reference/fallback and required inbox evidence.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "inquiry",
+        "tracker",
+        "context"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "FORM-05",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual no-JavaScript/analytics-blocked inbox receipt paths not proved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "inquiry",
+        "tracker",
+        "context"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "FORM-06",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish real browser and integrated controlled form case with preserved fields/reference/fallback and required inbox evidence.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "inquiry",
+        "tracker",
+        "context"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "MAIL-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual destination-route headers, message IDs and full field-by-field readback not captured.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "MAIL-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Direct-email attachment delivery and byte-hash capture not proved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "MAIL-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish applicable live connector and independent raw capture/archive evidence in addition to local fixtures.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "MAIL-04",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Full raw-message/attachment connector completeness not proved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "MAIL-05",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish applicable live connector and independent raw capture/archive evidence in addition to local fixtures.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "python"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "UX-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish actual responsive/keyboard/buyer review and retain versioned browser evidence; source checks are components only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "site",
+        "context",
+        "inquiry"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "UX-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish actual responsive/keyboard/buyer review and retain versioned browser evidence; source checks are components only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "site",
+        "context",
+        "inquiry"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "UX-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Required actual WebKit/mobile Safari and Firefox coverage not available in retained evidence.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "site",
+        "context",
+        "inquiry"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "UX-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish actual responsive/keyboard/buyer review and retain versioned browser evidence; source checks are components only.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "site",
+        "context",
+        "inquiry"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "JOB-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "A one-time hosted storage tool check is not the scheduled complete export/archive/report path.",
+      "local_component_status": "NOT RUN",
+      "local_component_suites": [],
+      "local_evidence": null,
+      "hosted_component": null
+    },
+    {
+      "case_id": "JOB-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Separate missed-run watchdog execution and notification latency not proved.",
+      "local_component_status": "NOT RUN",
+      "local_component_suites": [],
+      "local_evidence": null,
+      "hosted_component": null
+    },
+    {
+      "case_id": "JOB-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Scheduled common-mode outage and catch-up behavior not proved.",
+      "local_component_status": "NOT RUN",
+      "local_component_suites": [],
+      "local_evidence": null,
+      "hosted_component": null
+    },
+    {
+      "case_id": "JOB-04",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual canary-to-independent-archive chain and false-zero health comparison not proved.",
+      "local_component_status": "NOT RUN",
+      "local_component_suites": [],
+      "local_evidence": null,
+      "hosted_component": null
+    },
+    {
+      "case_id": "JOB-05",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual scheduled failure evidence/notification/catch-up matrix not proved.",
+      "local_component_status": "NOT RUN",
+      "local_component_suites": [],
+      "local_evidence": null,
+      "hosted_component": null
+    },
+    {
+      "case_id": "PERF-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted load envelope has not been run after confirmed quota/budget bounds.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "tracker"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "PERF-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Bounded hosted burst and durable reconciliation have not been run.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "tracker"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "PERF-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete three-run repeatable mobile profile and main-thread traces; gzip-size/backlog checks are only components.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "tracker"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "RELEASE-01",
+      "status": "PASS",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Existing site/form/context checks, meaningful new local tests and reproducible build pass on the unchanged source inventory.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "site",
+        "inquiry",
+        "context",
+        "tracker",
+        "collector",
+        "python",
+        "wrapper",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "RELEASE-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted additive deploy/code rollback preserving old and new exported raw history not proved.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "site",
+        "context",
+        "inquiry",
+        "tracker",
+        "collector",
+        "python",
+        "wrapper",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    },
+    {
+      "case_id": "RELEASE-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish final public artifact/secret/candidate-hook scan and exact pushed source/version mapping; no website migration is claimed.",
+      "local_component_status": "PASS",
+      "local_component_suites": [
+        "site",
+        "context",
+        "inquiry",
+        "tracker",
+        "collector",
+        "python",
+        "wrapper",
+        "cross-language"
+      ],
+      "local_evidence": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/execution.json",
+      "hosted_component": null
+    }
+  ]
+}

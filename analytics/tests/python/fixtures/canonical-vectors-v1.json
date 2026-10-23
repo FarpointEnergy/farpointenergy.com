@@ -1,0 +1,76 @@
+{
+  "version": "canonical-v1-independent-vectors",
+  "valid": [
+    {
+      "name": "sorted-keys",
+      "input_json": "{\"z\":2,\"a\":1}",
+      "expected_canonical_utf8": "{\"a\":1,\"z\":2}",
+      "expected_sha256": "99168216144c7fed5d4c54916cf98d9c66096280c04a499822a99b6658bd177a"
+    },
+    {
+      "name": "array-order",
+      "input_json": "{\"a\":[3,1,2]}",
+      "expected_canonical_utf8": "{\"a\":[3,1,2]}",
+      "expected_sha256": "d934227f5a9f29b31bd6a8ceed3213dd498a07ce32bdfa9ae2488de0c0ab68f1"
+    },
+    {
+      "name": "boolean-null",
+      "input_json": "{\"a\":true,\"b\":null}",
+      "expected_canonical_utf8": "{\"a\":true,\"b\":null}",
+      "expected_sha256": "426a747815b5a725d17521ef24c95d6cb990a37ae44c7dde47396d9fc0cedafa"
+    },
+    {
+      "name": "integral-spelling",
+      "input_json": "{\"a\":1.0,\"b\":-0,\"c\":1e2}",
+      "expected_canonical_utf8": "{\"a\":1,\"b\":0,\"c\":100}",
+      "expected_sha256": "51180fd1373d9f9fb5044bb8b7345caaafd325499f4b86d7d629ed1e8373d0da"
+    },
+    {
+      "name": "escapes",
+      "input_json": "{\"s\":\"quote\\\" slash\\\\ newline\\n control\\u0001\"}",
+      "expected_canonical_utf8": "{\"s\":\"quote\\\" slash\\\\ newline\\n control\\u0001\"}",
+      "expected_sha256": "f6c28aec404dda00a6cb9ad45dc80562889116fae4d6b1edf7f4b2df6b07ff32"
+    },
+    {
+      "name": "composed-unicode",
+      "input_json": "{\"s\":\"é\"}",
+      "expected_canonical_utf8": "{\"s\":\"é\"}",
+      "expected_sha256": "86028b41ba792eaf82aa26a45b218f6734f7f1096a86f1746c8296e088a0ccb4"
+    },
+    {
+      "name": "decomposed-unicode",
+      "input_json": "{\"s\":\"é\"}",
+      "expected_canonical_utf8": "{\"s\":\"é\"}",
+      "expected_sha256": "1fc0bd7cc93fca8092a2041d7d01842876422aa7e2838acf42c14578e9f2be05"
+    },
+    {
+      "name": "missing",
+      "input_json": "{}",
+      "expected_canonical_utf8": "{}",
+      "expected_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    {
+      "name": "explicit-null",
+      "input_json": "{\"a\":null}",
+      "expected_canonical_utf8": "{\"a\":null}",
+      "expected_sha256": "d091f9c83c091f79652fe8786375b3fe4ce0861a56f5bfbafedbe431877ff0e8"
+    },
+    {
+      "name": "emoji",
+      "input_json": "{\"s\":\"😀\"}",
+      "expected_canonical_utf8": "{\"s\":\"😀\"}",
+      "expected_sha256": "f9949e1006d1ca22bc0b60ea94f09779f11a8f0a29bae250fc7ab313d879f5e7"
+    }
+  ],
+  "invalid_json": [
+    "{\"a\":1,\"a\":2}",
+    "{\"a\":NaN}",
+    "{\"a\":Infinity}"
+  ],
+  "invalid_canonical_json": [
+    "{\"x\":9007199254740992}",
+    "{\"x\":0.1}",
+    "{\"x\":1e999999999}",
+    "{\"x\":\"\\ud800\"}"
+  ]
+}

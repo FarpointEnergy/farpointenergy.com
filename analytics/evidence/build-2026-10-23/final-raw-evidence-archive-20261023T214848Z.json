@@ -1,0 +1,64 @@
+{
+  "record_type": "final_raw_evidence_durable_preservation",
+  "date": "2026-10-23",
+  "status": "PASS",
+  "scope": "Exact byte preservation of specified test and failed-provider evidence after final coordinated tests; not an expansion of release acceptance.",
+  "regular_source_files": 1733,
+  "source_bytes": 5487244,
+  "category_file_counts": {
+    "coordinated_final_validation": 43,
+    "failed_rfq_compatibility": 7,
+    "host_smoke": 1,
+    "native_drive_binding": 4,
+    "synthetic_collector": 25,
+    "synthetic_python": 1499,
+    "synthetic_work": 151,
+    "synthetic_wrapper": 3
+  },
+  "symlink_metadata_entries": 5,
+  "empty_directory_entries": 5,
+  "archive_entry_count": 1743,
+  "previously_archived_collector_snapshots": 6,
+  "previous_archive_sha256": "1abe2755cb0d837118daaa47cb58415ae6ba71792b171a514ce6f00cb8eeea46",
+  "canonical_inventory_sha256": "89195b36998585ace3d6b0f45beaa131335cf81d57297aebdfc2c35860de3b4c",
+  "archive": {
+    "bytes": 1574109,
+    "sha256": "f3415dc249cb65fc6c19e7eff47721a0464e15d48ce9c8f7956b0454e51bdafc",
+    "byte_equal": true,
+    "verified_at": "2026-10-23T21:49:42.348843+00:00"
+  },
+  "manifest": {
+    "bytes": 501125,
+    "sha256": "78d86c939636eb64ab79fa724e891a4ee27f6905c84865c345e0fe446350f58e",
+    "byte_equal": true,
+    "verified_at": "2026-10-23T21:49:42.546985+00:00"
+  },
+  "completion": {
+    "bytes": 1528,
+    "sha256": "8b2deaf36622b06d906fff75ebe4080b7fa239cc6a8e6d31949126cb339c7578",
+    "byte_equal": true,
+    "verified_at": "2026-10-23T21:50:16.020720+00:00"
+  },
+  "completion_written_after_archive_and_manifest_readback": true,
+  "privacy": {
+    "folder_sole_owner_verified": true,
+    "each_uploaded_file_sole_owner_verified": true,
+    "actual_credential_pattern_flags": 0,
+    "raw_gmail_captures_duplicated": false,
+    "site_credentials_included": false,
+    "local_site_config_included": false,
+    "symlinks_followed": false
+  },
+  "preservation": {
+    "new_drive_files_only": true,
+    "originals_untouched": true,
+    "source_hashes_rechecked_after_packaging": true,
+    "zip_member_hashes_verified": true
+  },
+  "limitations": [
+    "Failed test evidence remains failed; archive success does not change the direct RFQ HTTP403 outcome.",
+    "No claim of full historical mailbox coverage, provider retention locks, complete disaster recovery, real mobile Safari coverage, or production readiness.",
+    "Future test runs need a new append-only evidence archive."
+  ],
+  "redaction": "Counts and hashes only; no private Drive IDs, private URLs, signed download references, raw logs, customer content or mailbox identifiers."
+}

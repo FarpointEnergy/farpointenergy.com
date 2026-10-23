@@ -1,0 +1,88 @@
+{
+  "conflicts": [],
+  "counts": {
+    "conflicted_event_ids": 0,
+    "duplicate_occurrences": 2,
+    "quarantined_events": 0,
+    "quarantined_receipts": 1,
+    "raw_receipts": 3,
+    "trusted_events": 2,
+    "unique_valid_event_ids": 2,
+    "valid_event_occurrences": 4
+  },
+  "events": [
+    {
+      "effective_at": "2026-10-23T12:00:00.000Z",
+      "event": {
+        "browser_id": "aa24986b-e6a8-46c2-871a-d98a15b9db03",
+        "client_timestamp": "2026-10-23T12:00:00.000Z",
+        "event_id": "06b76d88-9530-43fc-a988-1b6c1a33a01b",
+        "event_name": "page_view",
+        "page_id": "quote",
+        "referrer_category": "direct_unknown",
+        "schema_version": 1,
+        "sequence": 0,
+        "session_id": "5c01bb44-cb88-4b4d-bd7c-565e5cd0ae9c",
+        "storage_status": "persistent",
+        "synthetic": true,
+        "tracker_version": "1.0.0"
+      },
+      "first_received_at": "2026-10-23T12:00:00.000Z",
+      "payload_sha256": "7ba97752adf6f612b6a73051402dee34f1a1c04bec2c165c0e8a55f3cd5d844c",
+      "receipt_ids": [
+        "synthetic-cross-001",
+        "synthetic-cross-002"
+      ],
+      "time_anomaly": null
+    },
+    {
+      "effective_at": "2026-10-23T12:00:00.000Z",
+      "event": {
+        "browser_id": "aa24986b-e6a8-46c2-871a-d98a15b9db03",
+        "client_timestamp": "2026-10-23T12:00:00.000Z",
+        "event_id": "e29677ec-5e72-4899-a3e7-a2314c7a72bf",
+        "event_name": "quotation_view",
+        "page_id": "quote",
+        "referrer_category": "direct_unknown",
+        "schema_version": 1,
+        "sequence": 1,
+        "session_id": "5c01bb44-cb88-4b4d-bd7c-565e5cd0ae9c",
+        "storage_status": "persistent",
+        "synthetic": true,
+        "tracker_version": "1.0.0"
+      },
+      "first_received_at": "2026-10-23T12:00:00.000Z",
+      "payload_sha256": "f8134f79645766381c1523b623bd67e5c0cf09ca738c386261e679b6f0f8fc41",
+      "receipt_ids": [
+        "synthetic-cross-001",
+        "synthetic-cross-002"
+      ],
+      "time_anomaly": null
+    }
+  ],
+  "exclusions": [],
+  "integrity_errors": [],
+  "invalid_resolutions": [],
+  "quarantined_events": [],
+  "receipt_results": [
+    {
+      "invalid_events": 0,
+      "receipt_id": "synthetic-cross-001",
+      "status": "valid",
+      "valid_events": 2
+    },
+    {
+      "invalid_events": 0,
+      "receipt_id": "synthetic-cross-002",
+      "status": "valid",
+      "valid_events": 2
+    },
+    {
+      "invalid_events": 0,
+      "reason": "malformed_json_or_utf8",
+      "receipt_id": "synthetic-cross-003",
+      "status": "quarantined",
+      "valid_events": 0
+    }
+  ]
+}

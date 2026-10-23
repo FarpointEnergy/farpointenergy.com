@@ -1,0 +1,14 @@
+{
+  "test_suite": "preview-manifest",
+  "command": [
+    "python3",
+    "-c",
+    "from pathlib import Path; import json,hashlib,re; d=Path('../farpoint-website-preview/dist'); m=json.loads((d/'review-source-manifest.json').read_text()); s=m['source_sha256']; assert len(s)==26; assert all(hashlib.sha256(Path(n).read_bytes()).hexdigest()==h for n,h in s.items()); assert not json.loads(Path('analytics-config.json').read_text())['enabled']; assert (d/'robots.txt').read_text()=='User-agent: *\\nDisallow: /\\n'; assert 'preventDefault' in (d/'preview-guard.js').read_text(); pages=list(d.glob('*.html')); assert len(pages)==17; assert all('noindex,nofollow' in p.read_text() and 'preview-guard.js' in p.read_text() for p in pages); q=(d/'quote.html').read_text(); assert 'id=\"quote-submit\" disabled' in q; actions=re.findall(r'<form\\b[^>]*\\baction=\"([^\"]*)',q); assert actions and all(a=='#preview-disabled' for a in actions); assert not list(d.glob('*qa*')); print('PASS: 26 preview source assets exactly match current website, 17 pages guarded/noindex, quotation submission disabled, tracking disabled; hosted ACL/browser access is separate evidence')"
+  ],
+  "started_at": "2026-10-23T21:47:27.612530+00:00",
+  "ended_at": "2026-10-23T21:47:27.646454+00:00",
+  "exit_code": 0,
+  "status": "PASS",
+  "stdout_sha256": "0a364a31ae1231d5c335e862ffc95774f3324cfcca625ace90c477486b4c5ded",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

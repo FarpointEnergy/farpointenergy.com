@@ -1,0 +1,47 @@
+{
+  "record_type": "hosted_synthetic_storage_evidence",
+  "observed_on": "2026-10-23",
+  "executed_at": null,
+  "timestamp_note": "Exact tool-execution timestamp was not included in the safe response; date is retained without invention.",
+  "source": "Authenticated plugin result and readback-verified evidence document from the implementation conversation.",
+  "evidence_document": "https://docs.google.com/document/d/1IUcpF4G0gZZ0fFhFotl3QdV6FS2V6pvjSi921jiVKQU/edit?usp=drivesdk",
+  "invocations": 1,
+  "audience_observed": "custom, one owner, no groups/editors/external visitors",
+  "configuration": {
+    "OWNER_USER_ID": "stored as secret; value intentionally omitted",
+    "saved_environment_revision": 2,
+    "environment_revision_redeployed_during_check": false,
+    "GATEWAY_IDENTITY_VERIFIED": "0"
+  },
+  "tool_response": {
+    "status": "PASS",
+    "scope": "hosted_R2_create_only_collision_and_readback",
+    "receipts": [
+      {
+        "key": "receipts/2026/10/23/a34b9e3c-601a-4de4-87bf-9cb7c463c10e.json",
+        "sha256": "547824bd474072698b4e36d35f1105e9758dfc457b6ac80af10ad37ff2bdd437",
+        "bytes": 682
+      },
+      {
+        "key": "receipts/2026/10/23/357923c7-e4cd-48c5-b6c0-0aa0aca3f368.json",
+        "sha256": "714d9f6bb8d733ae9ade61f345d4f5d93556150b210503f9accc5719ae3df7a5",
+        "bytes": 682
+      },
+      {
+        "key": "receipts/2026/10/23/a920edc2-ac3f-46e0-a7b1-01eafda27d21.json",
+        "sha256": "547824bd474072698b4e36d35f1105e9758dfc457b6ac80af10ad37ff2bdd437",
+        "bytes": 682
+      }
+    ],
+    "retention_lock_verified": false,
+    "source_version": "farpoint-collector/1.0.0+a6bd1dfb3a390e5aa37dee67737c90378834a28b05084ac042430154f777eea3"
+  },
+  "not_certified": [
+    "retention locks or indefinite/admin-proof retention",
+    "source IP provenance",
+    "owner-only ordinary exports",
+    "complete remote archive/recovery",
+    "scheduled reporting/watchdog reliability",
+    "production readiness"
+  ]
+}

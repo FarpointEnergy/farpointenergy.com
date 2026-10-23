@@ -1,0 +1,14 @@
+{
+  "test_suite": "wrapper",
+  "command": [
+    "node",
+    "--test",
+    "analytics/deploy/sites/wrapper.test.mjs"
+  ],
+  "started_at": "2026-10-23T21:17:12.573141+00:00",
+  "ended_at": "2026-10-23T21:17:12.842959+00:00",
+  "exit_code": 0,
+  "status": "PASS",
+  "stdout_sha256": "b62d3971dcb55cb1b8a868228bf0289c37b1138cbcab14f96f2559c5e971739b",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

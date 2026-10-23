@@ -1,0 +1,14 @@
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {resolve,dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {createHash} from 'node:crypto';
+const here=dirname(fileURLToPath(import.meta.url));
+const target=process.argv[2];if(!target)throw new Error('Absolute Sites checkout path required');
+if(!target.startsWith('/'))throw new Error('Absolute Sites checkout path required');
+const core=await readFile(resolve(here,'../../collector/core.mjs'),'utf8');
+const wrapper=await readFile(resolve(here,'wrapper.mjs'),'utf8');
+const hash=createHash('sha256').update(core).update('\0').update(wrapper).digest('hex');
+const source=`const BUILD_SOURCE_VERSION = ${JSON.stringify('farpoint-collector/1.0.0+'+hash)};\n${core}\n${wrapper}`;
+await mkdir(resolve(target,'worker'),{recursive:true});
+await writeFile(resolve(target,'worker/index.js'),source);
+console.log(JSON.stringify({core_and_wrapper_sha256:hash,worker_sha256:createHash('sha256').update(source).digest('hex'),output:resolve(target,'worker/index.js')}));

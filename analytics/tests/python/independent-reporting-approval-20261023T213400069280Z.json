@@ -1,0 +1,63 @@
+{
+  "reviewer": "independent-staff-reporting-review",
+  "reviewed_at": "2026-10-23T21:34:00.068113+00:00",
+  "decision": "approved_scoped",
+  "scope": "Python attribution, declared contacts, company observation history and exact archive replay; synthetic local review only",
+  "source_sha256": {
+    "analytics/python/farpoint_analytics/reporting.py": "63036f2749756039bec09c0b80225a92e6403513cba2d994d245dcf0a9a93e38",
+    "analytics/python/farpoint_analytics/analysis.py": "ca76d220b474b8fe820eb116863a6caa2b8901192b3215b421662f79ceed2b9b",
+    "analytics/python/farpoint_analytics/__main__.py": "298c7be6df3cb86684dc1247f8e8f5e352a028c22a3f0585812b8cc3c39075f2",
+    "analytics/python/farpoint_analytics/archive.py": "2e7989e938c984dcf57a8015cae0bf83113bb8b6c3ecc417da6651c232e14a5d",
+    "analytics/python/farpoint_analytics/enrichment.py": "154e0d5b1c899b8add27a7abbdcc272fb33d854277ba9acaf4c24cdb98b76e42",
+    "analytics/tests/python/test_reporting.py": "4ed057fe4b3f8273ae7c9e3fdce3a1c44bb58078282a22a1154f0486ba0d3bb7",
+    "analytics/tests/python/test_analysis.py": "05ac31ff2bb326cdad0bd262f10b50f35b77387341e10f6c74c9923628810243",
+    "analytics/tests/python/test_archive.py": "a5343c15581b62ea5e9b51247f58ab2c640be43938ac8bea36c31c46252f857c",
+    "analytics/tests/python/fixtures/golden.py": "f4d7057d548ea274c7a844f89a8ec810545a938fc20f9bd8dc394ed496e7d45d",
+    "docs/technical/lead-intelligence-design-v1.1.md": "c6a1714d7c135044d477b7279fe86039270e8199eba0c3ccaf0917f92b0c7d51",
+    "docs/technical/lead-intelligence-test-plan-v1.md": "1d33157e62942fba37ed4fb44495505cb045ceeee75e55b7306656a97772b952"
+  },
+  "supersedes_review_disposition": "analytics/tests/python/independent-reporting-review-20261023T212917910506Z.json",
+  "independent_test_result": {
+    "command": "PYTHONPATH=analytics/python python3 -m unittest discover -s analytics/tests/python -v",
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "exit_code": 0,
+    "duration_seconds": 2.167,
+    "outcome": "passed",
+    "note": "Executed independently after fixes; includes all frozen golden, archive, replay and new reporting regressions."
+  },
+  "finding_closures": [
+    {
+      "id": "REPORT-REVIEW-01",
+      "status": "closed",
+      "verified": "Company timestamps preserve microseconds and latest selection compares parsed datetimes. Independently reproduced older VPN/newer corporate case now retains both historical observations, selects only newest, and remains identical under reversed input."
+    },
+    {
+      "id": "REPORT-REVIEW-02",
+      "status": "closed",
+      "verified": "Equivalent equal-time mail classifications select minimum classification_id. Independent duplicate-classification probe now yields identical entire report bytes under reversed input order."
+    }
+  ],
+  "remaining_blocking_findings_in_scope": [],
+  "approved_contracts": [
+    "Session-entry and first-observed-browser attribution use stated cohort denominator.",
+    "Nonexclusive product/application/reference engagement counts each session once per dimension and labels association.",
+    "Declared contacts require selected independently classified verified new-inquiry evidence; no arbitrary mail body becomes identity.",
+    "Receipt-linked verified IP provenance is required separately from the observation boolean.",
+    "Network ownership and possible company remain distinct from declared contact and verified employer.",
+    "Later company observations restate interpretation without replacing historical observations.",
+    "Exact company-observation inputs, source and output are archived and offline replay is byte-identical.",
+    "Frozen golden fixture expectations remain passing."
+  ],
+  "not_certified": [
+    "Hosted source-IP provenance",
+    "Provider license and retention approval",
+    "Owner-only export authorization",
+    "Remote archive read-back",
+    "Storage retention locks",
+    "Full runtime recovery across changed environments",
+    "Production tracking readiness"
+  ],
+  "reviewer_product_code_changes": false
+}

@@ -1,0 +1,14 @@
+{
+  "test_suite": "diff-whitespace",
+  "command": [
+    "git",
+    "diff",
+    "--check"
+  ],
+  "started_at": "2026-10-23T21:47:27.604336+00:00",
+  "ended_at": "2026-10-23T21:47:27.612401+00:00",
+  "exit_code": 0,
+  "status": "PASS",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

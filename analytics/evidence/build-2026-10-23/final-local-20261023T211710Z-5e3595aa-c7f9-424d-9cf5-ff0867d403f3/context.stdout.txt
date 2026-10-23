@@ -1,0 +1,1 @@
+PASS: 71 context/navigation/redirect cases. Explicit destinations preserved, section inference fresh, fragment links untouched, legacy anchors retained, unknown/duplicate context excluded, no freeform propagation, keyboard/toggle/reset behavior valid. No browser or network used.

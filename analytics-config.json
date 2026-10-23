@@ -1,0 +1,13 @@
+{
+  "enabled": false,
+  "endpoint": "",
+  "privacy_disclosure_version": "",
+  "tracker_version": "1.0.0",
+  "campaign_registry": {"source": [], "medium": [], "campaign": []},
+  "referrer_domains": {
+    "www.google.com": "search", "google.com": "search",
+    "www.bing.com": "search", "bing.com": "search",
+    "duckduckgo.com": "search",
+    "www.linkedin.com": "social", "linkedin.com": "social"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "contract_version": "farpoint-event-1.0.0",
+  "required": ["schema_version", "event_id", "sequence", "event_name", "page_id", "tracker_version"],
+  "optional": ["browser_id", "session_id", "client_timestamp", "product_id", "application_id", "reference_id", "inquiry_id", "campaign", "referrer_category", "error_category", "location_code", "synthetic", "bot", "storage_status"],
+  "event_name": ["page_view", "product_view", "reference_select", "quotation_view", "quotation_start", "technical_details_open", "quotation_validation_error", "quotation_attempt", "quotation_provider_accepted", "quotation_transport_error", "email_click", "script_error"],
+  "page_id": ["home", "products", "applications", "quality", "delivery", "manufacturing", "about", "quote", "privacy", "thanks", "power-transformers", "distribution-transformers", "data-centers", "solar-storage", "markets", "contact", "404", "unknown_page"],
+  "product_id": ["power", "distribution", "unsure"],
+  "application_id": ["data-center", "solar", "storage", "hybrid", "utility", "industrial", "other", "unsure"],
+  "reference_id": ["FP-MPT-138-50", "FP-MPT-115-50", "FP-MPT-138-100", "FP-MPT-115-100"],
+  "referrer_category": ["direct_unknown", "internal", "search", "social", "referral", "unknown"],
+  "error_category": ["required_field", "invalid_number", "provider_rejected", "transport_timeout", "transport_error", "malformed_response", "script_exception", "storage_unavailable", "unknown_error"],
+  "location_code": ["global", "quotation", "tracker", "navigation", "unknown_location"],
+  "storage_status": ["persistent", "memory_only", "unavailable"],
+  "campaign_registry": {"source": [], "medium": [], "campaign": []},
+  "campaign_unknown": "unknown_campaign",
+  "max_batch_events": 50,
+  "max_body_bytes": 32768
+}

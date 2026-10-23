@@ -1,0 +1,3 @@
+PASS: 17 routes; preserved navigation, diagram, founder, warranty and assets; in-page products, applications, redirect boundaries, labels and local links.
+Reproducible build checked.
+Browser layout, keyboard behavior and real form delivery require separate verification.

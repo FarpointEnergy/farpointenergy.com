@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "scope": "Independent source-scoped final checks; synthetic only",
+  "source_hashes_before": {
+    "README.md": "4117ea620a462c473ff960ebbbf361b668e721e6a2e8ff3c7071027f0e67e3b1",
+    "TASK.md": "8cc2a75dda7368cea82f65ec56f94921d125f24cbf1983c773ef28da632ffb20",
+    "build-bundle.mjs": "a8fe6dcd8e77b3cb1203f802c6003289f60c8d74b0fc3c8aef766dd693027610",
+    "host-bridge.mjs": "8d5f95f8734ad0fde2eb0ac19a59db00286d6cae72f8273c8056e5e92c9531fb",
+    "local_bridge.py": "13bb81b045cb046ba8e72bc43a85bb4ce32100fac04cc37e60055a3631e1efa0",
+    "native-adapters.mjs": "2713ff5094d2799ad001951a22ebfa6062d685337db235d5fbfb02410ff4f6a5",
+    "pipeline.mjs": "2a4525714b9f8b01f049a8b7b7dfc7fcc56a3c15609d60c35c257d2ff678e171",
+    "portable-runtime.mjs": "17d900448c1a3a49d355330f43a141abf98b808f43da1cdfbb96072cb5b47ae6",
+    "work.bundle.js": "db127601b87c2d44eed5e72345c9d549d1ca758f77b3f9f5db560688faa56d3b"
+  },
+  "source_hashes_after": {
+    "README.md": "4117ea620a462c473ff960ebbbf361b668e721e6a2e8ff3c7071027f0e67e3b1",
+    "TASK.md": "8cc2a75dda7368cea82f65ec56f94921d125f24cbf1983c773ef28da632ffb20",
+    "build-bundle.mjs": "a8fe6dcd8e77b3cb1203f802c6003289f60c8d74b0fc3c8aef766dd693027610",
+    "host-bridge.mjs": "8d5f95f8734ad0fde2eb0ac19a59db00286d6cae72f8273c8056e5e92c9531fb",
+    "local_bridge.py": "13bb81b045cb046ba8e72bc43a85bb4ce32100fac04cc37e60055a3631e1efa0",
+    "native-adapters.mjs": "2713ff5094d2799ad001951a22ebfa6062d685337db235d5fbfb02410ff4f6a5",
+    "pipeline.mjs": "2a4525714b9f8b01f049a8b7b7dfc7fcc56a3c15609d60c35c257d2ff678e171",
+    "portable-runtime.mjs": "17d900448c1a3a49d355330f43a141abf98b808f43da1cdfbb96072cb5b47ae6",
+    "work.bundle.js": "db127601b87c2d44eed5e72345c9d549d1ca758f77b3f9f5db560688faa56d3b"
+  },
+  "source_unchanged": true,
+  "commands": [
+    {
+      "name": "javascript",
+      "command": [
+        "node",
+        "--test",
+        "analytics/work/tests/pipeline.test.mjs",
+        "analytics/work/tests/runtime.test.mjs"
+      ],
+      "started_at": "2026-10-23T21:44:46.347068+00:00",
+      "finished_at": "2026-10-23T21:44:46.915825+00:00",
+      "exit_code": 0,
+      "stdout_file": "analytics/work/evidence/independent-final-20261023T214446345362Z/javascript.stdout.txt",
+      "stderr_file": "analytics/work/evidence/independent-final-20261023T214446345362Z/javascript.stderr.txt",
+      "stdout_sha256": "5a4c921ad070c6a8fafbbbc6b70e7efe96a1d8cb03cb1d24d1363ed1b8d0c3b1",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "python",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "analytics/work/tests",
+        "-v"
+      ],
+      "started_at": "2026-10-23T21:44:46.348817+00:00",
+      "finished_at": "2026-10-23T21:44:46.657223+00:00",
+      "exit_code": 0,
+      "stdout_file": "analytics/work/evidence/independent-final-20261023T214446345362Z/python.stdout.txt",
+      "stderr_file": "analytics/work/evidence/independent-final-20261023T214446345362Z/python.stderr.txt",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "41ab5b00421500d9b5f1479fe1d848af46cd129d6d7677e25fc26763afd1dc6d"
+    }
+  ]
+}
