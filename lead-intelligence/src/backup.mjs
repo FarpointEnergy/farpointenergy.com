@@ -38,9 +38,16 @@ export async function decryptSnapshot(file, destination, hexKey) {
   if (!header.subarray(0, MAGIC.length).equals(MAGIC)) throw new Error('Invalid encrypted snapshot');
   const decipher = createDecipheriv('aes-256-gcm', secretKey(hexKey), header.subarray(MAGIC.length));
   decipher.setAAD(MAGIC); decipher.setAuthTag(tag);
+  // Establish ownership before the cleanup scope. EEXIST must never enter the
+  // authentication-failure cleanup and delete a caller's existing destination.
+  const destinationHandle = await open(destination, 'wx', 0o600);
   try {
-    await pipeline(createReadStream(file, { start: header.length, end: info.size - 17 }), decipher, createWriteStream(destination, { flags: 'wx', mode: 0o600 }));
-  } catch { await rm(destination, { force: true }); throw new Error('Snapshot authentication failed'); }
+    await pipeline(createReadStream(file, { start: header.length, end: info.size - 17 }), decipher, destinationHandle.createWriteStream());
+  } catch {
+    await destinationHandle.close().catch(() => {});
+    await rm(destination, { force: true });
+    throw new Error('Snapshot authentication failed');
+  } finally { await destinationHandle.close().catch(() => {}); }
 }
 async function hashStream(stream) {
   const hash = createHash('sha256');

@@ -28,3 +28,19 @@ test('pg_dump credentials use environment fields and a strict protocol', () => {
   assert.equal(env.PGSSLMODE, 'require'); assert.equal(env.PGDATABASE, 'umami');
   assert.throws(() => pgEnvironment('https://db.internal/umami'), /Invalid/);
 });
+
+test('snapshot decryption never deletes or overwrites an existing destination', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'backup-existing-test-'));
+  try {
+    const encrypted = join(directory, 'backup.enc'), destination = join(directory, 'existing.dump');
+    const existing = Buffer.from('existing recovery data that must survive\n\0\xff', 'binary');
+    await encryptStream(Readable.from([Buffer.from('new synthetic database bytes')]), encrypted, 'ab'.repeat(32));
+    await writeFile(destination, existing);
+    await assert.rejects(decryptSnapshot(encrypted, destination, 'ab'.repeat(32)), { code: 'EEXIST' });
+    assert.deepEqual(await readFile(destination), existing);
+    // Even an unauthentic snapshot cannot make an existing destination ours to remove.
+    const damaged = await readFile(encrypted); damaged[25] ^= 1; await writeFile(encrypted, damaged);
+    await assert.rejects(decryptSnapshot(encrypted, destination, 'ab'.repeat(32)), { code: 'EEXIST' });
+    assert.deepEqual(await readFile(destination), existing);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
