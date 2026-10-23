@@ -1,2 +1,10 @@
 __pycache__/
-*.pyc
+node_modules/
+.env
+.env.*
+!.env.example
+.openai/
+.preview/
+lead-intelligence/runtime/
+*.dump
+*.enc

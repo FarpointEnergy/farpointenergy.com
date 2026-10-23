@@ -1,0 +1,91 @@
+name: Lead intelligence checks
+on:
+  pull_request:
+  push:
+    branches: [main, codex/lead-intelligence]
+permissions:
+  contents: read
+concurrency:
+  group: leads-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:15-bookworm@sha256:22c6356b2897cb0b4be6ad550b44ff97a0f29df7dbe327c01bc3c84bd457694d
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: farpoint_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d farpoint_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:synthetic-ci-only@127.0.0.1:5432/farpoint_test?sslmode=disable
+      TEST_DATABASE_URL: postgresql://postgres:synthetic-ci-only@127.0.0.1:5432/farpoint_test?sslmode=disable
+      UMAMI_TEST_DATABASE_URL: postgresql://postgres:synthetic-ci-only@127.0.0.1:5432/umami_test?sslmode=disable
+      UMAMI_SOURCE_DIR: ${{ github.workspace }}/vendor-qa/umami
+      ADMIN_TOKEN: synthetic-ci-admin-token-at-least-32-characters
+      NETWORK_HMAC_KEY: synthetic-ci-network-key-at-least-32-characters
+      DELETION_HMAC_KEY: synthetic-ci-deletion-key-at-least-32-characters
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0 # check_site.py compares the preserved original routes
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: lead-intelligence/package-lock.json
+      - name: Preserve existing website and client behavior
+        run: |
+          python3 build.py
+          python3 check_site.py
+          node check_inquiry.js
+          node check_context.js
+          node check_analytics.js
+          git diff --exit-code
+      - name: Install pinned service dependencies
+        working-directory: lead-intelligence
+        run: npm ci --ignore-scripts
+      - name: Unit and adversarial input tests
+        working-directory: lead-intelligence
+        run: npm test
+      - name: Read the exact upstream schema for integration verification
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: umami-software/umami
+          ref: ec0ff50388c264ed8ce46f00967e92f7e71476ae
+          path: vendor-qa/umami
+      - name: Prepare isolated upstream test database
+        working-directory: lead-intelligence
+        run: node scripts/umami-ci.mjs prepare
+      - name: Real PostgreSQL integration and concurrency
+        working-directory: lead-intelligence
+        run: node --test --test-concurrency=1 test/*.integration.mjs
+      - name: Persist a restart sentinel
+        working-directory: lead-intelligence
+        run: node scripts/restart-check.mjs before
+      - name: Restart native PostgreSQL
+        run: docker restart '${{ job.services.postgres.id }}'
+      - name: Verify committed data survives restart
+        working-directory: lead-intelligence
+        run: node scripts/restart-check.mjs after
+      - name: Start pinned private Umami
+        working-directory: lead-intelligence
+        run: node scripts/umami-ci.mjs start
+      - name: Verify official Umami storage, forwarding and purge contracts
+        working-directory: lead-intelligence
+        run: node scripts/umami-ci.mjs verify
+      - name: Check dependency advisories
+        working-directory: lead-intelligence
+        run: npm audit --omit=dev --audit-level=high
+      - name: Build production image
+        run: docker build --tag farpoint-leads-ci ./lead-intelligence
+      - name: Stop isolated Umami
+        if: always()
+        run: docker rm -f farpoint-umami-ci || true

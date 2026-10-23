@@ -59,6 +59,7 @@ def render_form(site, product_categories=None, applications=None):
 <div hidden aria-hidden="true"><label for="f-honey">Leave this field empty</label><input id="f-honey" type="text" name="_honey" tabindex="-1" autocomplete="off"></div>
 <input type="hidden" id="f-source" name="Source" value="" disabled>
 <input type="hidden" id="f-campaign" name="Campaign" value="" disabled>
+<input type="hidden" id="f-inquiry-id" name="Website inquiry ID" value="" disabled>
 <p id="configuration-summary" class="small full" role="status" aria-live="polite" aria-atomic="true" hidden></p>
 <div class="field"><label for="f-name">Name <span class="field-hint">(required)</span></label><input id="f-name" name="Name" required autocomplete="name" maxlength="160" aria-describedby="f-name-error"><p class="field-error" id="f-name-error" hidden></p></div>
 <div class="field"><label for="f-company">Company <span class="field-hint">(required)</span></label><input id="f-company" name="Company" required autocomplete="organization" maxlength="200" aria-describedby="f-company-error"><p class="field-error" id="f-company-error" hidden></p></div>

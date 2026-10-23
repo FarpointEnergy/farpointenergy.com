@@ -1,0 +1,74 @@
+name: farpoint-leads
+services:
+  postgres:
+    image: postgres:15-bookworm@sha256:22c6356b2897cb0b4be6ad550b44ff97a0f29df7dbe327c01bc3c84bd457694d
+    environment:
+      POSTGRES_USER: owner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a private database owner password}
+      LEADS_DB_PASSWORD: ${LEADS_DB_PASSWORD:?Set a private application password}
+      UMAMI_DB_PASSWORD: ${UMAMI_DB_PASSWORD:?Set a private Umami password}
+      UMAMI_MAINTENANCE_DB_PASSWORD: ${UMAMI_MAINTENANCE_DB_PASSWORD:?Set a private maintenance password}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./deploy/init-databases.sh:/docker-entrypoint-initdb.d/10-farpoint.sh:ro
+      - ./deploy/grant-maintenance.sql:/opt/farpoint/grant-maintenance.sql:ro
+    networks: [private]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U owner -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  umami:
+    image: ghcr.io/umami-software/umami:3.4.0@sha256:85909afc45bdcda1917394594a087421fdbb05610fded0fa9f6fb861abb2f367
+    environment:
+      DATABASE_URL: ${UMAMI_DATABASE_URL:?Set the Umami-only database URL}
+      APP_SECRET: ${UMAMI_APP_SECRET:?Set a strong private secret}
+      TWO_FACTOR_ENCRYPTION_KEY: ${UMAMI_TWO_FACTOR_ENCRYPTION_KEY:?Set a private encryption key}
+      TRACKER_SCRIPT_NAME: disabled-public-tracker.js
+      DISABLE_TELEMETRY: '1'
+    depends_on:
+      postgres: {condition: service_healthy}
+    networks: [private]
+    # Deliberately no published port: even /api/send remains private.
+    restart: unless-stopped
+  migrate:
+    build: .
+    environment:
+      DATABASE_URL: ${LEADS_DATABASE_URL:?Set the Farpoint-only database URL}
+    command: [node, src/runtime.mjs, migrate]
+    depends_on:
+      postgres: {condition: service_healthy}
+    networks: [private]
+    restart: 'no'
+  collector:
+    build: .
+    env_file: .env.collector
+    command: [node, src/runtime.mjs, serve]
+    ports: ['127.0.0.1:8080:8080']
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    networks: [private, egress]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8080/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+  report-job:
+    build: .
+    profiles: [jobs]
+    env_file: .env.collector
+    command: [node, src/runtime.mjs, hourly]
+    networks: [private, egress]
+  maintenance-job:
+    build: .
+    profiles: [jobs]
+    env_file: .env.maintenance
+    command: [node, src/runtime.mjs, maintenance]
+    networks: [private, egress]
+networks:
+  private: {internal: true}
+  egress: {}
+volumes:
+  postgres:
