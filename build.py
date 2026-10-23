@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Farpoint Energy website generator. Content lives in content.py; run `python3 build.py` to regenerate all pages."""
-import pathlib, html as H, json
+import pathlib, html as H, json, re
 from content import *
 from inquiry import render_form, thanks_content
 OUT = pathlib.Path(__file__).parent
 E = H.escape
+ANALYTICS_ENABLED = bool(re.search(r"enabled:\s*true\b", (OUT / "analytics-config.js").read_text()))
+ENRICHMENT_ENABLED = bool(re.search(r"enrichmentEnabled:\s*true\b", (OUT / "analytics-config.js").read_text()))
 MARK = '<svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="1" width="38" height="38" fill="none" stroke="#C4732C" stroke-width="3"/><line x1="7" y1="28" x2="33" y2="28" stroke="currentColor" stroke-width="3"/><circle cx="29" cy="13" r="4" fill="#C4732C"/></svg>'
 NAV = [("Products", "products.html"), ("Applications", "applications.html"), ("Manufacturing base", "manufacturing.html"),
        ("Quality", "quality.html"), ("Delivery & warranty", "delivery.html"), ("About", "about.html")]
@@ -124,12 +126,18 @@ section[id],#main{scroll-margin-top:140px}
 .reference-link{display:inline-flex;align-items:center;min-height:44px}#quote-form{scroll-margin-top:140px}
 @media(max-width:900px){.nav ul{display:flex}.nav:not(.menu-ready){position:static}.nav.menu-ready ul{max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px);overflow-y:auto}.nav.menu-ready ul:not(.is-open){display:none}.optional-grid{grid-template-columns:1fr}section[id],#main,#quote-form{scroll-margin-top:84px}}
 @media(max-width:360px){.nav .wrap{gap:8px}.nav .brand{font-size:12px;letter-spacing:.12em;gap:8px}}
+.analytics-link{font:inherit;color:inherit;background:none;border:0;text-decoration:underline;cursor:pointer;padding:8px 0;min-height:44px}
+.analytics-panel{position:fixed;z-index:30;right:20px;bottom:20px;width:min(420px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow-y:auto;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-top:3px solid var(--copper);padding:18px;box-shadow:0 4px 24px #0e1b2b26;font-size:15px}
+.analytics-panel[hidden],.analytics-link[hidden]{display:none}.analytics-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:10px}.analytics-heading h2{font-size:20px}
+.analytics-close{border:0;background:transparent;color:var(--slate);font:inherit;text-decoration:underline;min-height:44px;cursor:pointer;padding:4px}.analytics-actions{display:flex;gap:10px;flex-wrap:wrap}.analytics-actions .btn{flex:1}.analytics-exclusion{display:flex;align-items:center;gap:8px;margin-top:12px;min-height:44px}.analytics-exclusion input{width:18px;height:18px;flex:none}
+.analytics-panel:focus-visible,.analytics-panel button:focus-visible,.analytics-link:focus-visible{outline:3px solid var(--copper-dk);outline-offset:3px}
+@media(max-width:600px){.analytics-panel{right:16px;bottom:16px;padding:16px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 """
 
 def page(title, body, current, desc):
     VER = __import__("hashlib").md5(CSS.encode()).hexdigest()[:8]
-    script_versions = {name: __import__("hashlib").sha256((OUT / name).read_bytes()).hexdigest()[:10] for name in ("site.js", "inquiry.js")}
+    script_versions = {name: __import__("hashlib").sha256((OUT / name).read_bytes()).hexdigest()[:10] for name in ("site.js", "analytics-config.js", "analytics.js", "inquiry.js")}
     route = current or "404.html"
     canonical = SITE['domain'].rstrip('/') + ('/' if route == 'index.html' else '/' + route)
     robots = '<meta name="robots" content="noindex,follow">' if route in {'thanks.html','404.html'} else ''
@@ -145,7 +153,7 @@ def page(title, body, current, desc):
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css?v={VER}">
-<script src="site.js?v={script_versions['site.js']}" defer></script><script src="inquiry.js?v={script_versions['inquiry.js']}" defer></script>
+<script src="site.js?v={script_versions['site.js']}" defer></script><script src="analytics-config.js?v={script_versions['analytics-config.js']}" defer></script><script src="analytics.js?v={script_versions['analytics.js']}" defer></script><script src="inquiry.js?v={script_versions['inquiry.js']}" defer></script>
 </head><body><a class="skip" href="#main">Skip to content</a>
 <nav class="nav" aria-label="Main navigation"><div class="wrap"><a class="brand" href="index.html">{MARK}FARPOINT&nbsp;<span>ENERGY</span></a>
 <button type="button" class="navbtn" aria-controls="site-menu" aria-expanded="false" hidden><i aria-hidden="true"></i>Menu</button>
@@ -153,7 +161,14 @@ def page(title, body, current, desc):
 <main id="main" tabindex="-1">{body}</main>
 <footer><div class="wrap"><div><div class="brand" style="margin-bottom:10px">{MARK}FARPOINT&nbsp;<span>ENERGY</span></div>Power and distribution transformers, engineered to your specification.<br>{SITE['city']}</div>
 <div><a href="mailto:{SITE['email']}">{SITE['email']}</a><br><a href="tel:{SITE['phone_raw']}">{SITE['phone']}</a><br><a href="quote.html">Request a quotation</a></div>
-<div class="mono" style="font-size:12px;align-self:flex-end">© 2026 Farpoint Energy · <a href="privacy.html">Privacy</a></div></div></footer>
+<div class="mono" style="font-size:12px;align-self:flex-end">© 2026 Farpoint Energy · <a href="privacy.html">Privacy</a><br><button type="button" id="analytics-open" class="analytics-link" aria-controls="analytics-preferences" aria-expanded="false" hidden>Analytics preferences</button></div></div></footer>
+<aside id="analytics-preferences" class="analytics-panel" aria-labelledby="analytics-title" tabindex="-1" hidden>
+<div class="analytics-heading"><h2 id="analytics-title">Analytics preferences</h2><button type="button" id="analytics-close" class="analytics-close">Close</button></div>
+<p>May we measure which pages help visitors and whether they lead to inquiries? Analytics is optional. We do not include your form entries in browsing analytics.</p>
+<p id="analytics-status" class="small" role="status" aria-live="polite"></p>
+<div class="analytics-actions"><button type="button" id="analytics-allow" class="btn ghost">Allow analytics</button><button type="button" id="analytics-decline" class="btn ghost">Decline</button></div>
+<label for="analytics-exclude" class="analytics-exclusion"><input type="checkbox" id="analytics-exclude">Exclude this browser from visit counts</label>
+<p class="small"><a href="privacy.html">How we handle information</a></p></aside>
 </body></html>"""
 
 def hero(eyebrow, h1, sub=None, diagram=False, cta=None, strip=None):
@@ -278,10 +293,15 @@ about = hero("About", a['h'], a['intro']) + f"""
 (OUT/"about.html").write_text(page("About — Farpoint Energy", about, "about.html", "Farpoint Energy supplies power and distribution transformers for the US grid, based in New York."))
 
 # ---------- PRIVACY
+analytics_privacy = '<p>Optional browsing analytics is currently disabled.</p>'
+if ANALYTICS_ENABLED:
+    analytics_privacy = '<p>With your permission, Farpoint uses its own collector and self-hosted Umami to measure pages viewed, broad product interests, recognized campaign sources, quotation-form starts and accepted submissions, and email-link clicks. Browsing analytics excludes your name, email, form entries, specification links and full page URLs. A random browser identifier lasts up to 30 days; sessions expire after 30 minutes of inactivity. Your analytics choice lasts up to 180 days. You can change it through Analytics preferences in the footer. We honor browser Global Privacy Control and Do Not Track signals.</p><p>Raw analytics and imported inquiry records are retained for 90 days, aggregate counts and delivery records for 13 months, and encrypted backups for seven days. Our hosting providers may process network request information. Browsing data is linked to a received inquiry only through its random inquiry identifier. Network information is not proof of a visitor’s name or employer.</p>'
+    if ENRICHMENT_ENABLED:
+        analytics_privacy += '<p>For consenting visits, the collector sends your IP address to ipapi.is to look up business-network information. Residential, mobile and hosting networks are not treated as prospective customers. Farpoint retains a limited company/network result for up to seven days and does not store the raw IP address in its analytics database. The lookup provider and hosting provider process the address as part of their services.</p>'
 privacy = hero("Privacy", "Inquiry information", "How information sent through this website is handled.") + f"""
 <section class="s"><div class="wrap"><h2>Information you send</h2><p class="mt">The quotation form collects your contact details and the project information you choose to provide. Farpoint uses it to review your requirement, prepare a response and communicate about the potential supply.</p>
 <h2 class="mt">Form and email processing</h2><p class="mt">The form is submitted through <a href="https://formsubmit.co/privacy.pdf">FormSubmit</a> and routed to {SITE['email']}. Email attachments go directly to that business inbox. FormSubmit and the email provider process information as part of those services. Contact us first if a project requires a separate confidential document process.</p>
-<h2 class="mt">Website services</h2><p class="mt">This static website is hosted on GitHub Pages and uses Google Fonts. Those services receive technical request information when your browser loads their resources. This website does not currently send inquiry analytics to a tracking service.</p><p>After an accepted form submission, temporary browser session storage may display the confirmation. It is cleared after the confirmation is displayed. A source or campaign code may be included with an inquiry; personal information is not added to page URLs.</p>
+<h2 class="mt">Website services</h2><p class="mt">This static website is hosted on GitHub Pages and uses Google Fonts. Those services receive technical request information when your browser loads their resources. </p>{analytics_privacy}<p>After an accepted form submission, temporary browser session storage may display the confirmation. It is cleared after the confirmation is displayed. A source or campaign code and a random inquiry identifier may be included with an inquiry to check delivery and, when analytics is allowed, connect it with browsing activity. Personal information is not added to page URLs.</p>
 <h2 class="mt">Questions and requests</h2><p class="mt">For questions about information you have sent, or to request correction or deletion, email <a href="mailto:{SITE['email']}">{SITE['email']}</a>.</p></div></section>"""
 (OUT/"privacy.html").write_text(page("Privacy — Farpoint Energy", privacy, "privacy.html", "How contact and project information submitted through the Farpoint website is processed."))
 
@@ -303,9 +323,9 @@ Static GitHub Pages site. Edit `content.py` for copy and `build.py` for layout, 
 
 ## Review checks
 
-Run `python3 check_site.py`, `node check_inquiry.js`, and `node check_context.js`. These check baseline preservation, local navigation, reproducible builds, and mocked inquiry/context behavior. They do not send email or prove delivery. Browser review and one controlled inquiry receipt check are required before release.
+Run `python3 check_site.py`, `node check_inquiry.js`, `node check_context.js`, and `node check_analytics.js`. These check baseline preservation, local navigation, reproducible builds, and mocked inquiry/context behavior. They do not send email or prove delivery. Browser review and one controlled inquiry receipt check are required before release.
 
-The quote form progressively enhances a native FormSubmit POST. Only explicit provider acceptance shows success; uncertain transport results retain the entered values. No analytics destination is configured. Preview snapshots must disable submissions and indexing.
+The quote form progressively enhances a native FormSubmit POST. Only explicit provider acceptance shows success; uncertain transport results retain the entered values. Analytics is configured in `analytics-config.js` and stays disabled until the backend release gates pass. Preview snapshots must disable analytics, submissions and indexing. See `docs/lead-intelligence-design.md` for the approved data contracts and deployment acceptance gates.
 
 Power and distribution are sections of Products. The four former standalone draft routes are compatibility redirects. Catalog PDFs remain unchanged and unlinked.
 """)

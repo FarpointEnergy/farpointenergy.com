@@ -68,6 +68,21 @@
   }
 
   if (!form) return;
+  // Random correlation metadata only; independent of analytics consent and transport.
+  // Disabled when secure randomness is unavailable, preserving native submission.
+  const inquiryId = document.getElementById("f-inquiry-id");
+  try {
+    if (inquiryId && typeof window.crypto?.randomUUID === "function") {
+      inquiryId.value = window.crypto.randomUUID();
+      inquiryId.disabled = false;
+    } else if (inquiryId && typeof window.crypto?.getRandomValues === "function") {
+      const bytes = window.crypto.getRandomValues(new Uint8Array(16));
+      bytes[6] = (bytes[6] & 15) | 64; bytes[8] = (bytes[8] & 63) | 128;
+      const hex = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+      inquiryId.value = `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+      inquiryId.disabled = false;
+    }
+  } catch (_) { /* An identifier failure never prevents an inquiry. */ }
   const params = new URLSearchParams(location.search);
   function setPrefill(key, element, values) {
     const value = params.get(key);

@@ -7,8 +7,8 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="style.css?v=07e2a867">
-<script src="site.js?v=42820f51a5" defer></script><script src="inquiry.js?v=8363777e4c" defer></script>
+<link rel="stylesheet" href="style.css?v=e00717a7">
+<script src="site.js?v=42820f51a5" defer></script><script src="analytics-config.js?v=87fcc770da" defer></script><script src="analytics.js?v=893c1e7fc3" defer></script><script src="inquiry.js?v=58fbb10536" defer></script>
 </head><body><a class="skip" href="#main">Skip to content</a>
 <nav class="nav" aria-label="Main navigation"><div class="wrap"><a class="brand" href="index.html"><svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="1" width="38" height="38" fill="none" stroke="#C4732C" stroke-width="3"/><line x1="7" y1="28" x2="33" y2="28" stroke="currentColor" stroke-width="3"/><circle cx="29" cy="13" r="4" fill="#C4732C"/></svg>FARPOINT&nbsp;<span>ENERGY</span></a>
 <button type="button" class="navbtn" aria-controls="site-menu" aria-expanded="false" hidden><i aria-hidden="true"></i>Menu</button>
@@ -43,5 +43,12 @@
 </main>
 <footer><div class="wrap"><div><div class="brand" style="margin-bottom:10px"><svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="1" width="38" height="38" fill="none" stroke="#C4732C" stroke-width="3"/><line x1="7" y1="28" x2="33" y2="28" stroke="currentColor" stroke-width="3"/><circle cx="29" cy="13" r="4" fill="#C4732C"/></svg>FARPOINT&nbsp;<span>ENERGY</span></div>Power and distribution transformers, engineered to your specification.<br>New York, NY</div>
 <div><a href="mailto:quotes@farpointenergy.com">quotes@farpointenergy.com</a><br><a href="tel:+12174179345">+1 (217) 417-9345</a><br><a href="quote.html">Request a quotation</a></div>
-<div class="mono" style="font-size:12px;align-self:flex-end">© 2026 Farpoint Energy · <a href="privacy.html">Privacy</a></div></div></footer>
+<div class="mono" style="font-size:12px;align-self:flex-end">© 2026 Farpoint Energy · <a href="privacy.html">Privacy</a><br><button type="button" id="analytics-open" class="analytics-link" aria-controls="analytics-preferences" aria-expanded="false" hidden>Analytics preferences</button></div></div></footer>
+<aside id="analytics-preferences" class="analytics-panel" aria-labelledby="analytics-title" tabindex="-1" hidden>
+<div class="analytics-heading"><h2 id="analytics-title">Analytics preferences</h2><button type="button" id="analytics-close" class="analytics-close">Close</button></div>
+<p>May we measure which pages help visitors and whether they lead to inquiries? Analytics is optional. We do not include your form entries in browsing analytics.</p>
+<p id="analytics-status" class="small" role="status" aria-live="polite"></p>
+<div class="analytics-actions"><button type="button" id="analytics-allow" class="btn ghost">Allow analytics</button><button type="button" id="analytics-decline" class="btn ghost">Decline</button></div>
+<label for="analytics-exclude" class="analytics-exclusion"><input type="checkbox" id="analytics-exclude">Exclude this browser from visit counts</label>
+<p class="small"><a href="privacy.html">How we handle information</a></p></aside>
 </body></html>
