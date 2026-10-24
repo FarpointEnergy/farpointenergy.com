@@ -25,16 +25,22 @@ function json(value,status=200,headers={}) {
 }
 function integer(v,min,max) { return Number.isSafeInteger(v) && v>=min && v<=max; }
 function onlyKeys(o,keys) { return o && typeof o==='object' && !Array.isArray(o) && Object.keys(o).every(k=>keys.includes(k)); }
+function validMcpRequest(rpc) { return onlyKeys(rpc,['jsonrpc','id','method','params'])&&rpc.jsonrpc==='2.0'&&(rpc.id===undefined||rpc.id===null||(typeof rpc.id==='string'&&encoder.encode(rpc.id).length<=100)||Number.isSafeInteger(rpc.id))&&typeof rpc.method==='string'; }
+function validMcpToolParams(params) {
+  // MCP request metadata is inert transport context, never identity or tool input.
+  // The entire request, including metadata, remains bounded to 16 KiB.
+  return onlyKeys(params,['name','arguments','_meta'])&&typeof params.name==='string'&&(params._meta===undefined||(params._meta!==null&&typeof params._meta==='object'&&!Array.isArray(params._meta)));
+}
 function contentType(request) { return (request.headers.get('content-type')||'').split(';')[0].trim().toLowerCase(); }
 
-export async function readBoundedBody(request, limit) {
+export async function readBoundedBody(request, limit, {awaitCancellation=true}={}) {
   if (!request.body) return new Uint8Array();
   const reader=request.body.getReader(), chunks=[]; let size=0;
   try {
     for (;;) {
       const {done,value}=await reader.read(); if(done) break;
       size+=value.byteLength;
-      if(size>limit) { await reader.cancel().catch(()=>{}); const e=new Error('body_too_large'); e.code='body_too_large'; throw e; }
+      if(size>limit) { const cancellation=reader.cancel().catch(()=>{});if(awaitCancellation)await cancellation;const e=new Error('body_too_large');e.code='body_too_large';throw e; }
       chunks.push(value);
     }
   } finally { reader.releaseLock(); }
@@ -78,10 +84,13 @@ export class R2CreateOnlyStore {
 
 /**
  * Only set verifiedGatewayIdentity after actual hosted anti-spoof verification.
+ * privateSiteMcpOwnerAccess is a separate, default-off Sites owner-private
+ * feasibility mode, relying on documented authenticated MCP forwarding. Its
+ * wrapper must enforce the private candidate scope; it proves no public gateway.
  * Only a wrapper with proven transport provenance may provide verifiedSourceIp.
- * Both default closed. A hosting bypass credential never grants owner identity.
+ * Trust modes default closed. A hosting bypass credential never grants identity.
  */
-export function createCollector({store,allowedOrigins=['https://farpointenergy.com','https://www.farpointenergy.com'],ownerIdentity=null,verifiedGatewayIdentity=false,cursorHmacKey=null,verifiedSourceIp=null,collectorVersion=COLLECTOR_VERSION,storagePrefix='',now=()=>new Date(),newId=()=>crypto.randomUUID(),maxListItems=40,maxListBytes=16000,cursorLifetimeMs=24*60*60*1000}={}) {
+export function createCollector({store,allowedOrigins=['https://farpointenergy.com','https://www.farpointenergy.com'],ownerIdentity=null,verifiedGatewayIdentity=false,privateSiteMcpOwnerAccess=false,cursorHmacKey=null,verifiedSourceIp=null,collectorVersion=COLLECTOR_VERSION,storagePrefix='',now=()=>new Date(),newId=()=>crypto.randomUUID(),maxListItems=40,maxListBytes=16000,cursorLifetimeMs=24*60*60*1000}={}) {
   if(!store || !['create','list','readChunk'].every(k=>typeof store[k]==='function'))throw new Error('store_capabilities_required');
   if(storagePrefix && !/^[a-zA-Z0-9_-]+\/$/.test(storagePrefix))throw new Error('invalid_storage_prefix');
   if(!integer(maxListItems,1,100)||!integer(maxListBytes,4096,24000))throw new Error('invalid_export_limits');
@@ -137,9 +146,10 @@ export function createCollector({store,allowedOrigins=['https://farpointenergy.c
     }catch{return json({status:'retry',reason:'durability_unconfirmed'},503,{...cors(origin),'Retry-After':'5'});}
   }
   function owner(request) {
-    if(verifiedGatewayIdentity!==true||typeof ownerIdentity!=='string'||!ownerIdentity||ownerIdentity.length>200)return null;
+    const privateAccess=privateSiteMcpOwnerAccess===true&&typeof cursorHmacKey==='string'&&encoder.encode(cursorHmacKey).length>=32;
+    if((verifiedGatewayIdentity!==true&&!privateAccess)||typeof ownerIdentity!=='string'||!ownerIdentity||ownerIdentity.length>200||/[,\s]/.test(ownerIdentity))return null;
     const id=request.headers.get('oai-authenticated-user-id');
-    return id===ownerIdentity && !id.includes(',') ? id : null;
+    return id===ownerIdentity && !/[,\s]/.test(id) ? id : null;
   }
   async function signingKey() {
     if(typeof cursorHmacKey!=='string'||encoder.encode(cursorHmacKey).length<32)throw new Error('export_configuration_unavailable');
@@ -198,7 +208,7 @@ export function createCollector({store,allowedOrigins=['https://farpointenergy.c
     if(request.method!=='POST')return json({error:'method_not_allowed'},405);
     let rpc;
     try {rpc=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await readBoundedBody(request,16384)));}catch{return json({jsonrpc:'2.0',id:null,error:{code:-32700,message:'Invalid request'}},400);}
-    if(!onlyKeys(rpc,['jsonrpc','id','method','params'])||rpc.jsonrpc!=='2.0'||!(rpc.id===undefined||rpc.id===null||(typeof rpc.id==='string'&&encoder.encode(rpc.id).length<=100)||Number.isSafeInteger(rpc.id))||typeof rpc.method!=='string')return json({jsonrpc:'2.0',id:null,error:{code:-32600,message:'Invalid request'}},400);
+    if(!validMcpRequest(rpc))return json({jsonrpc:'2.0',id:null,error:{code:-32600,message:'Invalid request'}},400);
     const id=rpc.id??null,reply=result=>{
       const envelope={jsonrpc:'2.0',id,result};
       if(encoder.encode(JSON.stringify(envelope)).length>24000)return json({jsonrpc:'2.0',id,result:{isError:true,content:[{type:'text',text:'response_budget_exceeded'}]}});
@@ -208,7 +218,7 @@ export function createCollector({store,allowedOrigins=['https://farpointenergy.c
     if(rpc.method==='tools/list')return reply({tools:definitions});
     if(rpc.method!=='tools/call')return json({jsonrpc:'2.0',id,error:{code:-32601,message:'Method unavailable'}},404);
     const identity=owner(request);if(!identity)return json({jsonrpc:'2.0',id,error:{code:-32001,message:'Owner authorization required'}},403);
-    if(!onlyKeys(rpc.params,['name','arguments'])||typeof rpc.params?.name!=='string')return reply({isError:true,content:[{type:'text',text:'invalid_arguments'}]});
+    if(!validMcpToolParams(rpc.params))return reply({isError:true,content:[{type:'text',text:'invalid_arguments'}]});
     try {
       let value;
       if(rpc.params.name==='list_records')value=await listRecords(rpc.params.arguments??{},identity,id);

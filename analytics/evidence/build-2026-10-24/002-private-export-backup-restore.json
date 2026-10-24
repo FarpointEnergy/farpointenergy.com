@@ -1,0 +1,129 @@
+{
+  "record_type": "private_synthetic_export_archive_restore_result",
+  "recorded_at": "2026-10-24T23:36:32.754Z",
+  "status": "PASS",
+  "scope": "private synthetic only",
+  "deployed_source_commit": "397304703f819c111b6a5706c436ce75c87deef4",
+  "deployment": {
+    "id": "appgdep_6add3f73141481918b4fa8f6cf8b36a6",
+    "project_id": "appgprj_6adbbaca1c548191aa47200d710de59b",
+    "title": "Farpoint Lead Collector",
+    "version_id": "appgprj_6adbbaca1c548191aa47200d710de59b~appgver_235cb9ae0d8c8191abf4af16ce4628ab",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://farpoint-lead-collector.karanuppal.chatgpt.site",
+    "has_mcp": true,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6adbbaca1c548191aa47200d710de59b",
+    "failure_message": null,
+    "env_set_revision": 6,
+    "updated_at": "2026-10-24T23:30:05.998111+00:00"
+  },
+  "audience": {
+    "observed_at": "2026-10-24T23:32:33.672Z",
+    "access_mode": "custom",
+    "owner_count": 1,
+    "user_count": 1,
+    "editor_count": 0,
+    "group_count": 0,
+    "external_count": 0
+  },
+  "enumeration": {
+    "receipts": {
+      "pages": 3,
+      "objects": 3,
+      "enumeration_complete": true
+    },
+    "rejections": {
+      "pages": 1,
+      "objects": 0,
+      "enumeration_complete": true
+    }
+  },
+  "chunk_responses": 9,
+  "original_records": [
+    {
+      "key": "receipts/2026/10/23/a34b9e3c-601a-4de4-87bf-9cb7c463c10e.json",
+      "sha256": "547824bd474072698b4e36d35f1105e9758dfc457b6ac80af10ad37ff2bdd437",
+      "bytes": 682
+    },
+    {
+      "key": "receipts/2026/10/23/357923c7-e4cd-48c5-b6c0-0aa0aca3f368.json",
+      "sha256": "714d9f6bb8d733ae9ade61f345d4f5d93556150b210503f9accc5719ae3df7a5",
+      "bytes": 682
+    },
+    {
+      "key": "receipts/2026/10/23/a920edc2-ac3f-46e0-a7b1-01eafda27d21.json",
+      "sha256": "547824bd474072698b4e36d35f1105e9758dfc457b6ac80af10ad37ff2bdd437",
+      "bytes": 682
+    }
+  ],
+  "all_original_objects_hash_verified": true,
+  "archive": {
+    "bytes": 32703,
+    "sha256": "e340bf1870cade6e06738c685635f74ef159dad77cce0f021963a0279901667d",
+    "owner_only_Drive_readback_verified": true,
+    "completion_record_sha256": "c6138c8dbd0ccb288dcf004b3a2cecd4143a272dbe67f839bd2879add5115371"
+  },
+  "restore": {
+    "status": "PASS",
+    "scope": "downloaded_archive_fresh_directory_restore",
+    "source_verification": {
+      "status": "verified",
+      "record_count": 14,
+      "total_bytes": 110484,
+      "manifest_sha256": "d4e30625102048b4a5e9f97576cf0a7f802099134713bbfd5a89fcebc8d3463b"
+    },
+    "restored_verification": {
+      "status": "verified",
+      "record_count": 14,
+      "total_bytes": 110484,
+      "manifest_sha256": "c24e86f3221aa2acf1d5f77db11401de6c996dfaad8e2540731e70b22f4e1f75"
+    },
+    "original_objects_verified": 3,
+    "original_total_bytes": 2046,
+    "full_runtime_recovery_verified": false
+  },
+  "no_identity_export_probe_original": {
+    "scope": "service_access_without_visitor_identity",
+    "observed_at": "2026-10-24T23:31:49.057302+00:00",
+    "tool": "list_records",
+    "identity_headers_sent": false,
+    "uses_bypass_as_identity": false,
+    "http_status": 401,
+    "recognized_application_denial": false,
+    "status": "UNVERIFIED"
+  },
+  "no_identity_denial": {
+    "status": "PASS",
+    "scope": "edge access denial only",
+    "http_status": 401,
+    "application_guard_executed": false,
+    "token_acceptance_verified": false
+  },
+  "local_tests": {
+    "independent_total": 64,
+    "status": "PASS",
+    "review": "approved"
+  },
+  "resolved_defects": [
+    "closed private export guard",
+    "missing cursor signing secret",
+    "standard MCP metadata rejected",
+    "cloned stream cancellation hang"
+  ],
+  "raw_evidence_location": "owner-only Drive; identifiers deliberately excluded",
+  "technical_document": "https://docs.google.com/document/d/1b7L0vS0bGorICu4qqoKHtTAKIKZiJ71WSvBTcKoJYsI/edit?usp=drivesdk",
+  "not_certified": [
+    "public intake",
+    "complete hosted auth matrix",
+    "visitor IP provenance",
+    "bucket lifecycle and retention controls",
+    "unattended reporting",
+    "full runtime recovery",
+    "production readiness"
+  ],
+  "live_tracking_enabled": false,
+  "RFQs_submitted": false,
+  "storage_write_probe_rerun": false
+}

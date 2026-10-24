@@ -4,8 +4,13 @@ This is the missing bridge between the hosted receipt tools and the reviewed
 Python analysis. It runs inside a Work task using the existing native connectors.
 There is no new server, database, credential store or always-on process.
 
-Status: implemented with synthetic fault tests. Hosted export remains disabled
-until gateway identity provenance is verified. Passing these tests does not
+Status: implemented with synthetic fault tests. The separate owner-private Sites
+MCP feasibility mode can permit the existing exporter after its documented
+private-access prerequisites pass; it leaves the general gateway verification
+flag off. This is a bounded test of existing synthetic records, not permission
+to run recurring reporting or collect customer traffic. See the
+[private export addendum](../../docs/technical/lead-intelligence-private-export-addendum-2026-10-24.md).
+Passing these tests does not
 certify actual Drive/Gmail permissions, a scheduled run, retention locks,
 visitor-IP provenance, independent runtime recovery or production readiness.
 
