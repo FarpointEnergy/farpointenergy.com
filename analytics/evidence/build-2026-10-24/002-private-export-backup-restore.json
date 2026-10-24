@@ -98,7 +98,7 @@
     "status": "PASS",
     "scope": "edge access denial only",
     "http_status": 401,
-    "application_guard_executed": false,
+    "application_guard_execution_verified": false,
     "token_acceptance_verified": false
   },
   "local_tests": {
@@ -106,7 +106,7 @@
     "status": "PASS",
     "review": "approved"
   },
-  "resolved_defects": [
+  "resolved_impediments": [
     "closed private export guard",
     "missing cursor signing secret",
     "standard MCP metadata rejected",
