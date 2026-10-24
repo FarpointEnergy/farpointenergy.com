@@ -1,0 +1,70 @@
+{
+  "record_type": "public_synthetic_test_preparation",
+  "recorded_at": "2026-10-24T23:43:07.933Z",
+  "status": "PREPARED_PRIVATE_AWAITING_AUDIENCE_AUTHORIZATION",
+  "source_commit": "397304703f819c111b6a5706c436ce75c87deef4",
+  "deployment": {
+    "id": "appgdep_6add423538a48191a0915960846fd0db",
+    "project_id": "appgprj_6adbbaca1c548191aa47200d710de59b",
+    "title": "Farpoint Lead Collector",
+    "version_id": "appgprj_6adbbaca1c548191aa47200d710de59b~appgver_235cb9ae0d8c8191abf4af16ce4628ab",
+    "type": "publish",
+    "status": "succeeded",
+    "has_mcp": true,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6adbbaca1c548191aa47200d710de59b",
+    "failure_message": null,
+    "env_set_revision": 7,
+    "updated_at": "2026-10-24T23:41:48.276490+00:00"
+  },
+  "audience": {
+    "access_mode": "custom",
+    "owner_count": 1,
+    "user_count": 1,
+    "group_count": 0,
+    "external_count": 0
+  },
+  "configuration": {
+    "GATEWAY_IDENTITY_VERIFIED": "0",
+    "PRIVATE_OWNER_EXPORT_ENABLED": "0",
+    "PRIVATE_CANDIDATE_BOOTSTRAP": "0",
+    "secrets": "preserved; values omitted"
+  },
+  "observed_denials": [
+    {
+      "operation": "list_records",
+      "denied": true,
+      "http_status": 403
+    },
+    {
+      "operation": "bootstrap",
+      "disabled": true,
+      "reason": "installed plugin reports unknown tool after private candidate tools removed"
+    }
+  ],
+  "bootstrap_result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "tool call error: tool call failed for `codex_apps/farpoint_lead_collector.bootstrap_owner_identity`\n\nCaused by:\n    Mcp error: -32001: Unknown tool({\"name\":\"farpoint_lead_collector.bootstrap_owner_identity\"})"
+      }
+    ],
+    "isError": true
+  },
+  "note": "The installed metadata list can remain cached, but bootstrap execution now reports unknown tool. No additional hosted storage probe was invoked.",
+  "next_test": {
+    "route": "POST /v1/events on the existing collector",
+    "requires": "explicit public audience authorization and controlled test egress",
+    "live_marketing_tracking": false,
+    "RFQ_submission": false,
+    "recurring_reporting": false,
+    "private_exports": false
+  },
+  "unchanged": [
+    "stored records",
+    "marketing website",
+    "owner identity secret",
+    "cursor signing secret"
+  ],
+  "remaining_policy_evidence": "actual bound-bucket lifecycle/expiration and mutation-protection settings; not a demonstrated storage failure"
+}
