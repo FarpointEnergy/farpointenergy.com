@@ -4,7 +4,10 @@
  */
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {readFile, mkdir, writeFile, appendFile} from 'node:fs/promises';
+import {createServer as createHttpsServer} from 'node:https';
+import {readFile, mkdir, mkdtemp, writeFile, appendFile} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
+import {tmpdir} from 'node:os';
 import {resolve, dirname, extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
@@ -30,13 +33,21 @@ const server=createServer(async(req,res)=>{
 });
 await new Promise(done=>server.listen(0,'127.0.0.1',done));
 const origin='http://127.0.0.1:'+server.address().port;
-const collector='https://collector.example.test/v1/events';
-const report={run_id:runId,scope:'local browser integration; external RFQ and collector mocked',real_inbox_delivery_verified:false,live_collection_verified:false,font_mode:'external fonts blocked; system fallback',engines:[]};
+// The tracker requires HTTPS. A private, ephemeral localhost certificate allows
+// real fetch/beacon bytes to reach the fixture, including WebKit Blob beacons
+// whose bodies Playwright's interception API does not expose.
+const tlsDirectory=await mkdtemp(resolve(tmpdir(),'farpoint-browser-tls-'));
+const keyPath=resolve(tlsDirectory,'key.pem'),certPath=resolve(tlsDirectory,'cert.pem');
+execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',keyPath,'-out',certPath,'-days','1','-subj','/CN=localhost','-addext','subjectAltName=IP:127.0.0.1,DNS:localhost'],{stdio:'pipe'});
+const fixtureTls={key:await readFile(keyPath),cert:await readFile(certPath)};
+const report={run_id:runId,scope:'local browser integration; external RFQ mocked; localhost HTTPS collector fixture',real_inbox_delivery_verified:false,live_collection_verified:false,font_mode:'external fonts blocked; system fallback',engines:[]};
 const sentinel='SYNTHETIC-PRIVATE-FORM-'+randomUUID();
 
 async function scenario(browser,name,mobile=false){
-  const ctx=await browser.newContext({serviceWorkers:'block',...(mobile?{...playwright.devices['iPhone 13'],viewport:{width:390,height:844}}:{viewport:{width:1366,height:900}})});
-  const payloads=[],batches=[],errors=[];
+  // Certificate relaxation is confined to this local synthetic context. Every
+  // unrelated external request remains blocked by the route handler below.
+  const ctx=await browser.newContext({serviceWorkers:'block',ignoreHTTPSErrors:true,...(mobile?{...playwright.devices['iPhone 13'],viewport:{width:390,height:844}}:{viewport:{width:1366,height:900}})});
+  const payloads=[],batches=[],errors=[],collectorErrors=[],receivedRequests=[];
   let observationSequence=0;
   const observationPath=resolve(evidence,name+'-observations.jsonl');
   async function observe(kind,data){
@@ -44,7 +55,34 @@ async function scenario(browser,name,mobile=false){
     await appendFile(observationPath,JSON.stringify(record)+'\n');
   }
   const bytesEvidence=body=>{const bytes=Buffer.from(body);return{body_base64:bytes.toString('base64'),body_bytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')};};
-  let mode='rejected',collectorMode='ack';
+  let mode='rejected',collectorMode='ack',scenarioResult=null;
+  const collectorTasks=new Set();
+  const collectorServer=createHttpsServer(fixtureTls,(req,res)=>{
+    const task=(async()=>{
+      res.setHeader('Access-Control-Allow-Origin',origin);
+      res.setHeader('Access-Control-Allow-Methods','POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers','Content-Type, Accept');
+      if(req.url!=='/v1/events'){res.writeHead(404);res.end();return;}
+      if(req.method==='OPTIONS'){await observe('collector_preflight',{method:req.method,origin:req.headers.origin||null});res.writeHead(204);res.end();return;}
+      const requestId=randomUUID(),chunks=[];
+      try{for await(const chunk of req)chunks.push(chunk);}
+      catch(err){await observe('collector_request_incomplete',{request_id:requestId,method:req.method,reason:String(err),...bytesEvidence(Buffer.concat(chunks))});throw err;}
+      const bytes=Buffer.concat(chunks),body=bytes.toString('utf8');
+      const request={request_id:requestId,method:req.method,accept:req.headers.accept||null,content_type:req.headers['content-type']||null,body};
+      batches.push(body);
+      await observe('collector_request',{request_id:requestId,method:request.method,accept:request.accept,content_type:request.content_type,...bytesEvidence(bytes)});
+      if(collectorMode==='drop'||(collectorMode==='beacon-only'&&request.accept==='application/json')){
+        await observe('collector_response_dropped',{request_id:requestId});receivedRequests.push({...request,response:'dropped'});res.destroy();return;
+      }
+      const ack=JSON.stringify({status:'retained',terminal:true,receipt_id:randomUUID(),receipt_body_sha256:createHash('sha256').update(bytes).digest('hex'),analytical_status:'not_evaluated'});
+      await observe('collector_response',{request_id:requestId,status:202,...bytesEvidence(ack)});
+      res.writeHead(202,{'Content-Type':'application/json'});res.end(ack);
+      receivedRequests.push({...request,response:'ack'});
+    })().catch(err=>{collectorErrors.push(String(err.stack||err));res.destroy();});
+    collectorTasks.add(task);void task.finally(()=>collectorTasks.delete(task));
+  });
+  await new Promise(done=>collectorServer.listen(0,'127.0.0.1',done));
+  const collector='https://127.0.0.1:'+collectorServer.address().port+'/v1/events';
   try{
   await observe('scenario_started',{name,mobile,external_requests_intercepted:true});
   await ctx.route('**/*',async route=>{
@@ -56,13 +94,7 @@ async function scenario(browser,name,mobile=false){
       await route.continue();return;
     }
     if(req.url()===collector){
-      if(req.method()==='OPTIONS') {await route.fulfill({status:204,headers:{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Accept'}});return;}
-      const body=req.postData()||'',requestId=randomUUID();batches.push(body);
-      await observe('collector_request',{request_id:requestId,...bytesEvidence(req.postDataBuffer()||'')});
-      if(collectorMode==='drop'){await observe('collector_response_dropped',{request_id:requestId});await route.abort('failed');return;}
-      const ack=JSON.stringify({status:'retained',terminal:true,receipt_id:randomUUID(),receipt_body_sha256:createHash('sha256').update(body).digest('hex'),analytical_status:'not_evaluated'});
-      await observe('collector_response',{request_id:requestId,status:202,...bytesEvidence(ack)});
-      await route.fulfill({status:202,contentType:'application/json',headers:{'Access-Control-Allow-Origin':origin},body:ack});return;
+      await route.continue();return;
     }
     if(url.hostname==='formsubmit.co'){
       if(req.method()==='OPTIONS') {await route.fulfill({status:204,headers:{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Accept'}});return;}
@@ -80,6 +112,26 @@ async function scenario(browser,name,mobile=false){
   const page=await ctx.newPage();page.on('pageerror',err=>errors.push(err.message));
   const target=origin+'/quote.html?product=power&reference=FP-MPT-138-50&utm_source=browser-test&utm_medium=email&utm_campaign=qa-test';
   await page.goto(target);await page.waitForFunction(()=>window.farpointTracker?.enabled===true);
+  // Exercise native sendBeacon against a real receiver. Only fetch sets the
+  // explicit application/json Accept header in this tracker; beacons do not.
+  // Even a successful beacon response must leave its event awaiting fetch ACK.
+  collectorMode='beacon-only';
+  const beaconProbe=await page.evaluate(()=>{const event_id=window.farpointTracker.record('email_click',{location_code:'quotation'});return{event_id,queued:window.farpointTracker.beacon()};});
+  assert.equal(beaconProbe.queued,true);
+  const containsProbe=r=>JSON.parse(r.body).events.some(e=>e.event_id===beaconProbe.event_id);
+  const beaconDeadline=Date.now()+5000;
+  while(!receivedRequests.some(r=>r.accept!=='application/json'&&r.response==='ack'&&containsProbe(r))){
+    assert.ok(Date.now()<beaconDeadline,'native beacon bytes did not reach the local HTTPS receiver');
+    await new Promise(done=>setTimeout(done,20));
+  }
+  assert.equal(await page.evaluate(id=>Boolean(localStorage.getItem('farpoint-event-v1:'+id)),beaconProbe.event_id),true);
+  const receivedBeacon=receivedRequests.find(r=>r.accept!=='application/json'&&r.response==='ack'&&containsProbe(r));
+  await observe('native_beacon_probe',{...beaconProbe,request_id:receivedBeacon.request_id,outbox_retained_after_beacon_ack:true});
+  collectorMode='ack';await page.evaluate(()=>window.farpointTracker.flush());
+  await page.waitForFunction(()=>window.farpointTracker.pendingCount()===0);
+  const probeFetch=receivedRequests.find(r=>r.accept==='application/json'&&r.response==='ack'&&containsProbe(r));
+  assert.ok(probeFetch,'probe must be received again by fetch before its outbox entry clears');
+  await observe('native_beacon_fetch_ack',{event_id:beaconProbe.event_id,request_id:probeFetch.request_id,outbox_cleared:true});
   assert.equal(await page.locator('#f-configuration').inputValue(),'FP-MPT-138-50');
   assert.equal(await page.locator('details.optional-fields').evaluate(e=>e.open),false);
   assert.equal(await page.locator('details.optional-fields [required]').count(),0);
@@ -143,8 +195,9 @@ async function scenario(browser,name,mobile=false){
   collectorMode='ack';await page.evaluate(()=>window.farpointTracker.flush());
   await page.waitForFunction(()=>window.farpointTracker.pendingCount()===0);
   assert.deepEqual(errors,[]);
-  const result={scenario:name,status:'PASS',viewport_equivalent:mobile?'iPhone 13 WebKit/Chromium emulation; not real iOS':'desktop',mock_form_attempts:payloads.length,event_types:[...new Set(events.map(e=>e.event_name))],checks:['responsive overflow 320/390/768/1366','offer/email precede form','optional technical accordion','reference retains entered electrical values','rejected/malformed/network errors retain fields and clickable email','stable retry inquiry correlation','explicit success only','no form sentinels in analytics','outbox reload/retry']};
-  await observe('scenario_passed',{result});
+  assert.deepEqual(collectorErrors,[]);
+  const result={scenario:name,status:'PASS',viewport_equivalent:mobile?'iPhone 13 WebKit/Chromium emulation; not real iOS':'desktop',mock_form_attempts:payloads.length,event_types:[...new Set(events.map(e=>e.event_name))],checks:['native beacon bytes received over local HTTPS','beacon ACK leaves queue until verified fetch ACK','responsive overflow 320/390/768/1366','offer/email precede form','optional technical accordion','reference retains entered electrical values','rejected/malformed/network errors retain fields and clickable email','stable retry inquiry correlation','explicit success only','no form sentinels in analytics','outbox reload/retry']};
+  scenarioResult=result;
   return result;
   }catch(err){
     await observe('scenario_failed',{reason:String(err.stack||err)});
@@ -153,8 +206,12 @@ async function scenario(browser,name,mobile=false){
     }
     throw err;
   }finally{
-    await observe('scenario_finished',{mock_form_attempts:payloads.length,collector_request_count:batches.length,page_errors:errors});
     await ctx.close();
+    collectorServer.closeAllConnections();await new Promise(done=>collectorServer.close(done));
+    await Promise.allSettled([...collectorTasks]);
+    await observe('scenario_finished',{status:scenarioResult&&!collectorErrors.length?'PASS':'FAIL',mock_form_attempts:payloads.length,collector_request_count:batches.length,page_errors:errors,collector_errors:collectorErrors});
+    assert.deepEqual(collectorErrors,[],'collector fixture failed during teardown');
+    if(scenarioResult)await observe('scenario_passed',{result:scenarioResult});
   }
 }
 
