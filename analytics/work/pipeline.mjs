@@ -46,8 +46,15 @@ export async function runLeadPipeline({runId,config,collector,mail,classify,anal
       workRequire(observation.id&&observation.url,'invalid_drive_create');
       workRequire(!createdIds.has(result.id),'duplicate_remote_file_id');createdIds.add(result.id);
       observation.state='created_unverified';
-      const readback=await drive.read(result.id);
-      workRequire(readback instanceof Uint8Array&&readback.length===data.length&&await workHash(readback)===observation.sha256,'drive_readback_mismatch');
+      if(typeof drive.verifyFile==='function'){
+        // The native bridge downloads and hashes the full file, retaining those
+        // exact bytes privately without streaming a second copy through V8.
+        const readback=await drive.verifyFile(result.id,{bytes:data.length,sha256:observation.sha256});
+        workRequire(readback?.verified===true&&readback.id===result.id&&readback.bytes===data.length&&readback.sha256===observation.sha256,'drive_readback_mismatch');
+      }else{
+        const readback=await drive.read(result.id);
+        workRequire(readback instanceof Uint8Array&&readback.length===data.length&&await workHash(readback)===observation.sha256,'drive_readback_mismatch');
+      }
       observation.verified=true;observation.state='verified';
       return {id:result.id,url:result.url,bytes:data.length,sha256:observation.sha256};
     }catch(error){if(!observation.id&&typeof error?.created_file?.id==='string'&&error.created_file.id){observation.id=error.created_file.id;observation.url=typeof error.created_file.url==='string'?error.created_file.url:null;}observation.state=observation.id?'created_unverified':'create_outcome_unknown';observation.reason=workCode(error);throw error;}

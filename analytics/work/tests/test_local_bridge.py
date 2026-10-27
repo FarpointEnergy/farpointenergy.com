@@ -15,6 +15,16 @@ bridge = importlib.util.module_from_spec(spec); spec.loader.exec_module(bridge)
 
 
 class BridgeTests(unittest.TestCase):
+    def test_large_reference_verifies_locally_and_retains_mismatched_download(self):
+        root=Path(__file__).parent/'.evidence'/str(uuid.uuid4()); root.mkdir(parents=True)
+        data=b'private-synthetic-download'*10000
+        source=Path(bridge.safe_write(root,'original.bin',data))
+        request={'response':{'workspace_path':str(source)},'expected_bytes':len(data),'expected_sha256':hashlib.sha256(data).hexdigest()}
+        proof=bridge.verify_reference(request,root);self.assertTrue(proof['verified']);self.assertEqual(Path(proof['path']).read_bytes(),data)
+        with self.assertRaisesRegex(ValueError,'download_integrity_mismatch'):
+            bridge.verify_reference({**request,'expected_sha256':'0'*64},root)
+        self.assertEqual(len(list((root/'verified-downloads').glob('*.bin'))),2)
+
     def test_large_response_has_exact_bounded_chunk_recovery(self):
         root=Path(__file__).parent/'.evidence'/str(uuid.uuid4()); root.mkdir(parents=True)
         value={'status':'ok','synthetic':'电力 — 🧑🏽‍🚀'*20000}
@@ -62,6 +72,10 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(result['report']['status'],'complete')
         names={a['name'] for a in result['artifacts']}; self.assertIn('replay/work-source/pipeline.mjs',names); self.assertIn('replay/timezone/America_New_York.tzif',names)
         self.assertIn('inputs/company_observations.json',names)
+        archived=next((root/'analysis-archives').iterdir())
+        replay=bridge.replay_restored_analysis({'archive':str(archived),'source_commit':'a'*40},root)
+        self.assertTrue(replay['verified']);self.assertTrue(replay['archived_source_used'])
+        self.assertTrue(replay['python_socket_calls_blocked']);self.assertFalse(replay['independent_os_runtime_recovery'])
 
 
 if __name__=='__main__':unittest.main()

@@ -33,6 +33,11 @@ export function createWorkHostBridge({tools,privateRoot,repositoryRoot}){
   return {
     create:async(path,bytes)=>(await invoke({op:'create',path,base64:bridgeBase64(bytes)})).path,
     readFileReference:async response=>workUnbase64((await invoke({op:'read_reference',response})).base64),
+    verifyFileReference:async({response,expectedBytes,expectedSha256})=>invoke({op:'verify_reference',response,expected_bytes:expectedBytes,expected_sha256:expectedSha256}),
+    packEvidence:async({sourceRoot,binding})=>(await invoke({op:'pack_evidence',source_root:bridgePath(sourceRoot),binding})).archive,
+    restoreEvidence:async({path,bytes,sha256})=>(await invoke({op:'restore_evidence',path:bridgePath(path),bytes,sha256})).restoration,
+    replayAnalysis:async({archive,sourceCommit})=>invoke({op:'replay_analysis',archive:bridgePath(archive),source_commit:sourceCommit}),
+    captureClosureSource:async()=>invoke({op:'capture_closure_source'}),
     normalizeMail:async({raw,connector,...metadata})=>{
       const value=await invoke({op:'normalize_mail',raw_base64:bridgeBase64(raw),connector,...metadata});
       return {...value.result,artifacts:value.result.artifacts.map(x=>({name:x.name,bytes:workUnbase64(x.base64)}))};

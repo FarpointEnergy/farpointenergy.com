@@ -40,6 +40,17 @@ export function createNativeAdapters({tools,local,settings,classify,analyze,now=
         nativeEnsure(meta.id===id&&meta.parents?.includes(settings.archive_folder_id)&&typeof meta.url==='string'&&nativePrivate(meta,settings.owner_email),'drive_destination_mismatch');return {id,url:meta.url};
       }catch(error){const failure=new WorkFailure(error instanceof WorkFailure?error.code:'drive_post_create_verification_failed');failure.created_file={id,url:typeof upload.url==='string'?upload.url:null};throw failure;}
     },
+    verifyFile:async(id,{bytes,sha256})=>{
+      const metadataRaw=await call('mcp__codex_apps__google_drive_get_file_metadata',{fileId:id,fields:'id,name,mimeType,parents,permissions,shared,webViewLink'});
+      const meta=nativeMeta(workToolValue(metadataRaw));
+      await local.create(`adapter-evidence/drive-verify-${crypto.randomUUID()}.json`,workJSON(metadataRaw));
+      nativeEnsure(meta.id===id&&meta.parents?.includes(settings.archive_folder_id)&&typeof meta.url==='string'&&nativePrivate(meta,settings.owner_email),'drive_read_scope_mismatch');
+      const raw=await call('mcp__codex_apps__google_drive_fetch',{url:meta.url,download_raw_file:true,include_base64:false});
+      nativeEnsure(!raw?.isError,'drive_fetch_failed');
+      const proof=await local.verifyFileReference({response:raw,expectedBytes:bytes,expectedSha256:sha256});
+      nativeEnsure(proof.verified===true&&proof.bytes===bytes&&proof.sha256===sha256,'drive_readback_mismatch');
+      return {id,url:meta.url,...proof};
+    },
     read:async id=>{
       const meta=nativeMeta(workToolValue(await call('mcp__codex_apps__google_drive_get_file_metadata',{fileId:id,fields:'id,name,mimeType,parents,permissions,shared,webViewLink'})));
       nativeEnsure(meta.id===id&&meta.parents?.includes(settings.archive_folder_id)&&typeof meta.url==='string'&&nativePrivate(meta,settings.owner_email),'drive_read_scope_mismatch');

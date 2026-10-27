@@ -26,6 +26,14 @@ const adapters = createNativeAdapters({tools, local, settings, classify, analyze
 const result = await runLeadPipeline({...adapters, collector, runId, config});
 ```
 
+The adapter-evidence callback writes outside the pipeline journal. Therefore a
+pipeline completed record alone is not the full connector-evidence archive.
+Keep all attempts beneath one private evidence root and finish with the bundled
+`closeWorkArchive` entry point in `TASK.md`. It binds the pipeline's verified
+manifest to a complete evidence ZIP, verifies its actual Drive download and
+fresh restoration, and replays the archived analysis before emitting a separate
+verified closure. Future tasks must require that closure result.
+
 The adapter emits only fixed `GET` requests through
 `mcp__codex_apps__farpoint_cloudflare_execute`. **This does not make the connected
 account or token read-only.** Provisioning uses administrative access; analysis

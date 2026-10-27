@@ -22,6 +22,7 @@ visitor-IP provenance, independent runtime recovery or production readiness.
 | `native-adapters.mjs` | Exact native MCP, Drive and Gmail tool bindings. Raw RFC2822 capture; no sender-only lead classification. |
 | `host-bridge.mjs` / `local_bridge.py` | Private create-only files and standard-library Python via hidden stdin. No credentials in shell arguments or files. |
 | `portable-runtime.mjs` | UTF-8, base64 and SHA-256 compatibility for Functions V8, which lacks browser Web APIs. UUID entropy comes from the OS. |
+| `archive-closure.mjs` / `evidence_archive.py` | Verify all remote manifest files, package every retained attempt and connector envelope, verify a downloaded ZIP, restore fresh files and replay archived numerical analysis before creating a separate closure record. |
 | `work.bundle.js` | Mechanically generated, self-contained Work entry point; source hash in header. Never hand-edit it. |
 
 The collector adapter follows **both** receipts and rejection-metadata
@@ -147,6 +148,17 @@ must be archived and shown in-app by its Work task.
 Notifications and real scheduled authorization remain acceptance tests; these
 functions do not themselves schedule or send anything. A Work-wide outage may
 also prevent the watchdog from warning at the time of failure.
+
+For the complete connector-evidence boundary, call `closeWorkArchive` after the
+pipeline with a quiescent evidence root and a new output root outside both the
+evidence root and Git. The versioned recipe is in `TASK.md`. Native Drive
+`verifyFile` downloads and hashes full file bytes inside Python, retaining them
+locally without returning large contents through tool stdout. The closure ZIP
+includes those verified copies, the collector's original connector envelopes,
+source versions and previous failed attempts. Its required-file manifest binds
+the successful run's local copies to the already verified remote manifest.
+Restore and numerical replay must pass before the separate closure is marked
+verified. A pipeline completed record alone does not certify this boundary.
 
 Work version `1.0.1` labels current-window receipts, session-cohort conversions,
 and all-history inquiry totals separately in the human report. The archive

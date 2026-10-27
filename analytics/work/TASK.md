@@ -41,10 +41,45 @@ hosted export, private archive and unattended-permission gates pass.
    two scans remains newly unreviewed and is visible; it cannot silently enter
    confirmed inquiry totals. Repeat only if useful within the task's resources;
    otherwise retain `needs_review` and show the exact pending count.
-7. Show the owner the verified archive/report links, source completeness, report
+7. After a completed pipeline run, stop all writes beneath this invocation's
+   evidence root and call the versioned `closeWorkArchive` entry point below.
+   Keep every attempt beneath that root, including raw capture failures, source
+   snapshots, original connector envelopes and the successful run. The separate
+   output root must be new and outside the evidence root. This re-downloads and
+   hashes every remote manifest file, binds its exact source copies into a ZIP,
+   uploads and downloads the new owner-private ZIP, verifies and restores every
+   file to a new directory, and replays the numerical analysis using archived
+   source with Python socket calls blocked. It then creates and reads back a
+   separate closure record. A standalone pipeline completion is not sufficient
+   evidence that this full boundary passed. Do not report success if closure
+   returns `failed`; retain its files and categorical reason.
+8. Show the owner the verified closure/archive/report links, source completeness, report
    authority, received-inquiry/funnel summary and unresolved/health actions.
    Do not send customer outreach, email others, change website tracking, or
    create schedules. Never call `complete` a statement of production readiness.
+
+The same generated Cloudflare Work bundle exports the closure runner. Use exact
+reviewed commits and already configured private values; do not invent a second
+packaging script inside each task:
+
+```javascript
+const closure = await api.closeWorkArchive({
+  tools, settings, pipelineResult: result,
+  evidenceRoot, pipelineRelativeRoot: runDirectoryRelativeToEvidenceRoot,
+  outputRoot: newOutputRootOutsideEvidenceRoot, repositoryRoot,
+  sourceCommit: reviewedPipelineCommit,
+  toolingCommit: reviewedClosureCommit
+});
+// Display only approved summary fields and verified owner-private links.
+// Required acceptance: closure.status === 'verified'.
+```
+
+`config.execution_code_commit` must equal `sourceCommit`. The archival closure
+keeps the original classification-review commit separate from the execution
+commit when unchanged, hash-verified classifications are reused. The helper
+does not certify a portable OS/runtime restoration, a scheduled permission
+grant, RFQ delivery or production readiness. Its replay uses the available
+interpreter, checks the archived version and blocks Python socket operations.
 
 ## Classification rules to execute in step 4
 

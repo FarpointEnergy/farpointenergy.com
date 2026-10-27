@@ -3,7 +3,7 @@
 Private output contains capture/report data. The Work caller must not print it.
 """
 from __future__ import annotations
-import argparse, base64, hashlib, io, json, os, pathlib, re, sys, termios, uuid
+import argparse, base64, hashlib, io, json, os, pathlib, re, subprocess, sys, termios, uuid
 from datetime import datetime, timezone
 from email import policy
 from email.parser import BytesParser
@@ -89,6 +89,54 @@ def reference_bytes(response):
                 raise ValueError('unsupported_reference_redirect')
             return stream.read()
     raise ValueError('connector_file_not_materialized')
+
+
+def verify_reference(request, root):
+    expected_bytes, expected_hash = request.get('expected_bytes'), request.get('expected_sha256')
+    if (type(expected_bytes) is not int or expected_bytes < 0 or not isinstance(expected_hash, str)
+            or not re.fullmatch('[a-f0-9]{64}', expected_hash)):
+        raise ValueError('invalid_readback_expectation')
+    data = reference_bytes(request['response'])
+    path = safe_write(root, 'verified-downloads/' + str(uuid.uuid4()) + '.bin', data)
+    observed_hash = hashlib.sha256(data).hexdigest()
+    if len(data) != expected_bytes or observed_hash != expected_hash:
+        raise ValueError('download_integrity_mismatch')
+    return {'verified': True, 'path': path, 'bytes': len(data), 'sha256': observed_hash}
+
+
+def replay_restored_analysis(request, root):
+    from farpoint_analytics.archive import read_verified_archive
+    archive = pathlib.Path(request['archive'])
+    if not archive.is_absolute() or not str(archive).startswith('/workspace/'):
+        raise ValueError('invalid_replay_archive_path')
+    snapshot = read_verified_archive(archive)
+    if snapshot['manifest']['metadata'].get('code_commit') != request['source_commit']:
+        raise ValueError('replay_source_commit_mismatch')
+    destination = root / ('numerical-replay-' + str(uuid.uuid4()))
+    # The inputs and source were verified before execution. This process uses
+    # the archived package and blocks Python socket calls during numerical replay.
+    program = "import runpy,socket\ndef denied(*a,**k): raise RuntimeError('network_disabled_for_replay')\nsocket.socket=denied\nsocket.create_connection=denied\nsocket.getaddrinfo=denied\nrunpy.run_module('farpoint_analytics',run_name='__main__')"
+    evidence = 'replay-process/' + str(uuid.uuid4())
+    try:
+        result = subprocess.run([sys.executable, '-S', '-c', program, 'replay', '--archive', str(archive), '--output', str(destination)],
+            cwd=str(archive), env={'PATH':os.defpath,'PYTHONPATH':str(archive/'replay/source'),'PYTHONDONTWRITEBYTECODE':'1','PYTHONNOUSERSITE':'1'},
+            capture_output=True, timeout=120, check=False)
+    except subprocess.TimeoutExpired as error:
+        safe_write(root,evidence+'/stdout.bin',error.stdout or b'')
+        safe_write(root,evidence+'/stderr.bin',error.stderr or b'')
+        raise ValueError('archived_numerical_replay_timeout') from None
+    safe_write(root,evidence+'/stdout.bin',result.stdout)
+    safe_write(root,evidence+'/stderr.bin',result.stderr)
+    if result.returncode != 0:
+        raise ValueError('archived_numerical_replay_failed')
+    replay = read_verified_archive(destination)
+    original = snapshot['files']['outputs/report.json']
+    reconstructed = replay['files']['outputs/replayed-report.json']
+    if original != reconstructed:
+        raise ValueError('numerical_replay_mismatch')
+    return {'verified':True,'path':str(destination),'source_manifest_sha256':snapshot['verification']['manifest_sha256'],
+            'report_sha256':hashlib.sha256(original).hexdigest(),'report_bytes':len(original),
+            'archived_source_used':True,'python_socket_calls_blocked':True,'independent_os_runtime_recovery':False}
 
 
 def normalize_mail(request):
@@ -177,6 +225,24 @@ def main():
             result = {'path': safe_write(root, request['path'], base64.b64decode(request['base64'], validate=True))}
         elif request['op'] == 'read_reference':
             result = {'base64': encoded(reference_bytes(request['response']))}
+        elif request['op'] == 'verify_reference':
+            result = verify_reference(request, root)
+        elif request['op'] == 'pack_evidence':
+            from evidence_archive import pack_evidence
+            result = {'archive':pack_evidence(request['source_root'],str(root / ('evidence-' + str(uuid.uuid4()) + '.zip')),request['binding'])}
+        elif request['op'] == 'restore_evidence':
+            from evidence_archive import verify_restore
+            result = {'restoration':verify_restore(request['path'],request['sha256'],request['bytes'],root / ('restored-' + str(uuid.uuid4())))}
+        elif request['op'] == 'replay_analysis':
+            result = replay_restored_analysis(request,root)
+        elif request['op'] == 'capture_closure_source':
+            names=['archive-closure.mjs','evidence_archive.py','host-bridge.mjs','native-adapters.mjs','local_bridge.py','pipeline.mjs','portable-runtime.mjs','build-cloudflare-bundle.mjs','TASK.md','README.md','CLOUDFLARE.md']
+            entries=[]
+            for name in names:
+                data=(pathlib.Path(__file__).parent/name).read_bytes()
+                saved=safe_write(root,'closure-source/'+name,data)
+                entries.append({'name':name,'path':saved,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})
+            result={'files':entries}
         elif request['op'] == 'normalize_mail':
             # Preserve originals before any MIME parser failure.
             prefix = 'mail-observations/' + str(uuid.uuid4())

@@ -55,6 +55,15 @@ test('ambiguous upload preserves created objects and cannot advance completion',
 test('remote readback corruption prevents completion',async()=>{
   const f=await fixture({corruptUpload:true});const r=await runLeadPipeline(f.args);assert.equal(r.status,'failed');assert.equal(r.reason,'drive_readback_mismatch');assert(![...f.remoteNames.values()].some(x=>x.endsWith('-completed.json')));
 });
+test('native whole-download integrity proof replaces bulk transport without skipping readback',async()=>{
+  const f=await fixture();let downloads=0;
+  f.args.drive.verifyFile=async(id,expected)=>{const bytes=await f.args.drive.read(id);downloads++;return {id,verified:true,bytes:bytes.length,sha256:await workHash(bytes)};};
+  const r=await runLeadPipeline(f.args);assert.equal(r.status,'complete');assert.equal(downloads,f.remote.size);
+});
+test('native download proof with wrong bytes cannot produce a completed run',async()=>{
+  const f=await fixture();f.args.drive.verifyFile=async(id,expected)=>({id,verified:true,bytes:expected.bytes+1,sha256:expected.sha256});
+  const r=await runLeadPipeline(f.args);assert.equal(r.status,'failed');assert.equal(r.reason,'drive_readback_mismatch');assert(![...f.remoteNames.values()].some(x=>x.endsWith('-completed.json')));
+});
 test('later remote byte change fails independent recovery verification',async()=>{
   const f=await fixture();const r=await runLeadPipeline(f.args);const v=await verifyRemoteRun({completionId:r.completion.id,drive:f.args.drive});f.remote.set(v.manifest.files[0].id,workJSON({altered:true}));await assert.rejects(()=>verifyRemoteRun({completionId:r.completion.id,drive:f.args.drive}),/remote_file_integrity/);
 });
