@@ -10,6 +10,8 @@ import sys
 from .analysis import analyze, json_bytes
 from .archive import create_archive, read_verified_archive, restore_archive, runtime_identity, source_snapshot, verify_archive
 from .canonical import InvalidData, sha256, strict_loads
+from .enrichment import IPToASN
+from .network import build_network_observations
 
 
 def read_json(path):
@@ -78,6 +80,39 @@ def replay(args):
                           {"verified_frozen_archive": True})
 
 
+def network_context(args):
+    """Archive a local dataset and its provenance with generated observations."""
+    receipts, receipt_bytes = read_json(args.receipts)
+    config, config_bytes = read_json(args.config)
+    provenance, provenance_bytes = read_json(args.dataset_provenance)
+    dataset_bytes = Path(args.dataset).read_bytes()
+    if (not isinstance(provenance, dict) or provenance.get("dataset_sha256") != args.dataset_sha256
+            or provenance.get("retention_approved") is not True
+            or not isinstance(provenance.get("source_url"), str) or not provenance["source_url"]
+            or not isinstance(provenance.get("license"), str) or not provenance["license"]):
+        raise InvalidData("invalid_network_dataset_provenance")
+    if not re.fullmatch(r"[0-9a-f]{40}", args.code_commit) and config.get("mode") != "isolated_fixture":
+        raise InvalidData("production_requires_exact_git_commit")
+    evidence = [f"network-context:{args.run_id}:inputs/dataset.tsv",
+                f"network-context:{args.run_id}:inputs/dataset-provenance.json",
+                f"network-context:{args.run_id}:inputs/receipts.json"]
+    result = build_network_observations(receipts, config, IPToASN(dataset_bytes, args.dataset_sha256),
+                                       observed_at=args.observed_at, observation_run_id=args.run_id,
+                                       evidence_refs=evidence, retention_approved=True)
+    files = {"inputs/receipts.json": receipt_bytes, "inputs/config.json": config_bytes,
+             "inputs/dataset.tsv": dataset_bytes, "inputs/dataset-provenance.json": provenance_bytes,
+             "outputs/company-observations.json": json_bytes(result["observations"]),
+             "outputs/network-context.json": json_bytes(result), **source_snapshot(),
+             "replay/runtime-identity.json": json_bytes(runtime_identity())}
+    archive = create_archive(args.output, files,
+                             {"kind": "network_context", "code_commit": args.code_commit,
+                              "observation_run_id": args.run_id, "observed_at": args.observed_at,
+                              "rule_version": result["rule_version"], "dataset_sha256": args.dataset_sha256},
+                             {"receipt_integrity": result["status"] == "complete", "dataset_hash": True})
+    return {**archive, "network_context_status": result["status"],
+            "observations": len(result["observations"]), "verified_employers": 0}
+
+
 def main():
     parser = argparse.ArgumentParser(description="Farpoint offline lead analysis and create-only archives")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -97,6 +132,9 @@ def main():
     replay_parser = sub.add_parser("replay")
     replay_parser.add_argument("--archive", required=True)
     replay_parser.add_argument("--output", required=True)
+    network_parser = sub.add_parser("network-context", help="Offline network ownership from an archived IPtoASN TSV")
+    for name in ("receipts", "config", "dataset", "dataset-sha256", "dataset-provenance", "observed-at", "run-id", "code-commit", "output"):
+        network_parser.add_argument("--" + name, required=True)
     args = parser.parse_args()
     try:
         if args.command == "run":
@@ -105,6 +143,8 @@ def main():
             result = verify_archive(args.archive)
         elif args.command == "restore":
             result = restore_archive(args.source, args.destination)
+        elif args.command == "network-context":
+            result = network_context(args)
         else:
             result = replay(args)
         print(json_bytes(result).decode())
