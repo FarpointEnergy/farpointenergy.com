@@ -19,7 +19,20 @@ def validate_event(event, registry=None):
         raise InvalidData("missing_required_event_key")
     if event.keys() - set(SCHEMA["required"] + SCHEMA["optional"]):
         raise InvalidData("unknown_event_key")
-    result = normalize(event)
+    # Events are shallow: only campaign may contain an object, with string
+    # values. Reject nested hostile structures before recursive normalization.
+    if any(isinstance(value, (dict, list)) for key, value in event.items() if key != "campaign"):
+        raise InvalidData("invalid_structure")
+    if "campaign" in event:
+        campaign = event["campaign"]
+        if not isinstance(campaign, dict) or campaign.keys() - {"source", "medium", "campaign"}:
+            raise InvalidData("invalid_campaign_keys")
+        if any(not isinstance(value, str) for value in campaign.values()):
+            raise InvalidData("unregistered_campaign_value")
+    try:
+        result = normalize(event)
+    except RecursionError:
+        raise InvalidData("invalid_structure") from None
     if type(result["schema_version"]) is not int or result["schema_version"] != 1:
         raise InvalidData("unsupported_event_schema")
     if not isinstance(result["event_id"], str) or not IDENTIFIER.fullmatch(result["event_id"]):
