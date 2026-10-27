@@ -17,7 +17,7 @@ function oidcObject(value){
   return object;
 }
 async function oidcBoundedJson(response){
-  if(!response.ok||response.redirected||!response.body)throw Error('jwks_unavailable');
+  if(response.status!==200||!response.ok||response.redirected||!response.body)throw Error('jwks_unavailable');
   const reader=response.body.getReader(),chunks=[];let size=0;
   try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>65536)throw Error('jwks_too_large');chunks.push(value);}}
   finally{await reader.cancel().catch(()=>{});}
@@ -55,7 +55,9 @@ export async function verifyStore01GithubOidc(request,env,run,{fetchJwks=(input,
     stage('jwks_timeout');
     const signal=AbortSignal.timeout(5000);
     stage('jwks_fetch');
-    const response=await fetchJwks(STORE01_JWKS,{method:'GET',redirect:'error',headers:{Accept:'application/json'},signal});
+    // Workers rejects redirect:'error' at construction. Manual + exact200 check
+    // preserves the same no-redirect trust boundary without following Location.
+    const response=await fetchJwks(STORE01_JWKS,{method:'GET',redirect:'manual',headers:{Accept:'application/json'},signal});
     if(trace)trace.jwks_http_status=response.status;
     stage('jwks_decode');
     const jwks=await oidcBoundedJson(response);
