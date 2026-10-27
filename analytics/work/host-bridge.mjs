@@ -1,4 +1,4 @@
-import {WorkFailure,workUnbase64} from './pipeline.mjs';
+import {WorkFailure,workUnbase64,workHash} from './pipeline.mjs';
 function bridgeBase64(bytes){let s='';for(let i=0;i<bytes.length;i+=8192)s+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(s);}
 function bridgePath(path){if(typeof path!=='string'||!/^\/[A-Za-z0-9_./-]+$/.test(path)||path.includes('/../'))throw new WorkFailure('invalid_bridge_path');return path;}
 
@@ -6,13 +6,29 @@ function bridgePath(path){if(typeof path!=='string'||!/^\/[A-Za-z0-9_./-]+$/.tes
  * never command arguments, source files, or printed tool-output summaries. */
 export function createWorkHostBridge({tools,privateRoot,repositoryRoot}){
   bridgePath(privateRoot);bridgePath(repositoryRoot);
-  async function invoke(request){
+  async function one(request){
     const process=await tools.exec_command({cmd:`python3 ${repositoryRoot}/analytics/work/local_bridge.py --root ${privateRoot} --repository ${repositoryRoot}`,tty:true,yield_time_ms:1000,max_output_tokens:1000});
     if(!process.session_id||!process.output.includes('READY'))throw new WorkFailure('private_bridge_start_failed');
-    let result=await tools.write_stdin({session_id:process.session_id,chars:JSON.stringify(request)+'\n',yield_time_ms:1000,max_output_tokens:100000});
-    let output=result.output;while(result.session_id){result=await tools.write_stdin({session_id:result.session_id,chars:'',yield_time_ms:1000,max_output_tokens:100000});output+=result.output;}
+    let result=await tools.write_stdin({session_id:process.session_id,chars:JSON.stringify({...request,stream_results:true})+'\n',yield_time_ms:1000,max_output_tokens:25000});
+    let output=result.output;while(result.session_id){result=await tools.write_stdin({session_id:result.session_id,chars:'',yield_time_ms:1000,max_output_tokens:25000});output+=result.output;}
     let value;try{value=JSON.parse(output.trim());}catch{throw new WorkFailure('private_bridge_output_invalid');}
     if(value.status!=='ok')throw new WorkFailure(value.reason??'private_bridge_failed');return value;
+  }
+  async function invoke(request){
+    const initial=await one(request),stream=initial.result_stream;
+    if(!stream)return initial;
+    if(!/^bridge-results\/[a-f0-9-]{36}\.json$/.test(stream.path??'')||stream.encoding!=='utf-8-json'||!Number.isSafeInteger(stream.bytes)||stream.bytes<=16384||stream.bytes>256*1024*1024||!/^[a-f0-9]{64}$/.test(stream.sha256??''))throw new WorkFailure('invalid_bridge_result_stream');
+    const bytes=new Uint8Array(stream.bytes);
+    for(let offset=0;offset<bytes.length;){
+      const part=await one({op:'read_result',path:stream.path,offset,max_bytes:8192});
+      const chunk=workUnbase64(part.base64);
+      if(part.path!==stream.path||part.offset!==offset||part.total_bytes!==stream.bytes||part.bytes!==chunk.length||chunk.length!==Math.min(8192,stream.bytes-offset)||await workHash(chunk)!==part.sha256)throw new WorkFailure('invalid_bridge_result_chunk');
+      bytes.set(chunk,offset);offset+=chunk.length;
+    }
+    if(await workHash(bytes)!==stream.sha256)throw new WorkFailure('bridge_result_hash_mismatch');
+    let value;try{value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}catch{throw new WorkFailure('private_bridge_output_invalid');}
+    if(value.status!=='ok'||value.result_stream)throw new WorkFailure('invalid_bridge_streamed_response');
+    return value;
   }
   return {
     create:async(path,bytes)=>(await invoke({op:'create',path,base64:bridgeBase64(bytes)})).path,

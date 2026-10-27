@@ -86,6 +86,10 @@ does not claim a complete portable runtime bundle.
 The host bridge uses a one-operation process with terminal echo and canonical
 line limits disabled, so large payloads travel through hidden stdin. The process
 returns private structured data to the calling script; do not display it.
+Responses above 16 KiB are retained as new private result files and read through
+8 KiB chunks, with each chunk and the complete response hash checked before use.
+This avoids truncating analysis artifacts in tool stdout. A response exceeding
+256 MiB fails explicitly and retains its file; it is not called complete.
 For Drive readback it accepts only an authenticated connector's top-level
 materialized workspace file or its approved file-storage URL. An opaque file
 reference that the host cannot materialize is a real blocker, not permission to
@@ -154,7 +158,7 @@ Unknown versions fail closed. Numerical replay still requires archived source.
 
 ```sh
 node analytics/work/build-bundle.mjs
-node --test analytics/work/tests/pipeline.test.mjs analytics/work/tests/runtime.test.mjs
+node --test analytics/work/tests/pipeline.test.mjs analytics/work/tests/runtime.test.mjs analytics/work/tests/host-bridge.test.mjs
 python3 -m unittest discover -s analytics/work/tests -v
 ```
 

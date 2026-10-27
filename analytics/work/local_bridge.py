@@ -31,6 +31,38 @@ def safe_write(root, name, data):
     return str(target)
 
 
+def transport_response(root, request, value):
+    """Keep tool stdout bounded; large results are immutable private byte files."""
+    data = json.dumps(value, ensure_ascii=False).encode('utf-8')
+    if request.get('stream_results') is not True or len(data) <= 16384:
+        return data.decode('utf-8')
+    name = 'bridge-results/' + str(uuid.uuid4()) + '.json'
+    safe_write(root, name, data)
+    return json.dumps({'status': 'ok', 'result_stream': {
+        'path': name, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(),
+        'encoding': 'utf-8-json'}})
+
+
+def read_result_chunk(root, request):
+    name = request.get('path')
+    if not isinstance(name, str) or not re.fullmatch(r'bridge-results/[a-f0-9-]{36}\.json', name):
+        raise ValueError('invalid_result_stream_path')
+    offset, maximum = request.get('offset'), request.get('max_bytes')
+    if (type(offset) is not int or offset < 0 or type(maximum) is not int
+            or not 1 <= maximum <= 8192):
+        raise ValueError('invalid_result_chunk_bounds')
+    path = root / name
+    if any(p.is_symlink() for p in [path, *path.parents]):
+        raise ValueError('symlink_result_stream')
+    size = path.stat().st_size
+    if offset >= size:
+        raise ValueError('invalid_result_chunk_offset')
+    with path.open('rb') as stream:
+        stream.seek(offset); data = stream.read(maximum)
+    return {'path': name, 'offset': offset, 'bytes': len(data), 'total_bytes': size,
+            'base64': encoded(data), 'sha256': hashlib.sha256(data).hexdigest()}
+
+
 def reference_bytes(response):
     if not isinstance(response, dict):
         raise ValueError('invalid_reference')
@@ -153,9 +185,11 @@ def main():
             result = {'result': normalize_mail(request)}
         elif request['op'] == 'analyze':
             result = analyze(request, root)
+        elif request['op'] == 'read_result':
+            result = read_result_chunk(root, request)
         else:
             raise ValueError('unsupported_operation')
-        print(json.dumps({'status':'ok', **result}, ensure_ascii=False), flush=True)
+        print(transport_response(root, request, {'status':'ok', **result}), flush=True)
     except Exception as error:
         safe = str(error) if isinstance(error, ValueError) and re.fullmatch('[a-z_]+', str(error)) else type(error).__name__
         print(json.dumps({'status':'failed','reason':safe}), flush=True)

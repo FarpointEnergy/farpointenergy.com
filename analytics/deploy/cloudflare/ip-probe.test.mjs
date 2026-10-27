@@ -4,6 +4,7 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {randomUUID,createHash} from 'node:crypto';
 import {resolve,isAbsolute} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createContext,runInContext} from 'node:vm';
 
 const core=await readFile(new URL('../../collector/core.mjs',import.meta.url),'utf8');
 const source=await readFile(new URL('./ip-probe.mjs',import.meta.url),'utf8');
@@ -22,6 +23,20 @@ function req({method='POST',body='{"synthetic":true,"test_id":"network-01","expe
 }
 function handler(store=new Store(),options={}){return{store,run:api.createSyntheticIpProbe({store,now:()=>new Date('2026-10-27T03:00:00Z'),...options})};}
 function first(store){return JSON.parse(Buffer.from(store.records.values().next().value).toString());}
+async function renderedUi(fetchImpl,timerOptions={}){
+  const {run}=handler();const html=await(await run(req({method:'GET'}),enabled)).text();
+  const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const elements={};
+  for(const id of ['probe','result','automatic-probe','manual-button','network-label','test-id','expected-ip','evidence-controls','retry-save','download-evidence'])elements[id]={value:'',textContent:'',disabled:false,hidden:true,listeners:{},addEventListener(event,callback){this.listeners[event]=callback;}};
+  elements.probe.querySelector=()=>elements['manual-button'];
+  elements['network-label'].value='wifi';elements['test-id'].value='manual-synthetic';elements['expected-ip'].value='192.0.2.7';
+  const downloads=[];class TestURL extends URL{static createObjectURL(blob){downloads.push({blob});return 'blob:synthetic-download';}static revokeObjectURL(){}}
+  const context=createContext({document:{getElementById:id=>elements[id],createElement:()=>({click(){downloads.at(-1).clicked=true;}})},location:{pathname:path},fetch:fetchImpl,URL:TestURL,Blob,Uint8Array,TextDecoder,TextEncoder,AbortController,crypto:{randomUUID},Date,JSON,Math,setTimeout:timerOptions.setTimeout||((fn,ms)=>setTimeout(fn,ms===1000?1:ms)),clearTimeout});
+  runInContext(script,context);
+  return {elements,context,downloads};
+}
+const diagnosticUrls=['https://api.ipify.org?format=json','https://api6.ipify.org?format=json','https://api64.ipify.org?format=json'];
+const fakeAck=()=>new Response(JSON.stringify({status:'retained',terminal:true,ip_provenance_verified:false,proof_key:'ip-proof/2026/10/27/synthetic-id.json',proof_sha256:'a'.repeat(64)}),{status:202,headers:{'Content-Type':'application/json'}});
 
 test('default-off and exact-host gates never touch storage',async()=>{
   const {store,run}=handler();
@@ -34,8 +49,81 @@ test('GET provides a static same-origin UI without observations or external scri
   const {store,run}=handler();const r=await run(req({method:'GET',headers:{'CF-Connecting-IP':'198.51.100.77'}}),enabled);const html=await r.text();
   assert.equal(r.status,200);assert.match(html,/Save synthetic network test/);assert.match(html,/unverified test assertions/);assert(!html.includes('198.51.100.77'));assert(!/src=["']https?:/.test(html));assert.match(r.headers.get('content-security-policy'),/connect-src 'self'/);assert.equal(store.calls.length,0);
   assert.match(html,/<form id="probe" method="post">/);
+  assert.match(html,/No network checks run before you click/);
+  assert.match(r.headers.get('content-security-policy'),/connect-src 'self' https:\/\/api\.ipify\.org https:\/\/api6\.ipify\.org https:\/\/api64\.ipify\.org;/);
   const script=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];assert.equal(typeof script,'string');
   assert.doesNotThrow(()=>new Function(script),'rendered inline JavaScript must parse; escaped newlines must remain escaped');
+});
+test('rendered automatic UI makes no requests before click, uses only fixed diagnostic hosts, and retains exact untrusted assertions',async()=>{
+  const calls=[],addresses=['192.0.2.10','2001:db8::10','2001:db8::11'];const {store,run}=handler();
+  const ui=await renderedUi(async(url,options)=>{
+    calls.push({url,options});
+    if(url===path)return run(req({body:options.body,headers:options.headers}),enabled);
+    const index=diagnosticUrls.indexOf(url);assert(index>=0,'arbitrary diagnostic URL');
+    assert.equal(options.credentials,'omit');assert.equal(options.redirect,'error');assert.equal(options.referrerPolicy,'no-referrer');assert.equal(options.cache,'no-store');assert.equal(options.method,'GET');assert.equal(options.body,undefined);
+    return new Response(JSON.stringify({ip:addresses[index],ignored_sensitive_field:'must-not-be-saved'}),{status:200});
+  });
+  assert.equal(calls.length,0);await ui.elements['automatic-probe'].listeners.click();
+  assert.equal(calls.length,4);assert.deepEqual(calls.slice(0,3).map(x=>x.url),diagnosticUrls);assert.equal(calls[3].url,path);assert.equal(calls[3].options.credentials,'omit');
+  const sent=JSON.parse(calls[3].options.body),record=first(store),text=ui.elements.result.textContent;
+  assert.equal(sent.network_label,'wifi');assert.equal(sent.expected_ip,null);assert.equal(sent.diagnostic_assertions_status,'untrusted_client_assertions');assert.equal(sent.diagnostic_observations.length,3);assert(sent.diagnostic_observations.every(x=>x.status==='observed'));
+  assert.deepEqual(sent.diagnostic_observations.map(x=>x.ip),addresses);assert.equal(Buffer.from(record.body_base64,'base64').toString(),calls[3].options.body);assert.equal(record.ip_provenance_verified,false);assert.equal(record.expected.network_ip,null);assert.equal(record.expected.status,'untrusted_client_assertion');
+  assert.match(text,/Synthetic evidence retained/);assert.match(text,/IP provenance is not yet verified/);assert(addresses.every(x=>!text.includes(x)));assert(!calls[3].options.body.includes('must-not-be-saved'));assert.equal(ui.elements['automatic-probe'].disabled,false);assert.equal(ui.elements['manual-button'].disabled,false);
+});
+test('rendered automatic UI preserves diagnostic failure codes and still saves partial evidence without leaking exception details',async()=>{
+  const calls=[];
+  const ui=await renderedUi(async(url,options)=>{
+    calls.push({url,options});if(url===path)return fakeAck();
+    if(url===diagnosticUrls[0])throw new Error('private-network-exception');
+    if(url===diagnosticUrls[1])return new Response('private-provider-error',{status:503});
+    return new Response(JSON.stringify({ip:'192.0.2.12'}),{status:200});
+  });
+  await ui.elements['automatic-probe'].listeners.click();
+  const payload=JSON.parse(calls.at(-1).options.body),observations=payload.diagnostic_observations;
+  assert.deepEqual(observations.map(x=>x.error_code),['network_error','http_error',null]);assert.equal(observations[1].http_status,503);assert.equal(observations[0].ip,null);
+  assert.match(ui.elements.result.textContent,/IPv4: network_error/);assert.match(ui.elements.result.textContent,/IPv6: http_error \(HTTP 503\)/);assert.match(ui.elements.result.textContent,/Synthetic evidence retained/);assert(!JSON.stringify(payload).includes('private-'));assert(!ui.elements.result.textContent.includes('private-'));
+});
+test('rendered diagnostics bound replies, validate IP families and preserve timeout evidence',async()=>{
+  const cases=[
+    {response:()=>new Response('a'.repeat(257)),code:'body_too_large'},
+    {response:()=>new Response('{'),code:'invalid_response'},
+    {response:()=>new Response(JSON.stringify({ip:'not-an-address'})),code:'invalid_ip'},
+    {response:()=>new Response(JSON.stringify({ip:'2001:db8::20'})),code:'unexpected_ip_family'},
+  ];
+  for(const example of cases){
+    let payload;const ui=await renderedUi(async(url,options)=>{if(url===path){payload=JSON.parse(options.body);return fakeAck();}if(url===diagnosticUrls[0])return example.response();return new Response(JSON.stringify({ip:'2001:db8::20'}));});
+    await ui.elements['automatic-probe'].listeners.click();assert.equal(payload.diagnostic_observations[0].error_code,example.code);assert.equal(payload.diagnostic_observations[0].ip,null);
+  }
+  let timeoutPayload;
+  const timed=await renderedUi(async(url,options)=>{if(url===path){timeoutPayload=JSON.parse(options.body);return fakeAck();}return new Promise((resolve,reject)=>options.signal.addEventListener('abort',()=>reject(new Error('aborted'))));},{setTimeout:(fn,ms)=>setTimeout(fn,ms===8000?1:ms)});
+  await timed.elements['automatic-probe'].listeners.click();assert(timeoutPayload.diagnostic_observations.every(x=>x.error_code==='timeout'));assert.match(timed.elements.result.textContent,/timeout/);assert.match(timed.elements.result.textContent,/Synthetic evidence retained/);
+});
+test('rendered manual path only posts same-origin and unconfirmed storage never claims success',async()=>{
+  const calls=[];const ui=await renderedUi(async(url,options)=>{calls.push({url,options});throw new Error('private-save-error');});
+  let prevented=false;await ui.elements.probe.listeners.submit({preventDefault(){prevented=true;}});
+  assert.equal(prevented,true);assert.equal(calls.length,1);assert.equal(calls[0].url,path);assert.deepEqual(JSON.parse(calls[0].options.body),{synthetic:true,test_id:'manual-synthetic',expected_ip:'192.0.2.7'});
+  assert.match(ui.elements.result.textContent,/No successful test is claimed/);assert(!ui.elements.result.textContent.includes('private-save-error'));assert(!ui.elements.result.textContent.includes('Synthetic evidence retained'));assert.equal(ui.elements['automatic-probe'].disabled,false);
+});
+test('rendered UI prevents overlapping runs, sanitizes connection labels and rejects malformed acknowledgements',async()=>{
+  let release;const pending=new Promise(resolve=>release=resolve),calls=[];
+  const ui=await renderedUi(async(url,options)=>{calls.push({url,options});if(url===path)return new Response(JSON.stringify({status:'retained'}),{status:202});await pending;return new Response(JSON.stringify({ip:url===diagnosticUrls[0]?'192.0.2.50':'2001:db8::50'}));});
+  ui.elements['network-label'].value='https://arbitrary.example.invalid';
+  const running=ui.elements['automatic-probe'].listeners.click();assert.equal(ui.elements['network-label'].disabled,true);
+  await ui.elements['automatic-probe'].listeners.click();await ui.elements.probe.listeners.submit({preventDefault(){}});assert.equal(calls.length,3);
+  release();await running;assert.equal(calls.length,4);assert.equal(JSON.parse(calls[3].options.body).network_label,'unspecified');assert(!JSON.stringify(calls).includes('arbitrary.example.invalid'));
+  assert.match(ui.elements.result.textContent,/not confirmed as retained/);assert(!ui.elements.result.textContent.includes('Synthetic evidence retained'));assert.equal(ui.elements['network-label'].disabled,false);
+});
+test('unconfirmed save retains immutable exact bytes for retry and private download without rerunning diagnostics',async()=>{
+  const calls=[];let saves=0;
+  const ui=await renderedUi(async(url,options)=>{calls.push({url,options});if(url===path){saves++;if(saves===1)throw new Error('temporary save failure');return fakeAck();}return new Response(JSON.stringify({ip:url===diagnosticUrls[0]?'192.0.2.80':'2001:db8::80'}));});
+  await ui.elements['automatic-probe'].listeners.click();const original=calls.at(-1).options.body;
+  assert.equal(ui.elements['retry-save'].hidden,false);assert.equal(ui.elements['evidence-controls'].hidden,false);assert.equal(ui.downloads.length,0);
+  assert.equal(runInContext('Object.isFrozen(attempts[0])',ui.context),true);
+  ui.elements['download-evidence'].listeners.click();assert.equal(ui.downloads.length,1);assert.equal(ui.downloads[0].clicked,true);
+  const before=JSON.parse(await ui.downloads[0].blob.text());assert.equal(before.attempts[0].body,original);assert.equal(before.save_outcomes[0].status,'save_network_or_response_error');assert.equal(before.ip_provenance_verified,false);
+  await ui.elements['retry-save'].listeners.click();assert.equal(calls.length,5);assert.equal(calls.at(-1).url,path);assert.equal(calls.at(-1).options.body,original);assert.equal(ui.elements['retry-save'].hidden,true);assert.match(ui.elements.result.textContent,/Synthetic evidence retained/);
+  ui.elements['download-evidence'].listeners.click();const after=JSON.parse(await ui.downloads[1].blob.text());assert.equal(after.attempts.length,1);assert.equal(after.attempts[0].body,original);assert.deepEqual(after.save_outcomes.map(x=>x.status),['save_network_or_response_error','retained']);
+  await ui.elements['automatic-probe'].listeners.click();ui.elements['download-evidence'].listeners.click();const third=JSON.parse(await ui.downloads[2].blob.text());assert.equal(third.attempts.length,2);assert.equal(third.attempts[0].body,original);assert.notEqual(third.attempts[1].body,original);
 });
 test('private record retains exact body and selected unverified headers; public ack does not echo them',async()=>{
   const {store,run}=handler();const body=' {"test_id":"network-01", "expected_ip":"203.0.113.5", "synthetic":true}\n';

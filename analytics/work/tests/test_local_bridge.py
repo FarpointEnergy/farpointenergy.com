@@ -15,6 +15,21 @@ bridge = importlib.util.module_from_spec(spec); spec.loader.exec_module(bridge)
 
 
 class BridgeTests(unittest.TestCase):
+    def test_large_response_has_exact_bounded_chunk_recovery(self):
+        root=Path(__file__).parent/'.evidence'/str(uuid.uuid4()); root.mkdir(parents=True)
+        value={'status':'ok','synthetic':'电力 — 🧑🏽‍🚀'*20000}
+        descriptor=json.loads(bridge.transport_response(root,{'stream_results':True},value))['result_stream']
+        self.assertLess(len(json.dumps(descriptor)),500)
+        chunks=[]; offset=0
+        while offset<descriptor['bytes']:
+            part=bridge.read_result_chunk(root,{'path':descriptor['path'],'offset':offset,'max_bytes':8192})
+            raw=base64.b64decode(part['base64']);self.assertEqual(hashlib.sha256(raw).hexdigest(),part['sha256'])
+            self.assertLess(len(json.dumps(part)),16384);chunks.append(raw);offset+=len(raw)
+        data=b''.join(chunks);self.assertEqual(hashlib.sha256(data).hexdigest(),descriptor['sha256'])
+        self.assertEqual(json.loads(data),value)
+        with self.assertRaises(ValueError):bridge.read_result_chunk(root,{'path':'../other','offset':0,'max_bytes':8192})
+        with self.assertRaises(ValueError):bridge.read_result_chunk(root,{'path':descriptor['path'],'offset':0,'max_bytes':8193})
+
     def test_original_mail_and_duplicate_headers_and_attachment_hash_preserved(self):
         message = EmailMessage(); message['From']='synthetic@example.test'; message['To']='quotes@farpointenergy.com'
         message['Received']='synthetic-hop-one'; message['Received']='synthetic-hop-two'; message.set_content('A test requirement.\n')
