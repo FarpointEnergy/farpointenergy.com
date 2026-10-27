@@ -283,6 +283,19 @@ class FunnelTests(unittest.TestCase):
 
 
 class TimeAndExclusionTests(unittest.TestCase):
+    def test_deep_invalid_event_is_quarantined_without_losing_valid_sibling(self):
+        bad = event("syn_deep", campaign={"source": "DEEP_SENTINEL"})
+        good = event("syn_good")
+        raw = json_bytes({"schema_version": 1, "tracker_version": "1.0.0", "events": [bad, good]})
+        raw = raw.replace(b'"DEEP_SENTINEL"', b'[' * 600 + b'"x"' + b']' * 600)
+        retained = receipt("synthetic-deep", raw=raw)
+        before = json_bytes(retained)
+        result = analyze([retained], [], [], config_for([bad, good]))
+        self.assertEqual(result["receipt_counts"]["trusted_events"], 1)
+        self.assertEqual(result["quarantined_events"][0]["reason"], "unregistered_campaign_value")
+        self.assertEqual(result["tables"]["events"][0]["event"]["event_id"], "syn_good")
+        self.assertEqual(json_bytes(retained), before)
+
     def test_GOLD_04_gap_boundaries_and_order_ties(self):
         for seconds, expected in [(1799, 1), (1800, 2), (1801, 2)]:
             later = (datetime(2026, 10, 19, 12, tzinfo=timezone.utc) + timedelta(seconds=seconds)).isoformat()
@@ -305,6 +318,19 @@ class TimeAndExclusionTests(unittest.TestCase):
         self.assertIsNone(times["syn_at_limit"]["time_anomaly"])
         self.assertIsNone(times["syn_late"]["time_anomaly"])
         self.assertEqual(sum(x["time_anomaly"] is not None for x in result["events"]), 3)
+
+    def test_out_of_range_utc_conversion_keeps_raw_events_and_uses_receipt_time(self):
+        events = [event("syn_underflow", at="0001-01-01T00:00:00+01:00"),
+                  event("syn_overflow", at="9999-12-31T23:59:59-01:00")]
+        raw = receipt("synthetic-overflow", events)
+        before = json_bytes(raw)
+        result = analyze([raw], [], [], config_for(events))
+        self.assertEqual(result["status"], "complete")
+        self.assertEqual(result["receipt_counts"]["trusted_events"], 2)
+        self.assertEqual({row["effective_at"] for row in result["tables"]["events"]},
+                         {"2026-10-19T14:00:00.000Z"})
+        self.assertEqual({row["reason"] for row in result["time_anomalies"]}, {"invalid_timestamp"})
+        self.assertEqual(json_bytes(raw), before)
 
     def test_GOLD_04_missing_identity_bot_and_synthetic(self):
         events = [event("syn_eligible"), event("syn_no_browser", browser=None),
