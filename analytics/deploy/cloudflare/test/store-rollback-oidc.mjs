@@ -25,31 +25,47 @@ async function oidcBoundedJson(response){
   return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(all));
 }
 
-export async function verifyStore01GithubOidc(request,env,run,{fetchJwks=fetch,now=()=>Date.now(),subtle=crypto.subtle}={}){
+export async function verifyStore01GithubOidc(request,env,run,{fetchJwks=fetch,now=()=>Date.now(),subtle=crypto.subtle,trace}={}){
+  const stage=value=>{if(trace)trace.stage=value;};
   try{
+    stage('configuration');
     const repositoryId=env.FARPOINT_STORE01_OIDC_REPOSITORY_ID,ownerId=env.FARPOINT_STORE01_OIDC_OWNER_ID;
     const runId=env.FARPOINT_STORE01_OIDC_RUN_ID,commit=env.FARPOINT_STORE01_OIDC_WORKFLOW_SHA;
     if(env.FARPOINT_STORE01_OIDC_ENABLED!=='1'||![repositoryId,ownerId,runId].every(v=>typeof v==='string'&&/^[1-9][0-9]{0,19}$/.test(v))||typeof commit!=='string'||!/^[a-f0-9]{40}$/.test(commit))return false;
+    stage('token_shape');
     const auth=request.headers.get('authorization');if(typeof auth!=='string'||auth.length>16384||!auth.startsWith('Bearer '))return false;
     const token=auth.slice(7),parts=token.split('.');if(parts.length!==3)return false;
+    stage('token_decode');
     const header=oidcObject(parts[0]),claims=oidcObject(parts[1]),signature=oidcBytes(parts[2]);
+    stage('header');
     if(header.alg!=='RS256'||header.typ!=='JWT'||typeof header.kid!=='string'||header.kid.length>200||Object.keys(header).some(k=>!['alg','typ','kid','x5t','x5t#S256'].includes(k)))return false;
+    stage('pinned_claims');
     const expected={iss:STORE01_ISSUER,aud:'urn:farpoint:store01:'+run.id,repository:STORE01_REPOSITORY,repository_owner:'FarpointEnergy',repository_id:repositoryId,repository_owner_id:ownerId,ref:STORE01_REF,ref_type:'branch',workflow_ref:STORE01_WORKFLOW,workflow_sha:commit,sha:commit,run_id:runId,run_attempt:'1',event_name:'push',runner_environment:'github-hosted'};
     if(Object.entries(expected).some(([k,v])=>claims[k]!==v))return false;
+    stage('subject_and_workflow');
     const subjects=['repo:'+STORE01_REPOSITORY+':ref:'+STORE01_REF,'repo:FarpointEnergy@'+ownerId+'/farpointenergy.com@'+repositoryId+':ref:'+STORE01_REF];
     const jobWorkflowAbsent=claims.job_workflow_ref===undefined&&claims.job_workflow_sha===undefined;
     const jobWorkflowMatches=claims.job_workflow_ref===STORE01_WORKFLOW&&claims.job_workflow_sha===commit;
     if(!subjects.includes(claims.sub)||claims.environment!==undefined||(!jobWorkflowAbsent&&!jobWorkflowMatches)||claims.head_ref!==''||claims.base_ref!=='')return false;
+    stage('time');
     const at=Math.floor(now()/1000);
     if(!['iat','nbf','exp'].every(k=>Number.isSafeInteger(claims[k]))||claims.iat>at+30||claims.nbf>at+30||claims.exp<=at||claims.exp<=claims.iat||claims.exp-claims.iat>600||at-claims.iat>600||claims.nbf>claims.exp||typeof claims.jti!=='string'||!claims.jti||claims.jti.length>200)return false;
+    stage('run_day');
     if(new Date(now()).toISOString().slice(0,10)!==run.day)return false;
+    stage('jwks_fetch');
     const response=await fetchJwks(STORE01_JWKS,{method:'GET',redirect:'error',headers:{Accept:'application/json'},signal:AbortSignal.timeout(5000)});
+    if(trace)trace.jwks_http_status=response.status;
+    stage('jwks_decode');
     const jwks=await oidcBoundedJson(response);
+    stage('jwks_key_selection');
     if(!Array.isArray(jwks.keys)||jwks.keys.length>20)return false;
     const candidates=jwks.keys.filter(k=>k?.kid===header.kid);
     if(candidates.length!==1)return false;
     const key=candidates[0];if(key.kty!=='RSA'||key.alg!=='RS256'||key.use!=='sig'||key.e!=='AQAB'||oidcBytes(key.n).length<256||oidcBytes(key.n).length>512||key.d!==undefined)return false;
+    stage('crypto_import');
     const imported=await subtle.importKey('jwk',{kty:key.kty,n:key.n,e:key.e,alg:'RS256',ext:true},{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);
-    return await subtle.verify('RSASSA-PKCS1-v1_5',imported,signature,new TextEncoder().encode(parts[0]+'.'+parts[1]));
-  }catch{return false;}
+    stage('signature_verify');
+    const valid=await subtle.verify('RSASSA-PKCS1-v1_5',imported,signature,new TextEncoder().encode(parts[0]+'.'+parts[1]));
+    if(valid)stage('verified');return valid;
+  }catch(error){if(trace)trace.exception_type=['Error','TypeError','SyntaxError','DOMException','AbortError','TimeoutError'].includes(error?.name)?error.name:'other';return false;}
 }

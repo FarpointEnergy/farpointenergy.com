@@ -9,7 +9,11 @@ const original=await readFile(resolve(here,'store-rollback-probe.mjs'),'utf8'),o
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const oldGate="typeof token!=='string'||token.length<32||request.headers.get('authorization')!=='Bearer '+token";
 if(original.split(oldGate).length!==2)throw Error('Reviewed helper auth anchor changed');
-const helper=original.replace('    const token=env.FARPOINT_STORE01_TOKEN;','').replace(oldGate,'!(await verifyStore01GithubOidc(request,env,run))');
+const helper=original.replace('    if(url.pathname!==path)return null;',"    const authOnly=url.pathname===path+'/auth';\n    if(url.pathname!==path&&!authOnly)return null;")
+  .replace('    const token=env.FARPOINT_STORE01_TOKEN;','    const authTrace={};')
+  .replace("request.method!=='POST'","(authOnly?request.method!=='GET':request.method!=='POST')")
+  .replace(oldGate,'!(await verifyStore01GithubOidc(request,env,run,{trace:authTrace}))')
+  .replace("return response({error:'not_found'},404);","return response({error:'not_found',auth_check:authTrace},404);\n    if(authOnly)return response({status:'verified',auth_check:authTrace,no_storage_access:true});");
 const id=randomUUID(),day=new Date().toISOString().slice(0,10),origin='https://farpoint-lead-collector-candidate.farpointenergy.workers.dev';
 const run={id,day,origin,ids:['store01-'+id+'-a','store01-'+id+'-b'],bodies:[JSON.stringify({schema_version:1,synthetic:true,acceptance_case:'STORE-01',run_id:id,kind:'seed'}),JSON.stringify({schema_version:999,synthetic:true,acceptance_case:'RELEASE-02',run_id:id,kind:'future_schema_forward_data',payload:'Synthetic future schema remains exact after compatible code restoration.'})]};
 const marker='    const probe = await createSyntheticIpProbe({sourceVersion: BUILD_SOURCE_VERSION})(request, env);';
