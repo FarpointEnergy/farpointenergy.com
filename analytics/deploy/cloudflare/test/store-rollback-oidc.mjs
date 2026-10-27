@@ -25,7 +25,7 @@ async function oidcBoundedJson(response){
   return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(all));
 }
 
-export async function verifyStore01GithubOidc(request,env,run,{fetchJwks=fetch,now=()=>Date.now(),subtle=crypto.subtle,trace}={}){
+export async function verifyStore01GithubOidc(request,env,run,{fetchJwks=(input,init)=>globalThis.fetch(input,init),now=()=>Date.now(),subtle=crypto.subtle,trace}={}){
   const stage=value=>{if(trace)trace.stage=value;};
   try{
     stage('configuration');
@@ -52,8 +52,10 @@ export async function verifyStore01GithubOidc(request,env,run,{fetchJwks=fetch,n
     if(!['iat','nbf','exp'].every(k=>Number.isSafeInteger(claims[k]))||claims.iat>at+30||claims.nbf>at+30||claims.exp<=at||claims.exp<=claims.iat||claims.exp-claims.iat>600||at-claims.iat>600||claims.nbf>claims.exp||typeof claims.jti!=='string'||!claims.jti||claims.jti.length>200)return false;
     stage('run_day');
     if(new Date(now()).toISOString().slice(0,10)!==run.day)return false;
+    stage('jwks_timeout');
+    const signal=AbortSignal.timeout(5000);
     stage('jwks_fetch');
-    const response=await fetchJwks(STORE01_JWKS,{method:'GET',redirect:'error',headers:{Accept:'application/json'},signal:AbortSignal.timeout(5000)});
+    const response=await fetchJwks(STORE01_JWKS,{method:'GET',redirect:'error',headers:{Accept:'application/json'},signal});
     if(trace)trace.jwks_http_status=response.status;
     stage('jwks_decode');
     const jwks=await oidcBoundedJson(response);
