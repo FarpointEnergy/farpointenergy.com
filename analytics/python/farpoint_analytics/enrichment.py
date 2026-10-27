@@ -51,8 +51,13 @@ class IPToASN:
         index = bisect_right(self.starts[ip.version], int(ip)) - 1
         if index >= 0 and self.rows[ip.version][index][1] >= int(ip):
             _, _, asn, country, name = self.rows[ip.version][index]
-            result.update(asn=asn, country=country, network_organization=name,
-                          identity_category="inferred_network_organization", reason="network_context_not_employer")
+            if asn == 0:
+                # IPtoASN represents uncovered/unrouted ranges with AS0. Its
+                # "Not routed" description is not a network organization.
+                result["reason"] = "network_unrouted"
+            else:
+                result.update(asn=asn, country=country, network_organization=name,
+                              identity_category="inferred_network_organization", reason="network_context_not_employer")
         else:
             result["reason"] = "network_unknown"
         return result
