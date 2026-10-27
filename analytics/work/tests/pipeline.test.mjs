@@ -66,8 +66,42 @@ test('native mail parser failure preserves both connector and raw RFC2822 eviden
   const adapters=createNativeAdapters({tools:{mcp__codex_apps__gmail_read_email:async()=>({structuredContent:{id:'m',raw,internalDate:'1'}})},local:{normalizeMail:async()=>{throw Error('bad MIME');}},settings:{mailbox:'synthetic@example.test'},classify:()=>{},analyze:()=>{}});
   const capture=await adapters.mail.capture('m');assert.equal(capture.complete,false);assert.deepEqual(capture.artifacts.map(x=>x.name),['connector.json','message.eml']);
 });
+test('native raw mail supplements missing receipt date with same-message provider metadata',async()=>{
+  const raw=b64(workJSON({synthetic:'mail'})).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const calls=[];let normalization;
+  const adapters=createNativeAdapters({tools:{mcp__codex_apps__gmail_read_email:async args=>{calls.push(args);return {structuredContent:args.format==='raw'?{id:'m',thread_id:'t',raw,internal_date:null}:{id:'m',thread_id:'t',internal_date:'1792631929000'}};}},local:{normalizeMail:async args=>{normalization=args;return {complete:true,capture:{message_id:'m'},artifacts:[]};}},settings:{mailbox:'synthetic@example.test',gmail_link_id:'synthetic-link'}});
+  const capture=await adapters.mail.capture('m');assert.equal(capture.complete,true);
+  assert.deepEqual(calls.map(x=>x.format),['raw','metadata']);assert.equal(normalization.internal_date,'1792631929000');
+  assert.deepEqual(capture.artifacts.map(x=>x.name),['metadata-connector.json']);
+});
+test('wrong-message receipt metadata fails closed while raw bytes and metadata survive',async()=>{
+  const raw=b64(workJSON({synthetic:'mail'})).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const adapters=createNativeAdapters({tools:{mcp__codex_apps__gmail_read_email:async args=>({structuredContent:args.format==='raw'?{id:'m',thread_id:'t',raw}:{id:'other',thread_id:'t',internal_date:'1792631929000'}})},local:{normalizeMail:async()=>{throw Error('must not normalize');}},settings:{mailbox:'synthetic@example.test'}});
+  const capture=await adapters.mail.capture('m');assert.equal(capture.complete,false);assert.equal(capture.reason,'mail_metadata_message_mismatch');assert.deepEqual(capture.artifacts.map(x=>x.name),['connector.json','message.eml','metadata-connector.json']);
+});
 test('tool-level export errors cannot become successful pagination',()=>{assert.throws(()=>workToolValue({isError:true,content:[{type:'text',text:'secret provider detail'}]}),/connector_error/);});
 test('report makes missing attribution and unavailable employer explicit',()=>{const s=renderLeadReport({status:'incomplete',warnings:[]});assert.match(s,/Attribution tables unavailable/);assert.match(s,/Company matching unavailable/);assert.match(s,/does not establish inbox delivery/);});
+test('report separates daily receipt and session-cohort counts from historical inquiry totals',()=>{
+  const s=renderLeadReport({traffic:{sessions:3},mail_counts:{received_in_window:2,cohort_received_inquiries:1,received_inquiries:101,matched_website_inquiries:82,unattributed_inquiries:19}});
+  assert.match(s,/Sessions starting in this window: 3; inquiries received in this window: 2; received inquiries matched to this session cohort through the observation cutoff: 1/);
+  assert.match(s,/Across all captured history through the cutoff: received inquiries 101; website-matched inquiries 82; unattributed inquiries 19/);
+});
+test('schema-compatible historical Work archive verifies but unknown or mixed versions fail',async()=>{
+  const f=await fixture();const r=await runLeadPipeline(f.args);
+  const c=JSON.parse(new TextDecoder().decode(f.remote.get(r.completion.id)));
+  const m=JSON.parse(new TextDecoder().decode(f.remote.get(c.manifest.id)));
+  async function replaceSyntheticVersions(completionVersion,manifestVersion){
+    c.work_version=completionVersion;m.work_version=manifestVersion;
+    const mb=workJSON(m);f.remote.set(c.manifest.id,mb);c.manifest.bytes=mb.length;c.manifest.sha256=await workHash(mb);f.remote.set(r.completion.id,workJSON(c));
+  }
+  // In-memory fault fixtures only; no stored evidence or remote files are changed.
+  await replaceSyntheticVersions('farpoint-work/1.0.0','farpoint-work/1.0.0');
+  assert.equal((await verifyRemoteRun({completionId:r.completion.id,drive:f.args.drive})).status,'verified');
+  await replaceSyntheticVersions('farpoint-work/1.0.0','farpoint-work/1.0.1');
+  await assert.rejects(()=>verifyRemoteRun({completionId:r.completion.id,drive:f.args.drive}),/remote_manifest_scope_mismatch/);
+  await replaceSyntheticVersions('farpoint-work/9.9.9','farpoint-work/9.9.9');
+  await assert.rejects(()=>verifyRemoteRun({completionId:r.completion.id,drive:f.args.drive}),/remote_manifest_scope_mismatch/);
+});
 test('analysis failure still archives acquired raw data without issuing completion',async()=>{const f=await fixture();f.args.analyze=async()=>{throw Error('synthetic analysis failure');};const r=await runLeadPipeline(f.args);assert.equal(r.status,'failed');assert([...f.remoteNames.values()].some(x=>x.includes('partial-raw--collector--receipts')));assert(![...f.remoteNames.values()].some(x=>x.endsWith('-completed.json')));});
 test('native read refuses a newly shared file even in the right archive folder',async()=>{const adapters=createNativeAdapters({tools:{mcp__codex_apps__google_drive_get_file_metadata:async()=>({structuredContent:{id:'f',parent_ids:['folder'],url:'https://drive.example/f',shared:true,permissions:[{type:'user',role:'owner',emailAddress:'owner@example.test'}]}})},local:{},settings:{archive_folder_id:'folder',owner_email:'owner@example.test'}});await assert.rejects(()=>adapters.drive.read('f'),/drive_read_scope_mismatch/);});
 test('watchdog rejects a current run with a stale reporting window or wrong job identity',async()=>{const f=await fixture();const r=await runLeadPipeline(f.args);for(const expected of [{...config,window_start:'2026-10-22T00:00:00Z',window_end:'2026-10-23T00:00:00Z'},{...config,job:{...config.job,id:'different-job'}}]){const h=await evaluateWatchdog({expectedIntervals:[{...expected,start:'2026-10-23T19:00:00Z',end:'2026-10-23T21:00:00Z'}],completionIds:[r.completion.id],drive:f.args.drive,now:'2026-10-23T21:15:00Z',canary:{status:'verified'}});assert.equal(h.missed_intervals.length,1);assert.equal(h.status,'warning');}});
