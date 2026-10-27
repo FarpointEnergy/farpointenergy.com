@@ -104,6 +104,24 @@ from incoming UTM fields. Other unregistered values remain quarantined and
 tracker-side unknown values remain `unknown_campaign`. Registry changes require
 a new run; earlier raw bytes, configs and results remain unchanged.
 
+For repeated full rescans, opt into `config.archive_mode: 'packed_journal_v1'`.
+The host packs the exact frozen journal inventory into one new ZIP. The native
+adapter uploads by local path, downloads the actual bytes, verifies every entry
+against that independent inventory and freshly restores them before completion.
+The config, JSON report and Markdown report remain three separate small files;
+the remote manifest and completion record remain directly readable by the
+watchdog. `record_count` and `total_bytes` describe physical payload files, while
+`logical_record_count`, `logical_total_bytes` and `logical_files` describe all
+preserved journal files. The archive carries an explicit journal binding; it
+does not invent a pipeline-completion reference before completion exists.
+
+Analysis failures still attempt a single partial journal ZIP when Drive is
+available. A Drive failure keeps local bytes and known/ambiguous upload IDs;
+it does not trigger thousands of fallback uploads. The final closure checks
+both remote ZIP membership and every logical source file, then creates a new
+whole-evidence archive and replays the restored numerical analysis. Legacy
+individual-file runs remain readable and remain the default unless opted in.
+
 The network callback is required in the current task recipe. It restores the
 hash-pinned dataset ZIP through authenticated Drive download even on a fresh
 host; Python verifies the full ZIP and selected manifest members. Its settings
@@ -209,15 +227,18 @@ verified. A pipeline completed record alone does not certify this boundary.
 
 Work version `1.0.1` labels current-window receipts, session-cohort conversions,
 and all-history inquiry totals separately in the human report. The archive
-schema is unchanged: verification explicitly accepts `1.0.0` and `1.0.1` when
+schema remained unchanged between `1.0.0` and `1.0.1`. Version `1.1.0` adds the
+opt-in packed journal fields and physical/logical count separation. Verification
+accepts historical individual-file `1.0.0`/`1.0.1` and current `1.1.0` when
 completion/manifest versions match and all other integrity/scope checks pass.
-Unknown versions fail closed. Numerical replay still requires archived source.
+Unknown versions and archive modes fail closed. Numerical replay still requires
+archived source.
 
 ## Build and tests
 
 ```sh
 node analytics/work/build-bundle.mjs
-node --test analytics/work/tests/pipeline.test.mjs analytics/work/tests/runtime.test.mjs analytics/work/tests/host-bridge.test.mjs
+node --test analytics/work/tests/*.test.mjs
 python3 -m unittest discover -s analytics/work/tests -v
 ```
 

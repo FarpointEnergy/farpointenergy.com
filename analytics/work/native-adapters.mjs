@@ -31,6 +31,10 @@ export function createNativeAdapters({tools,local,settings,classify,analyze,now=
     },
     create:async(name,bytes)=>{
       const path=await local.create(`drive-staging/${crypto.randomUUID()}-${name}`,bytes);
+      return drive.createFile(name,{path});
+    },
+    createFile:async(name,{path})=>{
+      nativeEnsure(typeof path==='string'&&path.startsWith('/'),'invalid_upload_file_path');
       const raw=await call('mcp__codex_apps__google_drive_upload_file',{file_uri:path,file_name:name,mime_type:'application/octet-stream',parent_folder_id:settings.archive_folder_id});
       const upload=workToolValue(raw);const id=upload.id??upload.fileId;
       nativeEnsure(typeof id==='string'&&id,'drive_id_missing');
@@ -50,6 +54,12 @@ export function createNativeAdapters({tools,local,settings,classify,analyze,now=
       const proof=await local.verifyFileReference({response:raw,expectedBytes:bytes,expectedSha256:sha256});
       nativeEnsure(proof.verified===true&&proof.bytes===bytes&&proof.sha256===sha256,'drive_readback_mismatch');
       return {id,url:meta.url,...proof};
+    },
+    verifyJournal:async(id,expected)=>{
+      const download=await drive.verifyFile(id,expected);
+      const checked=await local.verifyJournal({...expected,path:download.path});
+      nativeEnsure(checked.verified===true&&checked.entries_verified===true&&checked.bytes===expected.bytes&&checked.sha256===expected.sha256&&checked.manifest_sha256===expected.manifest_sha256&&checked.record_count===expected.entries.length,'packed_journal_integrity');
+      return {...download,...checked,id,url:download.url};
     },
     read:async id=>{
       const meta=nativeMeta(workToolValue(await call('mcp__codex_apps__google_drive_get_file_metadata',{fileId:id,fields:'id,name,mimeType,parents,permissions,shared,webViewLink'})));
@@ -98,7 +108,7 @@ export function createNativeAdapters({tools,local,settings,classify,analyze,now=
       }catch(error){return {complete:false,reason:error instanceof WorkFailure?error.code:'mail_normalization_failed',capture:null,artifacts};}
     }
   };
-  return {collector,drive,mail,classify,analyze,journal:{create:(path,bytes)=>local.create(`run/${path}`,bytes)},now};
+  return {collector,drive,mail,classify,analyze,journal:{create:(path,bytes)=>local.create(`run/${path}`,bytes),packJournal:args=>local.packJournal(args)},now};
 }
 
 /** Convert reviewed classification observations to a full explicit boundary.

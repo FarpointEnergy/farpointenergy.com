@@ -137,13 +137,18 @@ def _validate_binding(value):
     _require(isinstance(value.get('source_commit'), str)
              and HEX40.fullmatch(value['source_commit']), 'invalid_binding_commit')
     completion = value.get('pipeline_completion')
-    _require(isinstance(completion, dict)
+    journal = value.get('kind') == 'farpoint_pipeline_journal'
+    if journal:
+        _require('pipeline_completion' not in value
+                 and isinstance(value.get('required_source_files'), list), 'invalid_journal_binding')
+    else:
+        _require(isinstance(completion, dict)
              and isinstance(completion.get('id'), str)
              and 1 <= len(completion['id']) <= 256
              and not any(ord(c) < 32 for c in completion['id'])
              and type(completion.get('bytes')) is int and completion['bytes'] >= 0
              and isinstance(completion.get('sha256'), str)
-             and HEX64.fullmatch(completion['sha256']), 'invalid_binding_completion')
+                 and HEX64.fullmatch(completion['sha256']), 'invalid_binding_completion')
     required = value.get('required_source_files', [])
     _require(isinstance(required, list), 'invalid_required_source_files')
     seen = set()
@@ -169,6 +174,8 @@ def _binding(value):
 
 
 def _binding_summary(value):
+    if value.get('kind') == 'farpoint_pipeline_journal':
+        return {key: value[key] for key in ('schema_version', 'kind', 'run_id', 'source_commit')}
     completion = value['pipeline_completion']
     return {key: value[key] for key in ('schema_version', 'run_id', 'source_commit')} | {
         'pipeline_completion': {key: completion[key] for key in ('id', 'bytes', 'sha256')}}
@@ -211,6 +218,9 @@ def pack_evidence(source_root, output_zip, binding):
     required = {entry['path']: entry for entry in bound.get('required_source_files', [])}
     _require(required.keys() <= {p.relative_to(root).as_posix() for p in paths},
              'required_source_file_missing')
+    if bound.get('kind') == 'farpoint_pipeline_journal':
+        _require(required.keys() == {p.relative_to(root).as_posix() for p in paths},
+                 'journal_source_inventory_mismatch')
     entries, signatures = [], {}
     # Output is created exclusively. A failed ZIP is deliberately left in place.
     with _new_file(output) as stream:
@@ -291,6 +301,9 @@ def _checked_archive(data):
         _require(all(entry_map.get(entry['path']) == entry
                      for entry in bound.get('required_source_files', [])),
                  'required_source_binding_mismatch')
+        if bound.get('kind') == 'farpoint_pipeline_journal':
+            _require(set(entry_map) == {entry['path'] for entry in bound['required_source_files']},
+                     'journal_source_inventory_mismatch')
         for name in listed:
             _require(not any(p.as_posix() in listed for p in PurePosixPath(name).parents
                              if p.as_posix() != '.'), 'archive_path_collision')
@@ -342,6 +355,46 @@ def verify_restore(zip_path, expected_sha256, expected_bytes, new_destination):
                 'verification': 'Every listed file restored from verified ZIP bytes and read back exactly.'}
     finally:
         archive.close()
+
+
+def pack_journal(source_root, output_zip, run_id, source_commit, entries):
+    """Exactly the frozen journal inventory; no fabricated completion record."""
+    binding = {'schema_version': 1, 'kind': 'farpoint_pipeline_journal',
+               'run_id': run_id, 'source_commit': source_commit,
+               'required_source_files': entries}
+    return pack_evidence(source_root, output_zip, binding)
+
+
+def verify_journal(zip_path, expected_sha256, expected_bytes, new_destination,
+                   run_id, source_commit, entries, manifest_sha256):
+    """Verify against the independently frozen inventory, then freshly restore.
+
+    Rehashing a changed ZIP and its internal manifest cannot change this caller
+    contract. A prior valid but foreign journal cannot satisfy this run either.
+    """
+    expected = _validate_binding({'schema_version': 1, 'kind': 'farpoint_pipeline_journal',
+                                  'run_id': run_id, 'source_commit': source_commit,
+                                  'required_source_files': entries})
+    _require(isinstance(manifest_sha256, str) and HEX64.fullmatch(manifest_sha256),
+             'invalid_expected_journal_manifest')
+    data, _ = _read_regular(_absolute(zip_path))
+    _require(type(expected_bytes) is int and len(data) == expected_bytes
+             and _sha(data) == expected_sha256, 'archive_integrity_failure')
+    archive, manifest, manifest_bytes, _ = _checked_archive(data)
+    try:
+        _require(_sha(manifest_bytes) == manifest_sha256, 'journal_manifest_integrity_failure')
+        binding = manifest['binding']
+        _require(all(binding.get(k) == expected[k] for k in
+                     ('schema_version', 'kind', 'run_id', 'source_commit'))
+                 and 'pipeline_completion' not in binding, 'journal_binding_mismatch')
+        ordered = lambda rows: sorted(rows, key=lambda x: x['path'])
+        _require(ordered(manifest['entries']) == ordered(entries)
+                 and ordered(binding['required_source_files']) == ordered(entries),
+                 'journal_expected_inventory_mismatch')
+    finally:
+        archive.close()
+    restored = verify_restore(zip_path, expected_sha256, expected_bytes, new_destination)
+    return {**restored, 'verified': True, 'entries_verified': True}
 
 
 def main():

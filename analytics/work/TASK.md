@@ -1,6 +1,6 @@
 # Versioned Work task — archive and RFQ report
 
-Task definition version: `farpoint-work-task/1.1.1`. This file is an executable
+Task definition version: `farpoint-work-task/1.2.0`. This file is an executable
 Work-agent recipe, not an active schedule. The agent uses the existing connected
 tools and the checked-in deterministic runner. Do not activate it before the
 hosted export, private archive and unattended-permission gates pass.
@@ -33,6 +33,14 @@ hosted export, private archive and unattended-permission gates pass.
    `unknown_campaign`. A registry correction requires a new version and new run,
    preserving all earlier inputs and reports. Registered synthetic events still
    remain excluded from production traffic and inquiry totals.
+   For the reviewed packed-run profile set `config.archive_mode` to
+   `packed_journal_v1`. This packs the frozen journal once, uploads and downloads
+   its exact ZIP, verifies every logical file against the frozen inventory, and
+   freshly restores those paths. Config and reports remain separate small files.
+   The manifest's `record_count`/`total_bytes` count physical remote payloads;
+   `logical_record_count`/`logical_total_bytes` count preserved journal files.
+   The default remains individual-file mode for historical compatibility.
+   Never treat a ZIP hash alone as per-entry verification or skip final closure.
    The analysis callback must be `createNetworkAnalyzer`, with the pinned
    owner-private dataset artifact and separately approved IP-provenance
    artifacts from private settings. It automatically restores the dataset,

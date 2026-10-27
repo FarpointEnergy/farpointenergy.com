@@ -199,7 +199,7 @@ def analyze(request, root):
              'outputs/report.json': json_bytes(report), 'replay/runtime-identity.json': json_bytes(runtime_identity()), **source_snapshot()}
     work_source = pathlib.Path(__file__).parent
     files.update({'replay/work-source/'+p.name:p.read_bytes() for p in sorted(work_source.iterdir())
-                  if p.is_file() and p.suffix in ('.py','.mjs','.md')})
+                  if p.is_file() and p.suffix in ('.py','.mjs','.md','.json')})
     timezone_path = pathlib.Path('/usr/share/zoneinfo/America/New_York')
     if not timezone_path.is_file():
         raise ValueError('timezone_artifact_unavailable')
@@ -233,10 +233,22 @@ def main():
         elif request['op'] == 'restore_evidence':
             from evidence_archive import verify_restore
             result = {'restoration':verify_restore(request['path'],request['sha256'],request['bytes'],root / ('restored-' + str(uuid.uuid4())))}
+        elif request['op'] in ('pack_journal', 'verify_journal'):
+            from evidence_archive import pack_journal, verify_journal
+            repository = pathlib.Path(args.repository).resolve()
+            if root.resolve().is_relative_to(repository):
+                raise ValueError('private_journal_inside_repository')
+            if request['op'] == 'pack_journal':
+                result = {'archive':pack_journal(root / 'run', root / 'journal-packages' / (str(uuid.uuid4()) + '.zip'),
+                          request['run_id'], request['source_commit'], request['entries'])}
+            else:
+                result = {'verification':verify_journal(request['path'], request['sha256'], request['bytes'],
+                         root / 'journal-restores' / str(uuid.uuid4()), request['run_id'],
+                         request['source_commit'], request['entries'], request['manifest_sha256'])}
         elif request['op'] == 'replay_analysis':
             result = replay_restored_analysis(request,root)
         elif request['op'] == 'capture_closure_source':
-            names=['archive-closure.mjs','evidence_archive.py','host-bridge.mjs','native-adapters.mjs','local_bridge.py','pipeline.mjs','portable-runtime.mjs','build-cloudflare-bundle.mjs','TASK.md','README.md','CLOUDFLARE.md']
+            names=['archive-closure.mjs','evidence_archive.py','host-bridge.mjs','native-adapters.mjs','local_bridge.py','pipeline.mjs','portable-runtime.mjs','build-cloudflare-bundle.mjs','TASK.md','README.md','CLOUDFLARE.md','campaign-registry.json']
             entries=[]
             for name in names:
                 data=(pathlib.Path(__file__).parent/name).read_bytes()

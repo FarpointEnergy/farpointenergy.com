@@ -36,6 +36,8 @@ export function createWorkHostBridge({tools,privateRoot,repositoryRoot}){
     verifyFileReference:async({response,expectedBytes,expectedSha256})=>invoke({op:'verify_reference',response,expected_bytes:expectedBytes,expected_sha256:expectedSha256}),
     packEvidence:async({sourceRoot,binding})=>(await invoke({op:'pack_evidence',source_root:bridgePath(sourceRoot),binding})).archive,
     restoreEvidence:async({path,bytes,sha256})=>(await invoke({op:'restore_evidence',path:bridgePath(path),bytes,sha256})).restoration,
+    packJournal:async({runId,sourceCommit,entries})=>(await invoke({op:'pack_journal',run_id:runId,source_commit:sourceCommit,entries})).archive,
+    verifyJournal:async({path,bytes,sha256,manifest_sha256,runId,sourceCommit,entries})=>(await invoke({op:'verify_journal',path:bridgePath(path),bytes,sha256,manifest_sha256,run_id:runId,source_commit:sourceCommit,entries})).verification,
     replayAnalysis:async({archive,sourceCommit})=>invoke({op:'replay_analysis',archive:bridgePath(archive),source_commit:sourceCommit}),
     captureClosureSource:async()=>invoke({op:'capture_closure_source'}),
     normalizeMail:async({raw,connector,...metadata})=>{

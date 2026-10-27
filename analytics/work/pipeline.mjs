@@ -2,9 +2,9 @@
  * The host supplies the named capabilities; production adapters fail closed.
  * Every invocation is a full rescan into a NEW run. A retry never edits a run.
  */
-export const WORK_VERSION = 'farpoint-work/1.0.1';
+export const WORK_VERSION = 'farpoint-work/1.1.0';
 // Patch releases share the archive schema; completion and manifest must still agree.
-const READABLE_WORK_VERSIONS = new Set(['farpoint-work/1.0.0', WORK_VERSION]);
+const READABLE_WORK_VERSIONS = new Set(['farpoint-work/1.0.0','farpoint-work/1.0.1', WORK_VERSION]);
 const workEncoder = new TextEncoder();
 const workDecoder = new TextDecoder('utf-8', {fatal:true});
 const workHex = /^[a-f0-9]{64}$/;
@@ -32,6 +32,9 @@ export async function runLeadPipeline({runId,config,collector,mail,classify,anal
   const cap={pages:10000,objects:100000,objectBytes:1024*1024,totalBytes:256*1024*1024,...limits};
   for(const x of Object.values(cap))workRequire(Number.isSafeInteger(x)&&x>0,'invalid_limit');
   const startedAt=workIso(now()), files=new Map(), failures=[], sources={collector:false,mail:false,classifications:false};
+  const archiveMode=config.archive_mode??'individual_files_v1';
+  workRequire(['individual_files_v1','packed_journal_v1'].includes(archiveMode),'unsupported_archive_mode');
+  if(archiveMode==='packed_journal_v1')workRequire(/^[a-f0-9]{40}$/.test(config.execution_code_commit??'')&&typeof journal.packJournal==='function'&&typeof drive.createFile==='function'&&typeof drive.verifyJournal==='function','packed_journal_capability_missing');
   let seq=0,totalBytes=0,phase='destination',remoteStarted=null;const createdIds=new Set(),uploadedPaths=new Set(),remoteObservations=[];
   const record=async(path,bytes)=>{workSafePath(path);workRequire(!files.has(path),'duplicate_local_path');bytes=workBytes(bytes);const hash=await workHash(bytes);await journal.create(path,bytes);files.set(path,{path,bytes:bytes.length,sha256:hash,data:bytes});return {path,bytes:bytes.length,sha256:hash};};
   const observe=async(kind,value)=>record(`observations/${String(seq++).padStart(6,'0')}-${kind}.json`,workJSON(value));
@@ -58,6 +61,26 @@ export async function runLeadPipeline({runId,config,collector,mail,classify,anal
       observation.verified=true;observation.state='verified';
       return {id:result.id,url:result.url,bytes:data.length,sha256:observation.sha256};
     }catch(error){if(!observation.id&&typeof error?.created_file?.id==='string'&&error.created_file.id){observation.id=error.created_file.id;observation.url=typeof error.created_file.url==='string'?error.created_file.url:null;}observation.state=observation.id?'created_unverified':'create_outcome_unknown';observation.reason=workCode(error);throw error;}
+  };
+  const createPackedJournal=async(name,snapshot)=>{
+    const entries=snapshot.map(({path,bytes,sha256})=>({path,bytes,sha256}));
+    const archive=await journal.packJournal({runId,sourceCommit:config.execution_code_commit,entries});
+    workRequire(archive?.status==='packed'&&typeof archive.path==='string'&&Number.isSafeInteger(archive.bytes)&&archive.bytes>=0&&workHex.test(archive.sha256??'')&&workHex.test(archive.manifest_sha256??'')&&archive.record_count===entries.length&&archive.total_source_bytes===entries.reduce((s,x)=>s+x.bytes,0),'invalid_packed_journal');
+    const observation={name:`${runId}-${name}`,path:name,bytes:archive.bytes,sha256:archive.sha256,id:null,url:null,verified:false,state:'requested'};
+    remoteObservations.push(observation);
+    try{
+      const result=await drive.createFile(observation.name,archive);
+      if(typeof result?.id==='string'&&result.id)observation.id=result.id;
+      if(typeof result?.url==='string')observation.url=result.url;
+      workRequire(observation.id&&observation.url,'invalid_drive_create');
+      workRequire(!createdIds.has(observation.id),'duplicate_remote_file_id');createdIds.add(observation.id);
+      observation.state='created_unverified';
+      const proof=await drive.verifyJournal(observation.id,{...archive,entries,runId,sourceCommit:config.execution_code_commit});
+      workRequire(proof?.verified===true&&proof.entries_verified===true&&proof.id===observation.id&&proof.bytes===archive.bytes&&proof.sha256===archive.sha256&&proof.manifest_sha256===archive.manifest_sha256&&proof.record_count===entries.length,'packed_journal_readback_mismatch');
+      observation.verified=true;observation.state='verified';
+      for(const entry of entries)uploadedPaths.add(entry.path);
+      return {path:name,id:observation.id,url:observation.url,bytes:archive.bytes,sha256:archive.sha256,manifest_sha256:archive.manifest_sha256,record_count:entries.length,total_source_bytes:archive.total_source_bytes};
+    }catch(error){if(!observation.id&&typeof error?.created_file?.id==='string'&&error.created_file.id){observation.id=error.created_file.id;observation.url=error.created_file.url??null;}observation.state=observation.id?'created_unverified':'create_outcome_unknown';observation.reason=workCode(error);throw error;}
   };
   try {
     const privacy=await drive.assertPrivate();
@@ -158,11 +181,23 @@ export async function runLeadPipeline({runId,config,collector,mail,classify,anal
     await record('report/report.md',workEncoder.encode(renderLeadReport(analyzed.report,health)));
     phase='archive';
     const frozen=[...files.values()];const remoteFiles=[];
-    for(const file of frozen){const ref=await createRemote(file.path.replaceAll('/','--'),file.data,file.path);remoteFiles.push({path:file.path,...ref});uploadedPaths.add(file.path);}
+    let packedMetadata={};
+    if(archiveMode==='packed_journal_v1'){
+      const archive=await createPackedJournal('journal.zip',frozen);
+      remoteFiles.push({path:archive.path,id:archive.id,url:archive.url,bytes:archive.bytes,sha256:archive.sha256});
+      const logicalFiles=frozen.map(({path,bytes,sha256})=>({path,bytes,sha256}));
+      packedMetadata={archive_mode:archiveMode,packed_journal:{path:archive.path,manifest_sha256:archive.manifest_sha256,source_commit:config.execution_code_commit},logical_files:logicalFiles,logical_record_count:logicalFiles.length,logical_total_bytes:archive.total_source_bytes};
+      for(const path of ['inputs/config.json','report/report.json','report/report.md']){
+        const file=files.get(path),ref=await createRemote(path.replaceAll('/','--'),file.data,path);
+        remoteFiles.push({path,...ref});
+      }
+    }else{
+      for(const file of frozen){const ref=await createRemote(file.path.replaceAll('/','--'),file.data,file.path);remoteFiles.push({path:file.path,...ref});uploadedPaths.add(file.path);}
+    }
     const complete=failures.length===0&&Object.values(sources).every(x=>x===true)&&analyzed.report.status==='complete';
-    const manifest={schema_version:1,run_id:runId,work_version:WORK_VERSION,job,window_start:windowStart,window_end:windowEnd,started_at:startedAt,finished_at:workIso(now()),observation_cutoff:frozenConfig.observation_cutoff,source_completeness:sources,report_status:analyzed.report.status,report_authority:authority,unreviewed_message_ids:unreviewedMessages,source_snapshot_claim:'exact listed inputs; not a transactional source snapshot',files:remoteFiles,record_count:remoteFiles.length,total_bytes:remoteFiles.reduce((s,x)=>s+x.bytes,0),failures};
+    const manifest={schema_version:1,run_id:runId,work_version:WORK_VERSION,job,window_start:windowStart,window_end:windowEnd,started_at:startedAt,finished_at:workIso(now()),observation_cutoff:frozenConfig.observation_cutoff,source_completeness:sources,report_status:analyzed.report.status,report_authority:authority,unreviewed_message_ids:unreviewedMessages,source_snapshot_claim:'exact listed inputs; not a transactional source snapshot',files:remoteFiles,record_count:remoteFiles.length,total_bytes:remoteFiles.reduce((s,x)=>s+x.bytes,0),...packedMetadata,failures};
     const manifestBytes=workJSON(manifest);await record('remote-manifest.json',manifestBytes);const manifestRef=await createRemote('remote-manifest.json',manifestBytes);
-    const completion={schema_version:1,run_id:runId,work_version:WORK_VERSION,job,window_start:windowStart,window_end:windowEnd,state:complete?'completed':'partial',verified_at:workIso(now()),manifest:manifestRef,record_count:manifest.record_count,total_bytes:manifest.total_bytes,source_completeness:sources,report_status:analyzed.report.status,report_authority:authority};
+    const completion={schema_version:1,run_id:runId,work_version:WORK_VERSION,job,window_start:windowStart,window_end:windowEnd,state:complete?'completed':'partial',verified_at:workIso(now()),manifest:manifestRef,record_count:manifest.record_count,total_bytes:manifest.total_bytes,...(archiveMode==='packed_journal_v1'?{archive_mode:archiveMode,logical_record_count:manifest.logical_record_count,logical_total_bytes:manifest.logical_total_bytes}:{}),source_completeness:sources,report_status:analyzed.report.status,report_authority:authority};
     await record(complete?'remote-completed.json':'remote-partial.json',workJSON(completion));const finalRef=await createRemote(complete?'completed.json':'partial.json',workJSON(completion));
     return {status:complete?'complete':'partial',run_id:runId,manifest:manifestRef,completion:finalRef,report_status:analyzed.report.status,report_authority:authority,unreviewed_message_ids:unreviewedMessages,failures};
   }catch(error){
@@ -173,7 +208,11 @@ export async function runLeadPipeline({runId,config,collector,mail,classify,anal
       // A broken parser/report must not prevent archival of bytes already read.
       // If Drive itself is failing, stop after its first recovery failure.
       const recovered=[];
-      for(const file of [...files.values()]){if(uploadedPaths.has(file.path))continue;try{const ref=await createRemote('partial-'+file.path.replaceAll('/','--'),file.data,file.path);recovered.push({path:file.path,...ref});uploadedPaths.add(file.path);}catch{break;}}
+      if(archiveMode==='packed_journal_v1'){
+        try{recovered.push(await createPackedJournal('partial-journal-'+crypto.randomUUID()+'.zip',[...files.values()]));}catch{}
+      }else{
+        for(const file of [...files.values()]){if(uploadedPaths.has(file.path))continue;try{const ref=await createRemote('partial-'+file.path.replaceAll('/','--'),file.data,file.path);recovered.push({path:file.path,...ref});uploadedPaths.add(file.path);}catch{break;}}
+      }
       const finalFailure={...failure,recovered_files:recovered,remote_observations:remoteObservations.map(x=>({...x})),retained_partial_files:remoteObservations.filter(x=>x.id).map(x=>({...x})),ambiguous_remote_creates:remoteObservations.filter(x=>!x.id).map(x=>({...x})),unarchived_local_files:[...files.keys()].filter(x=>!uploadedPaths.has(x))};
       try{await record(`failure-recovery-${seq++}.json`,workJSON(finalFailure));}catch{}
       try{remoteFailure=await createRemote(`failure-${seq++}.json`,workJSON(finalFailure));}catch{}
@@ -191,8 +230,36 @@ export async function verifyRemoteRun({completionId,drive,full=true}){
   const bytes=await drive.read(c.manifest.id);workRequire(bytes.length===c.manifest.bytes&&await workHash(bytes)===c.manifest.sha256,'remote_manifest_integrity');
   const m=JSON.parse(workDecoder.decode(bytes));workRequire(m.run_id===c.run_id&&m.report_status==='complete'&&Array.isArray(m.files)&&m.record_count===m.files.length&&m.record_count===c.record_count&&m.total_bytes===c.total_bytes&&m.total_bytes===m.files.reduce((s,x)=>s+x.bytes,0),'remote_manifest_counts');
   workRequire(JSON.stringify(workJob(c.job))===JSON.stringify(workJob(m.job))&&workIso(c.window_start)===workIso(m.window_start)&&workIso(c.window_end)===workIso(m.window_end)&&c.window_start<c.window_end&&c.report_authority===m.report_authority&&['needs_review','qualified','complete_for_observed_evidence'].includes(m.report_authority)&&c.work_version===m.work_version&&READABLE_WORK_VERSIONS.has(m.work_version)&&['collector','mail','classifications'].every(k=>m.source_completeness?.[k]===true),'remote_manifest_scope_mismatch');
-  const ids=new Set(),paths=new Set();for(const f of m.files){workSafePath(f.path);workRequire(typeof f.id==='string'&&!ids.has(f.id)&&!paths.has(f.path)&&Number.isSafeInteger(f.bytes)&&f.bytes>=0&&workHex.test(f.sha256||''),'invalid_manifest_entry');ids.add(f.id);paths.add(f.path);if(full){const b=await drive.read(f.id);workRequire(b.length===f.bytes&&await workHash(b)===f.sha256,'remote_file_integrity');}}
-  return {status:'verified',run_id:c.run_id,verified_at:c.verified_at,record_count:m.record_count,full_content_verification:full,manifest:m};
+  const packed=m.archive_mode==='packed_journal_v1';
+  workRequire((m.archive_mode??'individual_files_v1')===(c.archive_mode??'individual_files_v1')&&['individual_files_v1','packed_journal_v1'].includes(m.archive_mode??'individual_files_v1'),'remote_archive_mode_mismatch');
+  if(packed){
+    workRequire(m.work_version===WORK_VERSION&&Array.isArray(m.logical_files)&&m.logical_record_count===m.logical_files.length&&m.logical_record_count===c.logical_record_count&&m.logical_total_bytes===c.logical_total_bytes&&m.logical_total_bytes===m.logical_files.reduce((s,x)=>s+x.bytes,0),'logical_manifest_counts');
+    const names=new Set();for(const f of m.logical_files){workSafePath(f.path);workRequire(Object.keys(f).length===3&&!names.has(f.path)&&Number.isSafeInteger(f.bytes)&&f.bytes>=0&&workHex.test(f.sha256??''),'invalid_logical_manifest_entry');names.add(f.path);}
+    workRequire(m.packed_journal?.path==='journal.zip'&&workHex.test(m.packed_journal.manifest_sha256??'')&&/^[a-f0-9]{40}$/.test(m.packed_journal.source_commit??'')&&m.files.length===4,'invalid_packed_journal_manifest');
+    const expectedPaths=['journal.zip','inputs/config.json','report/report.json','report/report.md'];
+    workRequire(m.files.every(x=>expectedPaths.includes(x.path)),'invalid_packed_journal_files');
+    for(const path of expectedPaths.slice(1)){
+      const physical=m.files.find(x=>x.path===path),logical=m.logical_files.find(x=>x.path===path);
+      workRequire(physical&&logical&&physical.bytes===logical.bytes&&physical.sha256===logical.sha256,'packed_direct_file_mismatch');
+    }
+  }else workRequire(m.logical_files===undefined&&m.packed_journal===undefined&&c.logical_record_count===undefined,'unexpected_packed_metadata');
+  const ids=new Set(),paths=new Set();for(const f of m.files){
+    workSafePath(f.path);workRequire(typeof f.id==='string'&&f.id.length>0&&!ids.has(f.id)&&!paths.has(f.path)&&Number.isSafeInteger(f.bytes)&&f.bytes>=0&&workHex.test(f.sha256||''),'invalid_manifest_entry');ids.add(f.id);paths.add(f.path);
+    if(full){
+      if(packed&&f.path===m.packed_journal.path){
+        workRequire(typeof drive.verifyJournal==='function','packed_journal_verifier_missing');
+        const proof=await drive.verifyJournal(f.id,{...f,manifest_sha256:m.packed_journal.manifest_sha256,entries:m.logical_files,runId:m.run_id,sourceCommit:m.packed_journal.source_commit});
+        workRequire(proof?.verified===true&&proof.entries_verified===true&&proof.id===f.id&&proof.bytes===f.bytes&&proof.sha256===f.sha256&&proof.manifest_sha256===m.packed_journal.manifest_sha256&&proof.record_count===m.logical_files.length,'packed_journal_integrity');
+      }else{
+        const b=await drive.read(f.id);workRequire(b.length===f.bytes&&await workHash(b)===f.sha256,'remote_file_integrity');
+        if(packed&&f.path==='inputs/config.json'){
+          const config=JSON.parse(workDecoder.decode(b));
+          workRequire(config.archive_mode==='packed_journal_v1'&&config.execution_code_commit===m.packed_journal.source_commit,'packed_source_commit_mismatch');
+        }
+      }
+    }
+  }
+  return {status:'verified',run_id:c.run_id,verified_at:c.verified_at,record_count:m.record_count,logical_record_count:packed?m.logical_record_count:m.record_count,full_content_verification:full,manifest:m};
 }
 
 export async function evaluateWatchdog({expectedIntervals,completionIds,drive,now,canary={status:'unverified'}}){
