@@ -19,6 +19,7 @@ const collector = createCloudflareCollectorAdapter({
   tools,
   accountId: privateSettings.cloudflare_account_id,
   bucketName: privateSettings.cloudflare_bucket_name,
+  batchSmallObjects: true,
   recordEvidence: (name, bytes) => local.create(`adapter-evidence/${name}`, bytes)
 });
 const adapters = createNativeAdapters({tools, local, settings, classify, analyze});
@@ -42,6 +43,19 @@ owner access must be checked against the actual connected account. No API token,
 owner identifier, account/bucket value or raw record belongs in public source.
 
 List pages are capped at 40 and object reads at 8,192 bytes per returned chunk.
+The optional `batchSmallObjects: true` setting coalesces reads of up to eight
+currently listed objects, each no larger than 8,192 bytes, into one authenticated
+connector call. Each group contains at most 24,576 raw bytes and at most four
+simultaneous provider GETs. This changes transport overhead, not the list/chunk
+contract: every object still receives its own exact size, object-hash and chunk-
+hash check, and every full returned envelope is saved before validation. A failed
+member remains an explicit failed read; successful siblings remain in the saved
+response. There is no alternate-client or individual-retry fallback. Large
+objects use the existing chunk path. Prefetched bytes are discarded when a new
+namespace scan starts, and a group never includes an object not listed in that
+current scan. The default remains the legacy single-object path for callers
+that do not opt in. Both paths remain full scans, not transactional snapshots.
+
 The provider executes the full object read, UTF-8 byte conversion and SHA-256
 before returning only the requested chunk. The initial octet-stream control
 object returned an exact text string, while actual `application/json` collector

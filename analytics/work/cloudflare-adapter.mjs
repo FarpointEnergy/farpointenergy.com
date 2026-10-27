@@ -5,7 +5,7 @@
  */
 import {WorkFailure,workJSON,workUnbase64,workHash} from './pipeline.mjs';
 
-export const CLOUDFLARE_ADAPTER_VERSION = 'farpoint-work-cloudflare/1.0.1';
+export const CLOUDFLARE_ADAPTER_VERSION = 'farpoint-work-cloudflare/1.1.0';
 const cfRecordKey = /^(receipts|rejections)\/\d{4}\/\d{2}\/\d{2}\/[A-Za-z0-9_-]{8,100}\.json$/;
 const cfHash = /^[a-f0-9]{64}$/;
 const cfObjectLimit = 1024 * 1024;
@@ -111,13 +111,16 @@ function cfChunkCode(scope, args) {
  * connector responses too. Include these evidence files in the run archive.
  * The caller's account/bucket scope is fixed; tool arguments cannot select it.
  */
-export function createCloudflareCollectorAdapter({tools,accountId,bucketName,recordEvidence,now=()=>new Date().toISOString()}) {
+export function createCloudflareCollectorAdapter({tools,accountId,bucketName,recordEvidence,batchSmallObjects=false,now=()=>new Date().toISOString()}) {
   cfRequire(typeof accountId === 'string' && /^[a-f0-9]{32}$/.test(accountId), 'invalid_cloudflare_scope');
   cfRequire(typeof bucketName === 'string' && /^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(bucketName) && !bucketName.includes('..'), 'invalid_cloudflare_scope');
   cfRequire(typeof recordEvidence === 'function', 'cloudflare_evidence_sink_required');
+  cfRequire(typeof batchSmallObjects === 'boolean', 'invalid_cloudflare_batch_option');
   cfRequire(typeof tools?.mcp__codex_apps__farpoint_cloudflare_execute === 'function', 'required_tool_unavailable');
   const scope = {accountId,bucketName};
   const inventory = new Map();
+  const prefetched = new Map();
+  const listedThisScan = new Set();
   const cursors = new Map();
   const seenContinuations = new Map([['receipts',new Set()],['rejections',new Set()]]);
   async function execute(operation,args,code) {
@@ -136,7 +139,12 @@ export function createCloudflareCollectorAdapter({tools,accountId,bucketName,rec
     cfRequire(cfInteger(limit,1,40) && (cursor===null || (typeof cursor==='string' && cursor.length>0 && cursor.length<=4096)), 'invalid_arguments');
     const state=cursor===null?null:cursors.get(cursor);
     if(cursor!==null)cfRequire(state?.namespace===namespace, 'invalid_cloudflare_cursor_scope');
-    else seenContinuations.get(namespace).clear();
+    else {
+      seenContinuations.get(namespace).clear();
+      // A new full scan never inherits downloaded bytes from an earlier scan.
+      for(const key of prefetched.keys())if(key.startsWith(namespace+'/'))prefetched.delete(key);
+      for(const key of listedThisScan)if(key.startsWith(namespace+'/'))listedThisScan.delete(key);
+    }
     const request={namespace,limit,floor:state?.floor||'',...(state?.kind==='provider'?{provider_cursor:state.value}:{}),...(state?.kind==='start_after'?{start_after:state.value}:{})};
     const value = await execute('list',{namespace,cursor,limit},cfListCode(scope,request));
     if(value.adapter_format==='farpoint_cf_list_failure_v1')throw new WorkFailure(['invalid_cloudflare_list_response','invalid_cloudflare_object_order','invalid_cloudflare_continuation'].includes(value.reason)?value.reason:'cloudflare_list_request_failed');
@@ -165,10 +173,45 @@ export function createCloudflareCollectorAdapter({tools,accountId,bucketName,rec
       if(continuation.kind==='provider')cfRequire(value.completion_basis==='provider_cursor'&&last.response.result_info?.is_truncated===true&&last.response.result_info.cursor===continuation.value,'invalid_cloudflare_continuation');
       else cfRequire(value.completion_basis==='keyset_probe_has_more'&&continuation.value===previous&&last.query.start_after===previous&&last.query.per_page===1&&last.response.result.length>0&&last.response.result[0].key>previous,'invalid_cloudflare_terminal_probe');
     }
-    for(const item of items)inventory.set(item.key,item);
+    for(const item of items){inventory.set(item.key,item);listedThisScan.add(item.key);}
     let nextCursor=null;
     if(!value.enumeration_complete){nextCursor='cf1-'+crypto.randomUUID();cursors.set(nextCursor,{namespace,...continuation});seenContinuations.get(namespace).add(continuation.kind+':'+continuation.value);}
     return {export_format_version:1,namespace,items,next_cursor:nextCursor,enumeration_complete:value.enumeration_complete,transactional_snapshot:false,scanned_at:value.scanned_at,completion_basis:value.completion_basis};
+  }
+  async function checkedChunk(value,{key,offset,maxBytes,listed}) {
+    if(value.adapter_format==='farpoint_cf_chunk_failure_v1')throw new WorkFailure(['invalid_cloudflare_object_response','cloudflare_object_reconstruction_failed','invalid_cloudflare_object_size','cloudflare_object_integrity_mismatch'].includes(value.reason)?value.reason:'cloudflare_object_read_failed');
+    cfRequire(cfOnlyKeys(value,['adapter_format','key','encoding','offset','bytes','object_size','object_sha256','chunk_sha256','body_base64','next_offset','object_complete','reconstruction_method','provider_response']) && value.adapter_format==='farpoint_cf_chunk_v1' && value.key===key && value.encoding==='base64' && value.offset===offset && value.object_size===listed.size && value.object_sha256===listed.sha256 && cfHash.test(value.chunk_sha256||''),'inconsistent_cloudflare_chunk');
+    cfRequire(cfOnlyKeys(value.provider_response,['success','status','result_type'])&&value.provider_response.success===true&&value.provider_response.status===200&&((value.reconstruction_method==='raw_utf8_text'&&value.provider_response.result_type==='string')||(value.reconstruction_method==='json_stringify_verified'&&value.provider_response.result_type==='plain_object')),'invalid_cloudflare_reconstruction_evidence');
+    const bytes=workUnbase64(value.body_base64);
+    cfRequire(bytes.length===Math.min(maxBytes,listed.size-offset) && bytes.length===value.bytes && value.next_offset===offset+bytes.length && value.object_complete===(value.next_offset===listed.size),'invalid_cloudflare_chunk_progress');
+    cfRequire(await workHash(bytes)===value.chunk_sha256,'cloudflare_chunk_hash_mismatch');
+    return {export_format_version:1,key,encoding:'base64',offset,bytes:bytes.length,object_size:listed.size,object_sha256:listed.sha256,body_base64:value.body_base64,next_offset:value.next_offset,object_complete:value.object_complete,reconstruction_method:value.reconstruction_method,provider_response:value.provider_response};
+  }
+  async function prefetchSmall(key) {
+    const requested=inventory.get(key),namespace=key.split('/')[0];
+    const rows=[requested];let total=requested.size;
+    for(const item of inventory.values()){
+      if(rows.length===8)break;
+      if(item.key<=key||!listedThisScan.has(item.key)||!item.key.startsWith(namespace+'/')||item.size>8192||prefetched.has(item.key)||total+item.size>24576)continue;
+      rows.push(item);total+=item.size;
+    }
+    // Each generated operation remains the same fixed authenticated GET and
+    // exact size/hash reconstruction. At most four provider reads run together;
+    // total raw payload is <=24 KiB, within the existing 60,000-character envelope.
+    const operations=rows.map(item=>`async()=>{try{return {key:${JSON.stringify(item.key)},chunk:await (${cfChunkCode(scope,{key:item.key,offset:0,max_bytes:8192,expected_size:item.size,expected_sha256:item.sha256})})()};}catch{return {key:${JSON.stringify(item.key)},chunk:{adapter_format:'farpoint_cf_chunk_failure_v1',reason:'cloudflare_object_read_failed'}};}}`);
+    const code=`async()=>{const operations=[${operations.join(',')}],items=[];for(let i=0;i<operations.length;i+=4)items.push(...await Promise.all(operations.slice(i,i+4).map(f=>f())));return {adapter_format:'farpoint_cf_batch_v1',items};}`;
+    const value=await execute('batch',{keys:rows.map(x=>x.key),max_raw_bytes:24576,max_concurrency:4},code);
+    cfRequire(cfOnlyKeys(value,['adapter_format','items'])&&value.adapter_format==='farpoint_cf_batch_v1'&&Array.isArray(value.items)&&value.items.length===rows.length,'invalid_cloudflare_batch');
+    for(let i=0;i<rows.length;i++)cfRequire(cfOnlyKeys(value.items[i],['key','chunk'])&&value.items[i].key===rows[i].key&&value.items[i].chunk&&typeof value.items[i].chunk==='object','invalid_cloudflare_batch');
+    // The entire response was retained before this validation. Successful
+    // siblings and failed records remain observable; failure never triggers a
+    // different client, alternate credential or silent individual retry.
+    const checked=[];
+    for(let i=0;i<rows.length;i++){
+      try{checked.push({key:rows[i].key,value:await checkedChunk(value.items[i].chunk,{key:rows[i].key,offset:0,maxBytes:8192,listed:rows[i]})});}
+      catch(error){checked.push({key:rows[i].key,error:error instanceof WorkFailure?error.code:'cloudflare_object_read_failed'});}
+    }
+    for(const item of checked)prefetched.set(item.key,item);
   }
   async function readRecordChunk(args={}) {
     cfRequire(cfOnlyKeys(args,['key','offset','max_bytes']) && cfRecordKey.test(args.key||''), 'invalid_arguments');
@@ -177,14 +220,15 @@ export function createCloudflareCollectorAdapter({tools,accountId,bucketName,rec
     const listed=inventory.get(key);
     cfRequire(listed,'cloudflare_record_not_listed');
     cfRequire(offset<=listed.size,'invalid_offset');
+    if(batchSmallObjects&&listedThisScan.has(key)&&offset===0&&maxBytes===8192&&listed.size<=8192){
+      if(!prefetched.has(key))await prefetchSmall(key);
+      const item=prefetched.get(key);prefetched.delete(key);
+      cfRequire(item,'cloudflare_batch_record_missing');
+      if(item.error)throw new WorkFailure(item.error);
+      return item.value;
+    }
     const value=await execute('chunk',{key,offset,max_bytes:maxBytes},cfChunkCode(scope,{key,offset,max_bytes:maxBytes,expected_size:listed.size,expected_sha256:listed.sha256}));
-    if(value.adapter_format==='farpoint_cf_chunk_failure_v1')throw new WorkFailure(['invalid_cloudflare_object_response','cloudflare_object_reconstruction_failed','invalid_cloudflare_object_size','cloudflare_object_integrity_mismatch'].includes(value.reason)?value.reason:'cloudflare_object_read_failed');
-    cfRequire(cfOnlyKeys(value,['adapter_format','key','encoding','offset','bytes','object_size','object_sha256','chunk_sha256','body_base64','next_offset','object_complete','reconstruction_method','provider_response']) && value.adapter_format==='farpoint_cf_chunk_v1' && value.key===key && value.encoding==='base64' && value.offset===offset && value.object_size===listed.size && value.object_sha256===listed.sha256 && cfHash.test(value.chunk_sha256||''),'inconsistent_cloudflare_chunk');
-    cfRequire(cfOnlyKeys(value.provider_response,['success','status','result_type'])&&value.provider_response.success===true&&value.provider_response.status===200&&((value.reconstruction_method==='raw_utf8_text'&&value.provider_response.result_type==='string')||(value.reconstruction_method==='json_stringify_verified'&&value.provider_response.result_type==='plain_object')),'invalid_cloudflare_reconstruction_evidence');
-    const bytes=workUnbase64(value.body_base64);
-    cfRequire(bytes.length===Math.min(maxBytes,listed.size-offset) && bytes.length===value.bytes && value.next_offset===offset+bytes.length && value.object_complete===(value.next_offset===listed.size),'invalid_cloudflare_chunk_progress');
-    cfRequire(await workHash(bytes)===value.chunk_sha256,'cloudflare_chunk_hash_mismatch');
-    return {export_format_version:1,key,encoding:'base64',offset,bytes:bytes.length,object_size:listed.size,object_sha256:listed.sha256,body_base64:value.body_base64,next_offset:value.next_offset,object_complete:value.object_complete,reconstruction_method:value.reconstruction_method,provider_response:value.provider_response};
+    return checkedChunk(value,{key,offset,maxBytes,listed});
   }
   return Object.freeze({list:listRecords,chunk:readRecordChunk,listRecords,readRecordChunk});
 }

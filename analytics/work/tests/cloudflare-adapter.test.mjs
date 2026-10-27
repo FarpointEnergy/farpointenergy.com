@@ -12,7 +12,7 @@ const key=n=>`receipts/2026/10/26/synthetic-record-${String(n).padStart(8,'0')}.
 const fixtures=[];
 function fixture(options={}){
   const source=new Map([[key(0),JSON.stringify({synthetic:true,payload:'café 🧪'.repeat(1800)})],[key(1),'{}'],[key(2),'']]);
-  const evidence=new Map(),calls=[];fixtures.push({source,evidence,calls});
+  const evidence=new Map(),calls=[],toolCalls=[];fixtures.push({source,evidence,calls});
   const provider=async request=>{
     calls.push(request);
     assert.equal(request.method,'GET','adapter may issue only GET');
@@ -35,6 +35,7 @@ function fixture(options={}){
     return options.changeProvider?options.changeProvider(result,request):result;
   };
   const tools={mcp__codex_apps__farpoint_cloudflare_execute:async args=>{
+    toolCalls.push(args);
     assert.equal(args.account_id,accountId);
     if(options.throwConnector)throw Error('synthetic credential error never leaked');
     const func=new Function('cloudflare','TextEncoder','crypto',`return (${args.code});`)({request:provider},TextEncoder,crypto);
@@ -43,9 +44,107 @@ function fixture(options={}){
     return options.changeEnvelope?options.changeEnvelope(raw,value,args):raw;
   }};
   const recordEvidence=async(name,bytes)=>{assert(!evidence.has(name));evidence.set(name,bytes);};
-  const adapter=createCloudflareCollectorAdapter({tools,accountId,bucketName,recordEvidence,now:()=> '2026-10-27T03:00:00.000Z'});
-  return{adapter,source,evidence,calls,tools,recordEvidence};
+  const adapter=createCloudflareCollectorAdapter({tools,accountId,bucketName,recordEvidence,batchSmallObjects:options.batchSmallObjects??false,now:()=> '2026-10-27T03:00:00.000Z'});
+  return{adapter,source,evidence,calls,toolCalls,tools,recordEvidence};
 }
+
+test('opt-in small-object batch preserves exact Unicode and empty bodies with fewer tool calls',async()=>{
+  const f=fixture({batchSmallObjects:true,providerPage:40});f.source.clear();
+  for(let n=0;n<10;n++)f.source.set(key(n),n?JSON.stringify({n,payload:'café 🧪'}):'');
+  const page=await f.adapter.list({namespace:'receipts'});
+  for(const item of page.items){const part=await f.adapter.chunk({key:item.key});assert.equal(part.object_complete,true);assert.deepEqual(Buffer.from(part.body_base64,'base64'),Buffer.from(f.source.get(item.key)));}
+  assert.equal(f.toolCalls.length,3,'one list plus two bounded batch calls');
+  assert.equal(f.calls.filter(x=>!x.query).length,10,'every listed object still receives an authenticated GET');
+  const batches=[...f.evidence.values()].map(b=>JSON.parse(Buffer.from(b))).filter(x=>x.operation==='batch');
+  assert.deepEqual(batches.map(x=>x.args.keys.length),[8,2]);
+  assert(batches.every(x=>x.response.content[0].text.length<=60000));
+});
+
+test('small-object batches enforce raw byte budget and use legacy chunks for large records',async()=>{
+  const f=fixture({batchSmallObjects:true,providerPage:40});f.source.clear();
+  for(let n=0;n<6;n++)f.source.set(key(n),'x'.repeat(8192));f.source.set(key(6),'y'.repeat(9000));
+  const page=await f.adapter.list({namespace:'receipts'});
+  for(const item of page.items){let at=0;do{const p=await f.adapter.chunk({key:item.key,offset:at});at=p.next_offset;}while(at<item.size);}
+  const evidence=[...f.evidence.values()].map(b=>JSON.parse(Buffer.from(b)));
+  assert.deepEqual(evidence.filter(x=>x.operation==='batch').map(x=>x.args.keys.length),[3,3]);
+  assert.equal(evidence.filter(x=>x.operation==='chunk').length,2);
+  assert(evidence.every(x=>(x.response?.content?.[0]?.text?.length??0)<=60000));
+});
+
+test('batch provider failure preserves siblings and fails the affected record without retry',async()=>{
+  const f=fixture({batchSmallObjects:true,providerPage:40,changeProvider:(v,r)=>{if(r.path.endsWith('/'+key(1)))throw Error('private failed provider text');return v;}});
+  f.source.clear();for(let n=0;n<3;n++)f.source.set(key(n),'{}');
+  await f.adapter.list({namespace:'receipts'});
+  assert.equal((await f.adapter.chunk({key:key(0)})).object_complete,true);
+  const calls=f.toolCalls.length;
+  await assert.rejects(()=>f.adapter.chunk({key:key(1)}),/cloudflare_object_read_failed/);
+  assert.equal((await f.adapter.chunk({key:key(2)})).object_complete,true);
+  assert.equal(f.toolCalls.length,calls,'failed record is not silently retried');
+  const retained=Buffer.concat([...f.evidence.values()]).toString();assert(!retained.includes('private failed provider text'));
+  const batch=JSON.parse(JSON.parse(Buffer.from([...f.evidence.values()].at(-1))).response.content[0].text);
+  assert.equal(batch.items.length,3);assert(batch.items[0].chunk.body_base64);assert(batch.items[2].chunk.body_base64);
+});
+
+test('malformed, reordered or truncated batch results fail after retaining raw envelope',async()=>{
+  for(const mutate of [v=>v.items.reverse(),v=>v.items.pop(),v=>v.items[0].key=key(2),v=>v.extra=true,v=>v.items[0].extra=true]){
+    const f=fixture({batchSmallObjects:true,providerPage:40,changeEnvelope:(raw,v)=>{if(v.adapter_format==='farpoint_cf_batch_v1'){mutate(v);raw.content[0].text=JSON.stringify(v);}return raw;}});
+    f.source.set(key(0),'{}');await f.adapter.list({namespace:'receipts'});
+    await assert.rejects(()=>f.adapter.chunk({key:key(0)}),/invalid_cloudflare_batch/);
+    assert.equal(f.evidence.size,2,'both listing and exact failed batch response retained');
+  }
+});
+
+test('batch validates listed object hashes and individual chunk bytes independently',async()=>{
+  for(const kind of ['changed_object','corrupt_chunk','wrong_reconstruction']){
+    const f=fixture({batchSmallObjects:true,providerPage:40,
+      changeProvider:(v,r)=>{if(kind==='changed_object'&&!r.query&&r.path.endsWith('/'+key(1)))v.result='changed';return v;},
+      changeEnvelope:(raw,v)=>{if(v.adapter_format==='farpoint_cf_batch_v1'){
+        if(kind==='corrupt_chunk')v.items[1].chunk.body_base64=Buffer.from('xx').toString('base64');
+        if(kind==='wrong_reconstruction')v.items[1].chunk.reconstruction_method='unchecked_normalization';
+        raw.content[0].text=JSON.stringify(v);
+      }return raw;}});
+    f.source.set(key(0),'{}');await f.adapter.list({namespace:'receipts'});
+    await f.adapter.chunk({key:key(0)});
+    await assert.rejects(()=>f.adapter.chunk({key:key(1)}));
+    assert.equal(f.toolCalls.length,2);
+  }
+});
+
+test('fresh scan discards prior prefetched bytes and sees a changed provider object',async()=>{
+  let changed=false;const f=fixture({batchSmallObjects:true,providerPage:40,changeProvider:(v,r)=>{if(changed&&!r.query&&r.path.endsWith('/'+key(1)))v.result='changed-after-first-scan';return v;}});
+  f.source.set(key(0),'{}');await f.adapter.list({namespace:'receipts'});await f.adapter.chunk({key:key(0)});
+  changed=true;await f.adapter.list({namespace:'receipts'});
+  await assert.rejects(()=>f.adapter.chunk({key:key(1)}),/cloudflare_object_integrity_mismatch/);
+  assert.equal(f.toolCalls.length,4,'new scan makes a new provider read');
+});
+
+test('prefetch only reads records listed in the current scan and requested namespace',async()=>{
+  const f=fixture({batchSmallObjects:true,providerPage:40});f.source.set(key(0),'{}');
+  const rejection='rejections/2026/10/26/synthetic-rejection-00000000.json';f.source.set(rejection,'{}');
+  await f.adapter.list({namespace:'receipts'});await f.adapter.list({namespace:'rejections'});
+  await f.adapter.list({namespace:'receipts',limit:1});
+  await f.adapter.chunk({key:key(0)});
+  assert.deepEqual(f.calls.filter(x=>!x.query).map(x=>x.path.split('/objects/')[1]),[key(0)]);
+});
+
+test('explicit old-inventory read outside the current scan cannot seed a prefetch batch',async()=>{
+  const f=fixture({batchSmallObjects:true,providerPage:40});f.source.set(key(0),'{}');
+  await f.adapter.list({namespace:'receipts'});
+  await f.adapter.list({namespace:'receipts',limit:1});
+  await f.adapter.chunk({key:key(1)});
+  const retained=[...f.evidence.values()].map(b=>JSON.parse(Buffer.from(b)));
+  assert.equal(retained.at(-1).operation,'chunk','existing explicit-read behavior uses only the legacy single record');
+  assert.equal(retained.filter(x=>x.operation==='batch').length,0);
+  assert.deepEqual(f.calls.filter(x=>!x.query).map(x=>x.path.split('/objects/')[1]),[key(1)]);
+});
+
+test('batch response persistence failure cannot return or cache acquired bytes',async()=>{
+  const f=fixture({providerPage:40});f.source.set(key(0),'{}');let count=0;
+  const adapter=createCloudflareCollectorAdapter({tools:f.tools,accountId,bucketName,batchSmallObjects:true,recordEvidence:async(name,bytes)=>{if(++count>1)throw Error('synthetic evidence sink failure');await f.recordEvidence(name,bytes);}});
+  await adapter.list({namespace:'receipts'});
+  await assert.rejects(()=>adapter.chunk({key:key(0)}),/synthetic evidence sink failure/);
+  assert.equal(f.evidence.size,1);
+});
 
 test('complete multi-page export reconstructs Unicode, chunk boundaries and empty objects',async()=>{
   const f=fixture();let cursor=null;const listed=[];
