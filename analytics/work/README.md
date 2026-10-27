@@ -99,6 +99,13 @@ duplicate headers, decoded text and original attachment-byte hashes. MIME parse
 failures still preserve the original acquired bytes and make mail incomplete.
 No HTML is rendered and no instructions in messages are executed.
 
+Actual raw-format responses can omit Gmail's `internal_date`. In that case the
+adapter reads authenticated metadata for the same immutable message ID, checks
+available thread IDs agree, and archives that additional connector envelope.
+Only the provider's receipt timestamp is used; the sender-controlled Date header
+is not a substitute. Missing or mismatched metadata makes capture incomplete
+while preserving all acquired bytes.
+
 Capture is separate from classification. `createFrozenClassifier` accepts
 versioned, evidence-backed observations of already reviewed messages. New or
 changed messages become explicit **unresolved** candidates; neither their
