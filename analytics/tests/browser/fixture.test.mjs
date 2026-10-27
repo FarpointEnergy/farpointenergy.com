@@ -119,6 +119,7 @@ test('window ownership guard permits only descendants of this runner and rejects
 test('native browser transport stays loopback and trusts only the fixture certificate key',()=>{
   const pin=Buffer.alloc(32).toString('base64'),args=nativeChromiumArguments('/owned/fresh-profile',pin);
   assert(args.includes('--remote-debugging-address=127.0.0.1'));assert(args.includes('--remote-debugging-port=0'));
+  assert(args.includes('--disable-component-extensions-with-background-pages'));
   assert(args.includes('--ignore-certificate-errors-spki-list='+pin));assert(!args.includes('--ignore-certificate-errors'));
   assert(!args.some(arg=>/focus|occluded|renderer-backgrounding|proxy-server|load-extension/.test(arg)));
   assert.throws(()=>nativeChromiumArguments('relative-profile',pin));assert.throws(()=>nativeChromiumArguments('/owned/fresh-profile','invalid-key'));

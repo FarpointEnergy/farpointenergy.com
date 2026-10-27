@@ -253,7 +253,7 @@ export function nativeChromiumArguments(profile,certificateSpki){
   assert(profile.startsWith('/'),'Native browser requires a fresh absolute profile path');
   assert(/^[A-Za-z0-9+/]{43}=$/.test(certificateSpki),'Collector certificate SPKI must be a SHA-256 digest');
   return ['--remote-debugging-address=127.0.0.1','--remote-debugging-port=0','--user-data-dir='+profile,
-    '--no-first-run','--no-default-browser-check','--disable-background-networking','--disable-default-apps','--disable-extensions',
+    '--no-first-run','--no-default-browser-check','--disable-background-networking','--disable-default-apps','--disable-extensions','--disable-component-extensions-with-background-pages',
     '--no-sandbox','--disable-dev-shm-usage','--window-size=1366,900','--ignore-certificate-errors-spki-list='+certificateSpki,'about:blank'];
 }
 
@@ -296,6 +296,7 @@ export async function launchNativeChromium(playwright,fixture){
     },'owned native Chromium debugging endpoint',20000);
     const browser=await playwright.chromium.connectOverCDP('http://127.0.0.1:'+port,{noDefaults:true,isLocal:true,timeout:15000});
     const contexts=browser.contexts();assert.equal(contexts.length,1,'Fresh native browser must have one default context');
+    await fixture.observe('native_default_context_attached',{browser_version:browser.version(),no_defaults:true,pages:contexts[0].pages().map(page=>page.url()),service_worker_urls:contexts[0].serviceWorkers().map(worker=>worker.url())});
     assert.equal(contexts[0].serviceWorkers().length,0,'Fresh profile must not contain a service worker');
     return {browser,context:contexts[0],closeProcess};
   }catch(error){await closeProcess();throw error;}
