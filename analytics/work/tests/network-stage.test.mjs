@@ -16,10 +16,32 @@ async function fixture(fault){
   const local={create:async(path,bytes)=>{assert(!saved.has(path));saved.set(path,bytes);return '/private/'+path;},analyze:async value=>{calls.push('analyze');analyzed=value;return {report:{status:'complete'},artifacts:[]};}};
   const drive={assertPrivate:async()=>({verified:fault!=='privacy',owner_only:fault!=='privacy'}),verifyFile:async(id,expected)=>{calls.push('download:'+id);if(fault==='dataset'&&id==='dataset-zip')throw Error('not_downloadable');return {id,verified:fault!=='readback'||id!=='stage-zip',path:'/private/download/'+id,bytes:expected.bytes,sha256:expected.sha256,url:'https://drive.example/'+id};}};
   const tools={mcp__codex_apps__google_drive_upload_file:async value=>{calls.push('upload');assert.equal(typeof value.file_uri,'string');assert(!value.file_uri.includes('base64'));return {structuredContent:{id:'stage-zip'}};}};
-  const makeHost=({privateRoot})=>({run:async request=>{calls.push('run');assert.equal(request.dataset_archive.path,'/private/download/dataset-zip');assert.equal(request.receipts.length,1);assert.equal(request.provenance_evidence[0].ref,'proof:approved');return {result:{status:fault==='incomplete'?'partial':'complete',observations_base64:observationBase64,observations_sha256:observedHash,archive:{path:privateRoot+'/network.zip',bytes:50,sha256:'f'.repeat(64),manifest_sha256:'1'.repeat(64)},summary:{network_context:1,verified_employers:0}}};},verify:async()=>{calls.push('replay');return {result:{status:fault==='replay'?'failed':'verified',observations_match:fault!=='replay',observations_sha256:fault==='observations'?'0'.repeat(64):observedHash}};}});
+  const makeHost=({privateRoot})=>({run:async request=>{calls.push('run');assert.equal(request.dataset_archive.path,'/private/download/dataset-zip');assert.equal(request.receipts.length,input.objects.filter(x=>x.namespace==='receipts').length);for(const r of request.receipts)assert(saved.has(r.path.slice('/private/'.length)),'all copies durable before host.run');assert.equal(request.provenance_evidence[0].ref,'proof:approved');return {result:{status:fault==='incomplete'?'partial':'complete',observations_base64:observationBase64,observations_sha256:observedHash,archive:{path:privateRoot+'/network.zip',bytes:50,sha256:'f'.repeat(64),manifest_sha256:'1'.repeat(64)},summary:{network_context:1,verified_employers:0}}};},verify:async()=>{calls.push('replay');return {result:{status:fault==='replay'?'failed':'verified',observations_match:fault!=='replay',observations_sha256:fault==='observations'?'0'.repeat(64):observedHash}};}});
   const analyze=createNetworkAnalyzer({tools,local,settings:{archive_folder_id:'private-folder'},privateRoot:'/private',repositoryRoot:'/repo',codeCommit:commit,datasetArtifact:dataset,provenanceArtifacts:proofs,makeHost,makeAdapters:()=>({drive})});
-  return {analyze,input,calls,saved,get analyzed(){return analyzed;}};
+  return {analyze,input,calls,saved,local,get analyzed(){return analyzed;}};
 }
+
+test('network receipt batches are bounded and durably flushed before generation',async()=>{
+  const f=await fixture();f.input.config.local_write_mode='bounded_batches_v1';
+  f.input.objects=Array.from({length:65},(_,i)=>({...f.input.objects[0],local_path:'raw/'+i}));
+  const groups=[];f.local.createMany=async rows=>{assert(rows.length<=64);assert(rows.reduce((n,x)=>n+x.bytes.length,0)<=256*1024);groups.push(rows.length);return Promise.all(rows.map(x=>f.local.create(x.path,x.bytes)));};
+  await f.analyze(f.input);assert.deepEqual(groups,[64,1]);assert(f.calls.includes('run'));
+});
+
+test('late receipt-integrity failure flushes valid staged prefix but never starts network generation',async()=>{
+  const f=await fixture();f.input.config.local_write_mode='bounded_batches_v1';
+  f.input.objects=Array.from({length:66},(_,i)=>({...f.input.objects[0],local_path:'raw/'+i}));f.input.objects[65].sha256='0'.repeat(64);
+  const groups=[];f.local.createMany=async rows=>{groups.push(rows.length);return Promise.all(rows.map(x=>f.local.create(x.path,x.bytes)));};
+  await assert.rejects(()=>f.analyze(f.input),/network_receipt_integrity_mismatch/);
+  assert.deepEqual(groups,[64,1]);assert(!f.calls.includes('run'));assert.equal([...f.saved.keys()].filter(x=>x.includes('/receipts/')).length,65);
+});
+
+test('network batch failure retains copied prefix and prevents host.run or analysis',async()=>{
+  const f=await fixture();f.input.config.local_write_mode='bounded_batches_v1';f.input.objects=[f.input.objects[0],{...f.input.objects[0],local_path:'raw/second'}];
+  f.local.createMany=async rows=>{await f.local.create(rows[0].path,rows[0].bytes);throw Error('synthetic local write interrupted');};
+  await assert.rejects(()=>f.analyze(f.input),/network_stage_operation_failed/);
+  assert.equal([...f.saved.keys()].filter(x=>x.includes('/receipts/')).length,1);assert(!f.calls.includes('run'));assert(!f.calls.includes('analyze'));
+});
 
 test('automatic network stage restores pinned data, freezes observations, verifies archive replay before analysis',async()=>{
   const f=await fixture();const result=await f.analyze(f.input);

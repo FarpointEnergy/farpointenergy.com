@@ -1,6 +1,6 @@
 # Versioned Work task — archive and RFQ report
 
-Task definition version: `farpoint-work-task/1.2.0`. This file is an executable
+Task definition version: `farpoint-work-task/1.2.1`. This file is an executable
 Work-agent recipe, not an active schedule. The agent uses the existing connected
 tools and the checked-in deterministic runner. Do not activate it before the
 hosted export, private archive and unattended-permission gates pass.
@@ -41,6 +41,15 @@ hosted export, private archive and unattended-permission gates pass.
    `logical_record_count`/`logical_total_bytes` count preserved journal files.
    The default remains individual-file mode for historical compatibility.
    Never treat a ZIP hash alone as per-entry verification or skip final closure.
+   Set `config.local_write_mode` to `bounded_batches_v1` for the reviewed native
+   runner. Each local batch is limited to 64 files and 256 KiB, with exclusive
+   writes, fsync and readback before acknowledgement. Small collector groups
+   retain their chunk observations before validation, then flush verified raw
+   copies before publishing inventory. Analysis files and network-stage receipt
+   copies also flush in bounded groups before their consumers run. Large files
+   retain the individual-write path. Batch requests, verified prefixes and
+   failure evidence remain beneath the invocation root for final closure;
+   a failed batch never acknowledges its unwritten remainder.
    The analysis callback must be `createNetworkAnalyzer`, with the pinned
    owner-private dataset artifact and separately approved IP-provenance
    artifacts from private settings. It automatically restores the dataset,

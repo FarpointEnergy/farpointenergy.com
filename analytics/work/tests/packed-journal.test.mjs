@@ -15,7 +15,7 @@ const config={archive_mode:'packed_journal_v1',execution_code_commit:commit,mode
   job:{id:'synthetic-packed',version:'1',scope_id:'synthetic',kind:'report'},
   window_start:'2026-10-26T00:00:00.000Z',window_end:at};
 
-async function fixture(fault=null){
+async function fixture(fault=null,{batch=false}={}){
   const root=join(evidence,crypto.randomUUID()),remote=new Map(),names=new Map();let next=0;
   await mkdir(root,{recursive:true});await mkdir(join(root,'remote'));
   const settings={archive_folder_id:'synthetic-folder',owner_email:'owner@example.test',mail_query:'in:anywhere synthetic',mailbox:'owner@example.test'};
@@ -27,6 +27,11 @@ async function fixture(fault=null){
     }
     return {
       create:async(path,bytes)=>{const p=join(privateRoot,path);await mkdir(resolve(p,'..'),{recursive:true});await writeFile(p,bytes,{flag:'wx'});return p;},
+      createMany:async rows=>{
+        const response=rpc({op:'create_many',files:rows.map(x=>({path:x.path,base64:Buffer.from(x.bytes).toString('base64')}))}).batch;
+        if(!response.complete){const error=new WorkFailure('local_batch_failed');error.created_local_files=response.verified_entries;throw error;}
+        return response.verified_entries.map(x=>x.path);
+      },
       packJournal:async({runId,sourceCommit,entries})=>rpc({op:'pack_journal',run_id:runId,source_commit:sourceCommit,entries}).archive,
       verifyJournal:async args=>rpc({op:'verify_journal',...args,run_id:args.runId,source_commit:args.sourceCommit}).verification,
       readFileReference:async response=>new Uint8Array(await readFile(response.privatePath)),
@@ -64,7 +69,7 @@ async function fixture(fault=null){
   const collector={list:async({namespace})=>({export_format_version:1,namespace,items:await Promise.all([...source].filter(([key])=>key.startsWith(namespace+'/')).map(async([key,b])=>({key,size:b.length,sha256:await workHash(b)}))),enumeration_complete:true,next_cursor:null,transactional_snapshot:false}),chunk:async({key,offset})=>{const b=source.get(key);return {export_format_version:1,key,encoding:'base64',offset,bytes:b.length,object_size:b.length,object_sha256:await workHash(b),body_base64:Buffer.from(b).toString('base64'),next_offset:b.length,object_complete:true};}};
   const local=createLocal({privateRoot:join(root,'evidence/pipeline')});
   const adapters=createNativeAdapters({tools,local,settings,analyze:input=>local.analyze(input),classify:async()=>({complete:true,observations:[],evidence_refs:['synthetic:no-mail']})});
-  const args={runId:'synthetic-packed-'+crypto.randomUUID(),config,...adapters,collector,mail:{list:async()=>({message_ids:[],enumeration_complete:true,next_cursor:null})},now:()=>at};
+  const args={runId:'synthetic-packed-'+crypto.randomUUID(),config:{...config,...(batch?{local_write_mode:'bounded_batches_v1'}:{})},...adapters,collector,mail:{list:async()=>({message_ids:[],enumeration_complete:true,next_cursor:null})},now:()=>at};
   return {root,remote,names,source,args,local,tools,settings,createLocal};
 }
 
@@ -122,4 +127,18 @@ test('post-upload metadata failure preserves known ZIP IDs without claiming veri
   assert.equal(known.length,2);assert(known.every(x=>!x.verified&&x.state==='created_unverified'));
   for(const row of known)assert(f.remote.has(row.id));
   assert(![...f.names.values()].some(x=>x.endsWith('-completed.json')));
+});
+
+test('bounded local batches compose with native packed ZIP and whole-evidence closure',async()=>{
+  const f=await fixture(null,{batch:true});const result=await runLeadPipeline(f.args);assert.equal(result.status,'complete');
+  const verified=await verifyRemoteRun({completionId:result.completion.id,drive:f.args.drive});assert.equal(verified.record_count,4);
+  const attempts=await readdir(join(f.root,'evidence/pipeline/batch-attempts'));assert(attempts.length>=4);assert(attempts.length<10);
+  for(const id of attempts){const path=join(f.root,'evidence/pipeline/batch-attempts',id);const request=JSON.parse(await readFile(join(path,'request.json'),'utf8'));const completion=JSON.parse(await readFile(join(path,'completed.json'),'utf8'));assert.equal(completion.verified_entries.length,request.files.length);assert(completion.complete);}
+  const closure=await closeWorkArchive({tools:f.tools,settings:f.settings,pipelineResult:result,evidenceRoot:join(f.root,'evidence'),pipelineRelativeRoot:'pipeline',outputRoot:join(f.root,'closure'),repositoryRoot:repository,sourceCommit:commit,toolingCommit:commit,makeLocal:f.createLocal});
+  assert.equal(closure.status,'verified',JSON.stringify(closure));assert.equal(closure.numerical_replay.verified,true);
+  // Every original batch request and acknowledgement belongs to the full
+  // private evidence root and therefore the final closure archive.
+  const zips=await readdir(join(f.root,'closure'));const zip=zips.find(x=>x.startsWith('evidence-')&&x.endsWith('.zip'));assert(zip);
+  const listing=spawnSync('python3',['-c','import json,sys,zipfile;print(json.dumps(zipfile.ZipFile(sys.argv[1]).namelist()))',join(f.root,'closure',zip)],{encoding:'utf8'});assert.equal(listing.status,0);
+  const members=JSON.parse(listing.stdout);for(const id of attempts)assert(members.includes('pipeline/batch-attempts/'+id+'/request.json'));
 });

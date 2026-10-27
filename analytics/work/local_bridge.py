@@ -31,6 +31,51 @@ def safe_write(root, name, data):
     return str(target)
 
 
+def create_many(root, files, request_bytes=None):
+    """A bounded synchronous batch; every successful prefix is retained.
+
+    The exact bounded request is durable before any target write. A failure is
+    explicit and never acknowledges the batch as complete; no target is replaced.
+    """
+    if not isinstance(files, list) or not 1 <= len(files) <= 64:
+        raise ValueError('local_batch_file_limit')
+    decoded=[];total=0
+    for item in files:
+        if not isinstance(item,dict) or set(item) != {'path','base64'}:
+            raise ValueError('invalid_local_batch_entry')
+        data=base64.b64decode(item['base64'],validate=True);total+=len(data)
+        if total > 256*1024:
+            raise ValueError('local_batch_byte_limit')
+        decoded.append((item['path'],data))
+    prefix='batch-attempts/'+str(uuid.uuid4())
+    raw=request_bytes if request_bytes is not None else json.dumps({'op':'create_many','files':files},ensure_ascii=False).encode()
+    request_path=safe_write(root,prefix+'/request.json',raw)
+    verified=[]
+    try:
+        names=set()
+        for name,_ in decoded:
+            p=pathlib.PurePosixPath(name)
+            if not isinstance(name,str) or p.is_absolute() or '\\' in name or any(x in ('','.','..') for x in name.split('/')):
+                raise ValueError('unsafe_path')
+            if name in names:
+                raise ValueError('duplicate_local_batch_path')
+            names.add(name)
+        for name,data in decoded:
+            path=safe_write(root,name,data)
+            verified.append({'path':path,'relative_path':name,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})
+        result={'complete':True,'verified_entries':verified,'request_path':request_path,'request_sha256':hashlib.sha256(raw).hexdigest()}
+        safe_write(root,prefix+'/completed.json',json.dumps(result,sort_keys=True).encode())
+        return result
+    except Exception as error:
+        reason=str(error) if isinstance(error,ValueError) and re.fullmatch('[a-z_]+',str(error)) else type(error).__name__
+        failure={'complete':False,'reason':reason,'verified_entries':verified,'request_path':request_path,'request_sha256':hashlib.sha256(raw).hexdigest(),'failed_index':len(verified)}
+        try:
+            failure['failure_path']=safe_write(root,prefix+'/failure.json',json.dumps(failure,sort_keys=True).encode())
+        except Exception:
+            failure['failure_record_unavailable']=True
+        return failure
+
+
 def transport_response(root, request, value):
     """Keep tool stdout bounded; large results are immutable private byte files."""
     data = json.dumps(value, ensure_ascii=False).encode('utf-8')
@@ -220,9 +265,12 @@ def main():
         settings = termios.tcgetattr(sys.stdin.fileno()); settings[3] &= ~(termios.ECHO | termios.ICANON); termios.tcsetattr(sys.stdin.fileno(), termios.TCSANOW, settings)
     print('READY', flush=True)
     try:
-        request = json.loads(sys.stdin.readline())
+        request_line = sys.stdin.readline()
+        request = json.loads(request_line)
         if request['op'] == 'create':
             result = {'path': safe_write(root, request['path'], base64.b64decode(request['base64'], validate=True))}
+        elif request['op'] == 'create_many':
+            result = {'batch':create_many(root,request['files'],request_line.encode())}
         elif request['op'] == 'read_reference':
             result = {'base64': encoded(reference_bytes(request['response']))}
         elif request['op'] == 'verify_reference':

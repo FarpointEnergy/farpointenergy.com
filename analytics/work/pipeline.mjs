@@ -2,9 +2,9 @@
  * The host supplies the named capabilities; production adapters fail closed.
  * Every invocation is a full rescan into a NEW run. A retry never edits a run.
  */
-export const WORK_VERSION = 'farpoint-work/1.1.0';
+export const WORK_VERSION = 'farpoint-work/1.1.1';
 // Patch releases share the archive schema; completion and manifest must still agree.
-const READABLE_WORK_VERSIONS = new Set(['farpoint-work/1.0.0','farpoint-work/1.0.1', WORK_VERSION]);
+const READABLE_WORK_VERSIONS = new Set(['farpoint-work/1.0.0','farpoint-work/1.0.1','farpoint-work/1.1.0', WORK_VERSION]);
 const workEncoder = new TextEncoder();
 const workDecoder = new TextDecoder('utf-8', {fatal:true});
 const workHex = /^[a-f0-9]{64}$/;
@@ -35,9 +35,42 @@ export async function runLeadPipeline({runId,config,collector,mail,classify,anal
   const archiveMode=config.archive_mode??'individual_files_v1';
   workRequire(['individual_files_v1','packed_journal_v1'].includes(archiveMode),'unsupported_archive_mode');
   if(archiveMode==='packed_journal_v1')workRequire(/^[a-f0-9]{40}$/.test(config.execution_code_commit??'')&&typeof journal.packJournal==='function'&&typeof drive.createFile==='function'&&typeof drive.verifyJournal==='function','packed_journal_capability_missing');
+  const batchWrites=config.local_write_mode==='bounded_batches_v1';
+  workRequire(config.local_write_mode===undefined||batchWrites,'unsupported_local_write_mode');
+  if(batchWrites)workRequire(typeof journal.createMany==='function','local_batch_capability_missing');
   let seq=0,totalBytes=0,phase='destination',remoteStarted=null;const createdIds=new Set(),uploadedPaths=new Set(),remoteObservations=[];
   const record=async(path,bytes)=>{workSafePath(path);workRequire(!files.has(path),'duplicate_local_path');bytes=workBytes(bytes);const hash=await workHash(bytes);await journal.create(path,bytes);files.set(path,{path,bytes:bytes.length,sha256:hash,data:bytes});return {path,bytes:bytes.length,sha256:hash};};
-  const observe=async(kind,value)=>record(`observations/${String(seq++).padStart(6,'0')}-${kind}.json`,workJSON(value));
+  const recordMany=async rows=>{
+    if(!batchWrites){for(const row of rows)await record(row.path,row.bytes);return;}
+    let pending=[],size=0;const names=new Set();
+    // Validate duplicate/unsafe paths before the first target mutation.
+    for(const row of rows){workSafePath(row.path);workRequire(!files.has(row.path)&&!names.has(row.path),'duplicate_local_path');names.add(row.path);}
+    const flush=async()=>{
+      if(!pending.length)return;
+      const group=pending;pending=[];size=0;
+      try{await journal.createMany(group.map(x=>({path:x.path,bytes:x.data})));}
+      catch(error){
+        const prefix=error?.created_local_files??[];
+        workRequire(Array.isArray(prefix)&&prefix.length<=group.length,'invalid_local_batch_prefix');
+        for(let i=0;i<prefix.length;i++){
+          const actual=prefix[i],want=group[i];
+          workRequire(actual.relative_path===want.path&&actual.bytes===want.bytes&&actual.sha256===want.sha256,'invalid_local_batch_prefix');
+          files.set(want.path,want);
+        }
+        throw error;
+      }
+      for(const item of group)files.set(item.path,item);
+    };
+    for(const row of rows){
+      const data=workBytes(row.bytes);
+      if(data.length>256*1024){await flush();await record(row.path,data);continue;}
+      if(pending.length===64||size+data.length>256*1024)await flush();
+      pending.push({path:row.path,data,bytes:data.length,sha256:await workHash(data)});size+=data.length;
+    }
+    await flush();
+  };
+  const observation=(kind,value)=>({path:`observations/${String(seq++).padStart(6,'0')}-${kind}.json`,bytes:workJSON(value)});
+  const observe=async(kind,value)=>{const row=observation(kind,value);return record(row.path,row.bytes);};
   const fail=async(stage,error)=>{const item={stage,reason:workCode(error),at:workIso(now())};failures.push(item);await observe('failure',item);};
   const createRemote=async(name,data,path=name)=>{
     const observation={name:`${runId}-${name}`,path,bytes:data.length,sha256:await workHash(data),id:null,url:null,verified:false,state:'requested'};
@@ -103,11 +136,52 @@ export async function runLeadPipeline({runId,config,collector,mail,classify,anal
           await observe('collector-page',{namespace,request:{cursor,limit},response:page});
           workRequire(page?.export_format_version===1&&page.namespace===namespace&&Array.isArray(page.items)&&typeof page.enumeration_complete==='boolean'&&page.transactional_snapshot===false,'invalid_collector_page');
           workRequire(page.enumeration_complete?page.next_cursor===null:typeof page.next_cursor==='string'&&!!page.next_cursor,'invalid_collector_continuation');
-          for(const item of page.items){
+          for(let itemIndex=0;itemIndex<page.items.length;itemIndex++){
+            const item=page.items[itemIndex];
             workRequire(workKey.test(item?.key||'')&&item.key.startsWith(namespace+'/')&&Number.isSafeInteger(item.size)&&item.size>=0&&item.size<=cap.objectBytes&&workHex.test(item.sha256||''),'invalid_collector_item');
             const prior=keys.get(item.key);
             if(prior){workRequire(prior.sha256===item.sha256&&prior.size===item.size,'conflicting_source_object');continue;}
             workRequire(objects.length<cap.objects&&totalBytes+item.size<=cap.totalBytes,'collector_capacity_limit');
+            if(batchWrites&&item.size<=8192){
+              const group=[],groupKeys=new Set();let groupBytes=0;
+              for(let next=itemIndex;next<page.items.length&&group.length<8;next++){
+                const candidate=page.items[next];
+                if(!workKey.test(candidate?.key??'')||!candidate.key.startsWith(namespace+'/')||!Number.isSafeInteger(candidate.size)||candidate.size<0||candidate.size>Math.min(8192,cap.objectBytes)||!workHex.test(candidate.sha256??'')||keys.has(candidate.key)||groupKeys.has(candidate.key)||groupBytes+candidate.size>24*1024||objects.length+group.length>=cap.objects||totalBytes+groupBytes+candidate.size>cap.totalBytes)break;
+                group.push(candidate);groupKeys.add(candidate.key);groupBytes+=candidate.size;
+              }
+              workRequire(group.length>0,'collector_capacity_limit');
+              const obtained=[],observations=[];let acquisitionError=null,acquisitionKey=null;
+              try{
+                for(const candidate of group){
+                  const request={key:candidate.key,offset:0,max_bytes:8192};
+                  acquisitionKey=candidate.key;
+                  const part=await collector.chunk(request);obtained.push({candidate,part});
+                  observations.push(observation('collector-chunk',{request,response:part}));
+                }
+              }catch(error){
+                acquisitionError=error;
+                observations.push(observation('collector-acquisition-failure',{key:acquisitionKey,reason:workCode(error)}));
+              }finally{
+                // Original responses become durable before any interpretation;
+                // a later acquisition error cannot discard acquired siblings.
+                await recordMany(observations);
+              }
+              const raw=[],accepted=[];
+              try{
+                for(const {candidate,part}of obtained){
+                  workRequire(part?.export_format_version===1&&part.key===candidate.key&&part.encoding==='base64'&&part.offset===0&&part.object_size===candidate.size&&part.object_sha256===candidate.sha256,'inconsistent_chunk_metadata');
+                  const bytes=workUnbase64(part.body_base64);
+                  workRequire(bytes.length===part.bytes&&bytes.length===candidate.size&&part.next_offset===candidate.size&&part.object_complete===true,'invalid_chunk_progress');
+                  workRequire(await workHash(bytes)===candidate.sha256,'collector_object_hash_mismatch');
+                  raw.push({path:`raw/collector/${candidate.key}`,bytes});accepted.push(candidate);
+                }
+              }finally{
+                await recordMany(raw);
+                for(const candidate of accepted){keys.set(candidate.key,{sha256:candidate.sha256,size:candidate.size});totalBytes+=candidate.size;objects.push({...candidate,namespace,local_path:`raw/collector/${candidate.key}`});}
+              }
+              if(acquisitionError)throw acquisitionError;
+              itemIndex+=group.length-1;continue;
+            }
             const chunks=[];let offset=0;
             do {
               const part=await collector.chunk({key:item.key,offset,max_bytes:8192});
@@ -145,7 +219,9 @@ export async function runLeadPipeline({runId,config,collector,mail,classify,anal
             const capture=await mail.capture(id);await observe('mail-capture',{message_id:id,response:capture});
             workRequire(Array.isArray(capture?.artifacts),'incomplete_mail_capture');
             // Preserve obtained raw bytes even when normalization is invalid.
-            for(const artifact of capture.artifacts){workRequire(artifact.bytes instanceof Uint8Array,'invalid_mail_artifact');await record(`raw/mail/${id}/${workSafePath(artifact.name)}`,artifact.bytes);}
+            const mailRows=[];
+            try{for(const artifact of capture.artifacts){workRequire(artifact.bytes instanceof Uint8Array,'invalid_mail_artifact');mailRows.push({path:`raw/mail/${id}/${workSafePath(artifact.name)}`,bytes:artifact.bytes});}}
+            finally{await recordMany(mailRows);}
             workRequire(capture?.capture?.message_id===id&&capture.complete===true,'incomplete_mail_capture');
             captures.push(capture.capture);
           }catch(error){mailComplete=false;await fail('mail-message',error);}
@@ -168,13 +244,16 @@ export async function runLeadPipeline({runId,config,collector,mail,classify,anal
     }catch(error){await fail('classifications',error);}
     phase='analysis';
     const frozenConfig={...config,observation_cutoff:workIso(now()),source_completeness:sources};
-    await record('inputs/config.json',workJSON(frozenConfig));
-    await record('inputs/messages.json',workJSON(captures));
-    await record('inputs/classifications.json',workJSON(classifications));
-    await record('inputs/collector-inventory.json',workJSON({scan_started_at:startedAt,scan_finished_at:workIso(now()),objects,transactional_snapshot:false}));
+    await recordMany([
+      {path:'inputs/config.json',bytes:workJSON(frozenConfig)},
+      {path:'inputs/messages.json',bytes:workJSON(captures)},
+      {path:'inputs/classifications.json',bytes:workJSON(classifications)},
+      {path:'inputs/collector-inventory.json',bytes:workJSON({scan_started_at:startedAt,scan_finished_at:workIso(now()),objects,transactional_snapshot:false})}
+    ]);
     const analyzed=await analyze({objects,captures,classifications,config:frozenConfig,readLocal:path=>files.get(path)?.data});
     workRequire(analyzed?.report&&Array.isArray(analyzed.artifacts),'invalid_analysis_result');
-    for(const artifact of analyzed.artifacts){workRequire(artifact.bytes instanceof Uint8Array,'invalid_analysis_artifact');await record(`analysis/${workSafePath(artifact.name)}`,artifact.bytes);}
+    const analysisRows=analyzed.artifacts.map(artifact=>{workRequire(artifact.bytes instanceof Uint8Array,'invalid_analysis_artifact');return {path:`analysis/${workSafePath(artifact.name)}`,bytes:artifact.bytes};});
+    await recordMany(analysisRows);
     const authority=unreviewedMessages.length?'needs_review':analyzed.report.mail_unresolved?.length?'qualified':'complete_for_observed_evidence';
     const health={collector_enumeration_complete:sources.collector,mail_enumeration_complete:sources.mail,classification_complete:sources.classifications,report_authority:authority,unreviewed_message_ids:unreviewedMessages,canary:config.canary_observation??{status:'unverified'},prior_archive:config.prior_archive_observation??{status:'unverified'},failures};
     await record('report/report.json',workJSON({...analyzed.report,report_authority:authority,unreviewed_message_ids:unreviewedMessages,work_report:{version:WORK_VERSION,job,source_completeness:sources}}));
@@ -233,7 +312,7 @@ export async function verifyRemoteRun({completionId,drive,full=true}){
   const packed=m.archive_mode==='packed_journal_v1';
   workRequire((m.archive_mode??'individual_files_v1')===(c.archive_mode??'individual_files_v1')&&['individual_files_v1','packed_journal_v1'].includes(m.archive_mode??'individual_files_v1'),'remote_archive_mode_mismatch');
   if(packed){
-    workRequire(m.work_version===WORK_VERSION&&Array.isArray(m.logical_files)&&m.logical_record_count===m.logical_files.length&&m.logical_record_count===c.logical_record_count&&m.logical_total_bytes===c.logical_total_bytes&&m.logical_total_bytes===m.logical_files.reduce((s,x)=>s+x.bytes,0),'logical_manifest_counts');
+    workRequire(['farpoint-work/1.1.0',WORK_VERSION].includes(m.work_version)&&Array.isArray(m.logical_files)&&m.logical_record_count===m.logical_files.length&&m.logical_record_count===c.logical_record_count&&m.logical_total_bytes===c.logical_total_bytes&&m.logical_total_bytes===m.logical_files.reduce((s,x)=>s+x.bytes,0),'logical_manifest_counts');
     const names=new Set();for(const f of m.logical_files){workSafePath(f.path);workRequire(Object.keys(f).length===3&&!names.has(f.path)&&Number.isSafeInteger(f.bytes)&&f.bytes>=0&&workHex.test(f.sha256??''),'invalid_logical_manifest_entry');names.add(f.path);}
     workRequire(m.packed_journal?.path==='journal.zip'&&workHex.test(m.packed_journal.manifest_sha256??'')&&/^[a-f0-9]{40}$/.test(m.packed_journal.source_commit??'')&&m.files.length===4,'invalid_packed_journal_manifest');
     const expectedPaths=['journal.zip','inputs/config.json','report/report.json','report/report.md'];

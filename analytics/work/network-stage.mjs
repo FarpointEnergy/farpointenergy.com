@@ -4,7 +4,7 @@
 import {WorkFailure,workJSON,workHash,workUnbase64} from './pipeline.mjs';
 import {createNativeAdapters,workToolValue} from './native-adapters.mjs';
 
-export const NETWORK_STAGE_VERSION='farpoint-work-network-stage/1.0.0';
+export const NETWORK_STAGE_VERSION='farpoint-work-network-stage/1.0.1';
 function networkRequire(value,code){if(!value)throw new WorkFailure(code);}
 function networkPath(value){networkRequire(typeof value==='string'&&/^\/[A-Za-z0-9_./-]+$/.test(value)&&value.split('/').slice(1).every(x=>x&&x!=='.'&&x!=='..'),'invalid_network_stage_path');return value;}
 function networkPrivateRoot(privateRoot,repositoryRoot){networkPath(privateRoot);networkPath(repositoryRoot);networkRequire(privateRoot!==repositoryRoot&&!privateRoot.startsWith(repositoryRoot+'/'),'private_network_stage_inside_repository');}
@@ -68,14 +68,30 @@ export function createNetworkAnalyzer({tools,local,settings,privateRoot,reposito
         networkRequire(proof.verified===true&&proof.bytes===descriptor.bytes&&proof.sha256===descriptor.sha256,'network_provenance_readback_mismatch');
         proofs.push({path:proof.path,bytes:descriptor.bytes,sha256:descriptor.sha256,ref:descriptor.ref});
       }
-      phase='receipts';const receipts=[];
-      for(const object of input.objects){
-        if(object.namespace!=='receipts')continue;
-        const bytes=input.readLocal(object.local_path);
-        networkRequire(bytes instanceof Uint8Array&&bytes.length===object.size&&await workHash(bytes)===object.sha256,'network_receipt_integrity_mismatch');
-        const path=await local.create(prefix+'/receipts/'+crypto.randomUUID()+'.json',bytes);
-        receipts.push({path,bytes:bytes.length,sha256:object.sha256});
-      }
+      phase='receipts';const receipts=[],batchWrites=input.config.local_write_mode==='bounded_batches_v1';let pending=[],pendingBytes=0;
+      if(batchWrites)networkRequire(typeof local.createMany==='function','network_local_batch_capability_missing');
+      const flushReceipts=async()=>{
+        if(!pending.length)return;
+        const group=pending;pending=[];pendingBytes=0;
+        const paths=await local.createMany(group.map(x=>({path:x.path,bytes:x.bytes})));
+        networkRequire(Array.isArray(paths)&&paths.length===group.length&&paths.every((path,i)=>path===privateRoot+'/'+group[i].path),'network_local_batch_confirmation_mismatch');
+        for(let i=0;i<group.length;i++)receipts.push({path:paths[i],bytes:group[i].bytes.length,sha256:group[i].sha256});
+      };
+      try{
+        for(const object of input.objects){
+          if(object.namespace!=='receipts')continue;
+          const bytes=input.readLocal(object.local_path);
+          networkRequire(bytes instanceof Uint8Array&&bytes.length===object.size&&await workHash(bytes)===object.sha256,'network_receipt_integrity_mismatch');
+          const path=prefix+'/receipts/'+crypto.randomUUID()+'.json';
+          if(batchWrites&&bytes.length<=256*1024){
+            if(pending.length===64||pendingBytes+bytes.length>256*1024)await flushReceipts();
+            pending.push({path,bytes,sha256:object.sha256});pendingBytes+=bytes.length;
+          }else{
+            if(batchWrites)await flushReceipts();
+            const saved=await local.create(path,bytes);receipts.push({path:saved,bytes:bytes.length,sha256:object.sha256});
+          }
+        }
+      }finally{if(batchWrites)await flushReceipts();}
       phase='generation';onProgress({phase:'network_observations',receipts:receipts.length});
       const generated=await host.run({dataset_archive:{...datasetArtifact,path:dataset.path},receipts,config:input.config,run_id:stageId,code_commit:codeCommit,provenance_evidence:proofs});
       networkRequire(generated.result?.status==='complete','network_stage_incomplete');

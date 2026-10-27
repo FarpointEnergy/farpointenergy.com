@@ -122,6 +122,19 @@ both remote ZIP membership and every logical source file, then creates a new
 whole-evidence archive and replays the restored numerical analysis. Legacy
 individual-file runs remain readable and remain the default unless opted in.
 
+The reviewed native runner can also set `config.local_write_mode` to
+`bounded_batches_v1`. `local.createMany` writes at most 64 files / 256 KiB per
+call and acknowledges only exclusive, fsynced, byte-verified writes. It retains
+the exact batch request before target writes, plus completion or partial-failure
+evidence. Collector groups of up to eight small objects / 24 KiB first flush
+their original chunk observations, then validate and flush raw copies before
+inventory publication. Acquisition or validation failures preserve obtained
+responses and the verified raw prefix. Network receipt copies flush before
+generation; analysis artifacts flush before report/archive creation. Large
+files and the default path still use individual writes. The whole-evidence
+closure includes batch attempts, including failed requests; no caller silently
+buffers all evidence until run completion.
+
 The network callback is required in the current task recipe. It restores the
 hash-pinned dataset ZIP through authenticated Drive download even on a fresh
 host; Python verifies the full ZIP and selected manifest members. Its settings
@@ -229,7 +242,8 @@ Work version `1.0.1` labels current-window receipts, session-cohort conversions,
 and all-history inquiry totals separately in the human report. The archive
 schema remained unchanged between `1.0.0` and `1.0.1`. Version `1.1.0` adds the
 opt-in packed journal fields and physical/logical count separation. Verification
-accepts historical individual-file `1.0.0`/`1.0.1` and current `1.1.0` when
+accepts historical individual-file `1.0.0`/`1.0.1`, packed `1.1.0`, and current
+`1.1.1` (bounded local writes) when
 completion/manifest versions match and all other integrity/scope checks pass.
 Unknown versions and archive modes fail closed. Numerical replay still requires
 archived source.

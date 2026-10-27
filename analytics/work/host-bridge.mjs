@@ -32,6 +32,21 @@ export function createWorkHostBridge({tools,privateRoot,repositoryRoot}){
   }
   return {
     create:async(path,bytes)=>(await invoke({op:'create',path,base64:bridgeBase64(bytes)})).path,
+    createMany:async files=>{
+      if(!Array.isArray(files)||files.length<1||files.length>64||files.some(x=>typeof x.path!=='string'||!(x.bytes instanceof Uint8Array))||files.reduce((n,x)=>n+x.bytes.length,0)>256*1024)throw new WorkFailure('local_batch_limit');
+      const expected=await Promise.all(files.map(async x=>({relative_path:x.path,bytes:x.bytes.length,sha256:await workHash(x.bytes)})));
+      const batch=(await invoke({op:'create_many',files:files.map(x=>({path:x.path,base64:bridgeBase64(x.bytes)}))})).batch;
+      if(!batch||!Array.isArray(batch.verified_entries)||batch.verified_entries.length>files.length)throw new WorkFailure('invalid_local_batch_confirmation');
+      for(let i=0;i<batch.verified_entries.length;i++){
+        const row=batch.verified_entries[i],want=expected[i];
+        if(row.relative_path!==want.relative_path||row.bytes!==want.bytes||row.sha256!==want.sha256||row.path!==privateRoot+'/'+want.relative_path)throw new WorkFailure('invalid_local_batch_confirmation');
+      }
+      if(batch.complete!==true){
+        const error=new WorkFailure('local_batch_failed');error.batch_reason=batch.reason;error.created_local_files=batch.verified_entries;error.batch_evidence={request_path:batch.request_path,failure_path:batch.failure_path,request_sha256:batch.request_sha256};throw error;
+      }
+      if(batch.verified_entries.length!==files.length)throw new WorkFailure('incomplete_local_batch_confirmation');
+      return batch.verified_entries.map(x=>x.path);
+    },
     readFileReference:async response=>workUnbase64((await invoke({op:'read_reference',response})).base64),
     verifyFileReference:async({response,expectedBytes,expectedSha256})=>invoke({op:'verify_reference',response,expected_bytes:expectedBytes,expected_sha256:expectedSha256}),
     packEvidence:async({sourceRoot,binding})=>(await invoke({op:'pack_evidence',source_root:bridgePath(sourceRoot),binding})).archive,

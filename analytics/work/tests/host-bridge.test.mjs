@@ -17,3 +17,18 @@ function fixture(fault){
 test('host reconstructs large private response from bounded independently hashed chunks',async()=>{const f=fixture();assert.deepEqual(await f.bridge.readFileReference({}),new Uint8Array(f.expected));assert(f.reads>10);});
 test('host rejects mismatching private response chunk without accepting data',async()=>{await assert.rejects(()=>fixture('chunk').bridge.readFileReference({}),/invalid_bridge_result_chunk/);});
 test('host rejects mismatching full private response hash after complete transport',async()=>{await assert.rejects(()=>fixture('object').bridge.readFileReference({}),/bridge_result_hash_mismatch/);});
+
+test('createMany checks every returned byte proof and preserves a failed verified prefix',async()=>{
+  const files=[{path:'first',bytes:new Uint8Array([0,255])},{path:'second',bytes:new Uint8Array([2])}];let failure=false,bad=false,calls=0;
+  const tools={exec_command:async()=>({session_id:1,output:'READY\n'}),write_stdin:async({chars})=>{
+    calls++;const q=JSON.parse(chars);assert.equal(q.op,'create_many');
+    const entries=q.files.map(x=>{const bytes=Buffer.from(x.base64,'base64');return {relative_path:x.path,path:'/private/test/'+x.path,bytes:bytes.length,sha256:hash(bytes)};});
+    if(bad)entries[0].sha256='0'.repeat(64);
+    return {output:JSON.stringify({status:'ok',batch:{complete:!failure,verified_entries:failure?entries.slice(0,1):entries,reason:'FileExistsError',request_path:'/private/test/request',request_sha256:'a'.repeat(64)}})};
+  }};
+  const bridge=createWorkHostBridge({tools,privateRoot:'/private/test',repositoryRoot:'/repo'});
+  assert.deepEqual(await bridge.createMany(files),['/private/test/first','/private/test/second']);
+  failure=true;await assert.rejects(()=>bridge.createMany(files),error=>error.code==='local_batch_failed'&&error.created_local_files.length===1&&error.created_local_files[0].relative_path==='first'&&error.batch_evidence.request_path==='/private/test/request');
+  failure=false;bad=true;await assert.rejects(()=>bridge.createMany(files),/invalid_local_batch_confirmation/);
+  const before=calls;await assert.rejects(()=>bridge.createMany(Array.from({length:65},()=>files[0])),/local_batch_limit/);await assert.rejects(()=>bridge.createMany([{path:'large',bytes:new Uint8Array(256*1024+1)}]),/local_batch_limit/);assert.equal(calls,before);
+});

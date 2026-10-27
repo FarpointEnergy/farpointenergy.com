@@ -50,6 +50,7 @@ export function createNativeAdapters({tools,local,settings,classify,analyze,now=
       await local.create(`adapter-evidence/drive-verify-${crypto.randomUUID()}.json`,workJSON(metadataRaw));
       nativeEnsure(meta.id===id&&meta.parents?.includes(settings.archive_folder_id)&&typeof meta.url==='string'&&nativePrivate(meta,settings.owner_email),'drive_read_scope_mismatch');
       const raw=await call('mcp__codex_apps__google_drive_fetch',{url:meta.url,download_raw_file:true,include_base64:false});
+      await local.create(`adapter-evidence/drive-fetch-${crypto.randomUUID()}.json`,workJSON(raw));
       nativeEnsure(!raw?.isError,'drive_fetch_failed');
       const proof=await local.verifyFileReference({response:raw,expectedBytes:bytes,expectedSha256:sha256});
       nativeEnsure(proof.verified===true&&proof.bytes===bytes&&proof.sha256===sha256,'drive_readback_mismatch');
@@ -108,7 +109,11 @@ export function createNativeAdapters({tools,local,settings,classify,analyze,now=
       }catch(error){return {complete:false,reason:error instanceof WorkFailure?error.code:'mail_normalization_failed',capture:null,artifacts};}
     }
   };
-  return {collector,drive,mail,classify,analyze,journal:{create:(path,bytes)=>local.create(`run/${path}`,bytes),packJournal:args=>local.packJournal(args)},now};
+  return {collector,drive,mail,classify,analyze,journal:{create:(path,bytes)=>local.create(`run/${path}`,bytes),
+    createMany:async files=>{
+      try{return await local.createMany(files.map(x=>({...x,path:'run/'+x.path})));}
+      catch(error){if(Array.isArray(error.created_local_files))error.created_local_files=error.created_local_files.map(x=>({...x,relative_path:x.relative_path.startsWith('run/')?x.relative_path.slice(4):x.relative_path}));throw error;}
+    },packJournal:args=>local.packJournal(args)},now};
 }
 
 /** Convert reviewed classification observations to a full explicit boundary.
