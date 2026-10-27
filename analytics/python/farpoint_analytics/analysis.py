@@ -10,7 +10,7 @@ import re
 from .canonical import InvalidData, canonical_bytes, logical_hash, sha256, strict_loads
 from .schema import SCHEMA, validate_envelope, validate_event
 
-RULE_VERSION = "farpoint-analysis-1.1.0"
+RULE_VERSION = "farpoint-analysis-1.1.1"
 UTC = timezone.utc
 MAIL_KINDS = {"new_inquiry", "follow_up", "automated", "noise", "unresolved"}
 
@@ -27,7 +27,7 @@ def timestamp(value):
         if result.tzinfo is None:
             raise ValueError()
         return result.astimezone(UTC)
-    except ValueError:
+    except (ValueError, OverflowError):
         raise InvalidData("invalid_timestamp") from None
 
 
