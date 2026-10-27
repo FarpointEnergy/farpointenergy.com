@@ -1,0 +1,71 @@
+name: Browser QA
+
+on:
+  push:
+    branches: [codex/lead-intelligence-design-v1]
+    paths:
+      - '.github/workflows/browser-qa.yml'
+      - 'check_browser.mjs'
+      - 'build.py'
+      - '*.html'
+      - '*.js'
+      - '*.css'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    name: Synthetic browser checks (${{ matrix.engine }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit, firefox]
+    env:
+      FARPOINT_BROWSER_ENGINES: ${{ matrix.engine }}
+      FARPOINT_BROWSER_EVIDENCE: ${{ runner.temp }}/farpoint-browser-evidence
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Record test scope
+        run: |
+          mkdir -p "$FARPOINT_BROWSER_EVIDENCE"
+          node -e 'require("fs").writeFileSync(process.env.FARPOINT_BROWSER_EVIDENCE+"/run.json",JSON.stringify({commit:process.env.GITHUB_SHA,run_id:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,engine:process.env.FARPOINT_BROWSER_ENGINES,scope:"Synthetic local fixture; RFQ and collector requests intercepted; no production credentials or customer data",canonical_archive_required:true},null,2))'
+      - name: Install pinned browser tooling
+        run: |
+          set -o pipefail
+          npm install --no-save --ignore-scripts --package-lock=false playwright@1.62.1 2>&1 | tee "$FARPOINT_BROWSER_EVIDENCE/npm-install.log"
+          npx --no-install playwright install --with-deps "$FARPOINT_BROWSER_ENGINES" 2>&1 | tee "$FARPOINT_BROWSER_EVIDENCE/browser-install.log"
+      - name: Check source and mocked behavior
+        if: matrix.engine == 'chromium'
+        run: |
+          set -o pipefail
+          python3 check_site.py 2>&1 | tee "$FARPOINT_BROWSER_EVIDENCE/site.log"
+          node check_tracker.js 2>&1 | tee "$FARPOINT_BROWSER_EVIDENCE/tracker.log"
+          node check_inquiry.js 2>&1 | tee "$FARPOINT_BROWSER_EVIDENCE/inquiry.log"
+          node check_context.js 2>&1 | tee "$FARPOINT_BROWSER_EVIDENCE/context.log"
+      - name: Run real browser engine with synthetic network
+        run: |
+          set -o pipefail
+          node check_browser.mjs 2>&1 | tee "$FARPOINT_BROWSER_EVIDENCE/browser-console.log"
+      - name: Preserve transfer artifact for permanent archive
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: browser-qa-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.engine }}
+          path: ${{ runner.temp }}/farpoint-browser-evidence/
+          if-no-files-found: error
+          retention-days: 90
+          overwrite: false
+      # GitHub artifacts are transfer buffers, not the permanent evidence store.
+      # Download each attempt (including failures), verify hashes and preserve in
+      # the existing append-only R2/Drive archive before accepting the run.
