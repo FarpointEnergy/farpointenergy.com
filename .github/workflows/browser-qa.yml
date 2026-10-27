@@ -40,7 +40,7 @@ jobs:
           export FARPOINT_BROWSER_EVIDENCE="$RUNNER_TEMP/farpoint-browser-evidence"
           printf 'FARPOINT_BROWSER_EVIDENCE=%s\n' "$FARPOINT_BROWSER_EVIDENCE" >> "$GITHUB_ENV"
           mkdir -p "$FARPOINT_BROWSER_EVIDENCE"
-          node -e 'require("fs").writeFileSync(process.env.FARPOINT_BROWSER_EVIDENCE+"/run.json",JSON.stringify({commit:process.env.GITHUB_SHA,run_id:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,engine:process.env.FARPOINT_BROWSER_ENGINES,scope:"Synthetic local fixture; RFQ and collector requests intercepted; no production credentials or customer data",canonical_archive_required:true},null,2))'
+          node -e 'require("fs").writeFileSync(process.env.FARPOINT_BROWSER_EVIDENCE+"/run.json",JSON.stringify({commit:process.env.GITHUB_SHA,run_id:process.env.GITHUB_RUN_ID,attempt:process.env.GITHUB_RUN_ATTEMPT,engine:process.env.FARPOINT_BROWSER_ENGINES,scope:"Synthetic local fixture; RFQ requests intercepted; isolated localhost HTTPS collector; no production credentials or customer data",canonical_archive_required:true},null,2))'
       - name: Install pinned browser tooling
         run: |
           set -o pipefail
