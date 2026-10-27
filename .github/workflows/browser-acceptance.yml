@@ -48,7 +48,7 @@ jobs:
           set -o pipefail
           npm install --no-save --ignore-scripts --package-lock=false playwright@1.62.1 2>&1 | tee "$FARPOINT_ACCEPTANCE_EVIDENCE/npm-install.log"
           npx --no-install playwright install --with-deps "$FARPOINT_ACCEPTANCE_ENGINES" 2>&1 | tee "$FARPOINT_ACCEPTANCE_EVIDENCE/browser-install.log"
-          sudo apt-get install --no-install-recommends --yes openbox xdotool 2>&1 | tee "$FARPOINT_ACCEPTANCE_EVIDENCE/window-tools-install.log"
+          sudo apt-get install --no-install-recommends --yes openbox xdotool x11-utils 2>&1 | tee "$FARPOINT_ACCEPTANCE_EVIDENCE/window-tools-install.log"
           command -v xvfb-run
       - name: Check evidence fixture and trace parser
         if: matrix.engine == 'chromium'

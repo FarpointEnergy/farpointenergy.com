@@ -4,8 +4,8 @@ import {createServer} from 'node:http';
 import {createServer as createHttpsServer} from 'node:https';
 import {appendFile, mkdir, mkdtemp, readFile, writeFile} from 'node:fs/promises';
 import {readFileSync} from 'node:fs';
-import {execFileSync} from 'node:child_process';
-import {createHash, randomUUID} from 'node:crypto';
+import {execFileSync,spawn} from 'node:child_process';
+import {createHash,randomUUID,X509Certificate} from 'node:crypto';
 import {tmpdir} from 'node:os';
 import {dirname, extname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -139,7 +139,8 @@ export async function createFixture({evidence,name,enabled=true,trackerMode='nor
       }catch(error){errors.push(String(error.stack||error));await observe('route_error',{reason:String(error)});await route.abort('failed').catch(()=>{});}
     });
   }
-  return {directory,origin,endpoint,requests,providerRequests,errors,observe,save,attach,
+  const certificateSpki=createHash('sha256').update(new X509Certificate((await tlsOptions()).cert).publicKey.export({type:'spki',format:'der'})).digest('base64');
+  return {directory,origin,endpoint,certificateSpki,requests,providerRequests,errors,observe,save,attach,
     observedCount(kind){return observationCounts.get(kind)||0;},
     set collectorMode(value){assert(['ack','drop','hold'].includes(value));collectorMode=value;},
     set providerMode(value){assert(['accepted','rejected'].includes(value));providerMode=value;},
@@ -235,11 +236,67 @@ export async function minimizeOwnedTestWindow(page,observe){
   const title=command(['getwindowname',windowId]);await observe('active_window_title_observed',{window_id:windowId,title});
   assert(title.startsWith('Request a quotation — Farpoint Energy'),'Active window is not the fixture quotation page');
   const pid=Number(command(['getwindowpid',windowId])),ancestry=ownedProcessChain(pid);
-  await observe('owned_window_before_minimize',{window_id:windowId,title,pid,ancestry});
+  const state=()=>execFileSync('xprop',['-id',windowId,'WM_STATE','_NET_WM_STATE'],{encoding:'utf8',timeout:5000}).trim();
+  await observe('owned_window_before_minimize',{window_id:windowId,title,pid,ancestry,window_manager_state:state()});
   command(['windowminimize',windowId]);
+  await observe('owned_window_minimize_requested',{window_id:windowId,pid,window_manager_state:state()});
+  await until(()=>/Iconic|_NET_WM_STATE_HIDDEN/.test(state()),'owned native window reports minimized',5000);
+  await observe('owned_window_minimized',{window_id:windowId,pid,window_manager_state:state()});
   return async()=>{
     assert.equal(Number(command(['getwindowpid',windowId])),pid,'Owned test window changed');ownedProcessChain(pid);
     command(['windowmap','--sync',windowId,'windowactivate','--sync',windowId]);
-    await observe('owned_window_restored',{window_id:windowId,pid});
+    await observe('owned_window_restored',{window_id:windowId,pid,window_manager_state:state()});
   };
+}
+
+export function nativeChromiumArguments(profile,certificateSpki){
+  assert(profile.startsWith('/'),'Native browser requires a fresh absolute profile path');
+  assert(/^[A-Za-z0-9+/]{43}=$/.test(certificateSpki),'Collector certificate SPKI must be a SHA-256 digest');
+  return ['--remote-debugging-address=127.0.0.1','--remote-debugging-port=0','--user-data-dir='+profile,
+    '--no-first-run','--no-default-browser-check','--disable-background-networking','--disable-default-apps','--disable-extensions',
+    '--no-sandbox','--disable-dev-shm-usage','--window-size=1366,900','--ignore-certificate-errors-spki-list='+certificateSpki,'about:blank'];
+}
+
+export async function launchNativeChromium(playwright,fixture){
+  // A new owned process/profile avoids any pre-existing Playwright focus
+  // override. noDefaults is a documented connectOverCDP option. No user
+  // browser, driver patch, DOM visibility override or public endpoint is used.
+  const profile=await mkdtemp(resolve(tmpdir(),'farpoint-native-owned-profile-'));
+  const args=nativeChromiumArguments(profile,fixture.certificateSpki);
+  const paths={stdout:resolve(fixture.directory,'native-browser.stdout.txt'),stderr:resolve(fixture.directory,'native-browser.stderr.txt')};
+  for(const path of Object.values(paths))await writeFile(path,'',{flag:'wx'});
+  let journal=Promise.resolve(),launchError,exitResult,closePromise;
+  const child=spawn(playwright.chromium.executablePath(),args,{stdio:['ignore','pipe','pipe']});
+  child.once('error',error=>{launchError=error;});
+  const exited=new Promise(done=>child.once('close',(code,signal)=>{exitResult={code,signal};done(exitResult);}));
+  for(const stream of ['stdout','stderr'])child[stream].on('data',bytes=>{
+    journal=journal.then(()=>appendFile(paths[stream],bytes));void journal.catch(()=>{});
+  });
+  async function closeProcess(){
+    if(closePromise)return closePromise;
+    closePromise=(async()=>{
+      let timer;
+      if(!exitResult){child.kill('SIGTERM');
+        try{await Promise.race([exited,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Native browser graceful close timed out')),5000);})]);}
+        catch{child.kill('SIGKILL');await Promise.race([exited,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Owned native browser did not exit')),5000);})]);}
+        finally{clearTimeout(timer);}
+      }
+      await journal;await fixture.observe('native_browser_closed',{pid:child.pid,exit:exitResult});
+    })();return closePromise;
+  }
+  try{
+    await fixture.observe('native_browser_started',{pid:child.pid,executable:playwright.chromium.executablePath(),args,context:'fresh owned profile; noDefaults true; original installed browser/driver bytes'});
+    await until(()=>{
+      try{return /window id # 0x[1-9a-f]/i.test(execFileSync('xprop',['-root','_NET_SUPPORTING_WM_CHECK'],{encoding:'utf8',timeout:1000}));}catch{return false;}
+    },'owned display window manager readiness',5000);
+    let port;
+    await until(async()=>{
+      if(launchError)throw launchError;if(exitResult)throw Error('Native browser exited before CDP became ready');
+      try{const text=await readFile(resolve(profile,'DevToolsActivePort'),'utf8');port=Number(text.split('\n')[0]);return Number.isSafeInteger(port)&&port>0&&port<=65535;}catch(error){if(error.code==='ENOENT')return false;throw error;}
+    },'owned native Chromium debugging endpoint',20000);
+    const browser=await playwright.chromium.connectOverCDP('http://127.0.0.1:'+port,{noDefaults:true,isLocal:true,timeout:15000});
+    const contexts=browser.contexts();assert.equal(contexts.length,1,'Fresh native browser must have one default context');
+    assert.equal(contexts[0].serviceWorkers().length,0,'Fresh profile must not contain a service worker');
+    return {browser,context:contexts[0],closeProcess};
+  }catch(error){await closeProcess();throw error;}
 }

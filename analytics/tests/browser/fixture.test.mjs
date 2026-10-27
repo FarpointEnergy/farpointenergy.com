@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {request as httpsRequest} from 'node:https';
 import {mkdir,mkdtemp,readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {classifyRequest,createFixture,fillStorageQuota,ownedProcessChain,hash,until,repositoryRoot} from './fixture.mjs';
+import {classifyRequest,createFixture,fillStorageQuota,ownedProcessChain,nativeChromiumArguments,hash,until,repositoryRoot} from './fixture.mjs';
 
 const evidenceRoot=process.env.FARPOINT_ACCEPTANCE_EVIDENCE||resolve(repositoryRoot,'..','farpoint-browser-acceptance-unit-evidence');
 await mkdir(evidenceRoot,{recursive:true});
@@ -115,4 +115,11 @@ test('window ownership guard permits only descendants of this runner and rejects
   assert.throws(()=>ownedProcessChain(900,101,read));
   assert.throws(()=>ownedProcessChain(301,101,()=> 'malformed process record'));
   assert.throws(()=>ownedProcessChain(301,101,id=>`${id} (cycle) S ${id} 0 0`));
+});
+test('native browser transport stays loopback and trusts only the fixture certificate key',()=>{
+  const pin=Buffer.alloc(32).toString('base64'),args=nativeChromiumArguments('/owned/fresh-profile',pin);
+  assert(args.includes('--remote-debugging-address=127.0.0.1'));assert(args.includes('--remote-debugging-port=0'));
+  assert(args.includes('--ignore-certificate-errors-spki-list='+pin));assert(!args.includes('--ignore-certificate-errors'));
+  assert(!args.some(arg=>/focus|occluded|renderer-backgrounding|proxy-server|load-extension/.test(arg)));
+  assert.throws(()=>nativeChromiumArguments('relative-profile',pin));assert.throws(()=>nativeChromiumArguments('/owned/fresh-profile','invalid-key'));
 });

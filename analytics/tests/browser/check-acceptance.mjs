@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {createRequire} from 'node:module';
 import {gzipSync} from 'node:zlib';
 import {randomUUID} from 'node:crypto';
-import {createFixture,repositoryRoot,hash,until,outbox,fillMinimal,rejectAndCheckForm,seedBacklog,fillStorageQuota,minimizeOwnedTestWindow,formSentinel} from './fixture.mjs';
+import {createFixture,repositoryRoot,hash,until,outbox,fillMinimal,rejectAndCheckForm,seedBacklog,fillStorageQuota,minimizeOwnedTestWindow,launchNativeChromium,formSentinel} from './fixture.mjs';
 import {analyzeTrace,TRACE_CATEGORIES} from './performance-trace.mjs';
 
 const require=createRequire(import.meta.url);
@@ -55,14 +55,9 @@ define('persistent-offline-close-reopen','BROWSER-01',async env=>{
 
 define('native-window-background','BROWSER-01',async env=>{
   assert(headed,'Actual foreground/background test requires headed browser under Xvfb');
-  const browserOptions=env.engine==='firefox'?{firefoxUserPrefs:{'focusmanager.testmode':false}}:{};
-  const {context}=await env.session({browserOptions});const page=await context.newPage();
+  const {context}=await env.session({nativeBrowser:true});const page=await context.newPage();
   await page.goto(env.fixture.origin+'/quote.html');await waitEnabled(page);await pendingZero(page);
-  if(env.engine==='chromium'){
-    const client=await context.newCDPSession(page);
-    await client.send('Emulation.setFocusEmulationEnabled',{enabled:false});
-    await env.fixture.observe('automation_focus_override_removed',{engine:env.engine,method:'documented CDP Emulation.setFocusEmulationEnabled false; session remains attached until context closes'});
-  }else await env.fixture.observe('automation_focus_override_removed',{engine:env.engine,method:'documented launch firefoxUserPrefs focusmanager.testmode false'});
+  await env.fixture.save('native-lifecycle-environment.json',await page.evaluate(()=>({user_agent:navigator.userAgent,viewport:{width:innerWidth,height:innerHeight},outer:{width:outerWidth,height:outerHeight},visibility:document.visibilityState,has_focus:document.hasFocus()})));
   await page.bringToFront();
   await page.waitForFunction(()=>document.visibilityState==='visible',null,{polling:100});
   env.fixture.collectorMode='drop';
@@ -85,7 +80,7 @@ define('native-window-background','BROWSER-01',async env=>{
   assert(lifecycle.some(row=>row.event==='online'));
   assert(env.fixture.requests.some(record=>record.accept==='application/json'&&record.acknowledged&&requestHas(record,backgroundId)),'Background event must receive a later hash-bound fetch ACK');
   await env.fixture.save('actual-lifecycle.json',{background_event_id:backgroundId,events:lifecycle,all_original_event_bytes_preserved:true,beacon_did_not_clear_outbox:true,later_fetch_acknowledged:true,remaining_pending:await page.evaluate(()=>window.farpointTracker.pendingCount())});
-},{engineNames:['chromium','firefox']});
+},{engineNames:['chromium']});
 
 define('concurrent-tabs-out-of-order-acks','BROWSER-02',async env=>{
   const {context}=await env.session();const a=await context.newPage(),b=await context.newPage();
@@ -309,17 +304,19 @@ async function execute(engine,definition){
   const name=engine+'-'+definition.name;console.log('Checking',name);
   const fixture=await createFixture({evidence,name,enabled:definition.enabled??true,trackerMode:definition.trackerMode||'normal'});
   const sessions=[],pageErrors=[],pending=[];let result={engine,name,gate:definition.gate,status:'RUNNING'},failure;
-  async function session({profile,contextOptions={},routeOptions={},browserOptions={}}={}){
+  async function session({profile,contextOptions={},routeOptions={},nativeBrowser=false}={}){
     const options={serviceWorkers:'block',ignoreHTTPSErrors:true,viewport:{width:1366,height:900},...contextOptions};
-    let browser,context;
+    let browser,context,nativeController;
     try{
-      if(profile){context=await playwright[engine].launchPersistentContext(profile,{headless:!headed,timeout:20000,...options,...browserOptions});browser=context.browser();}
-      else{browser=await playwright[engine].launch({headless:!headed,timeout:20000,...browserOptions});context=await bounded(browser.newContext(options),15000,'context creation');}
+      if(nativeBrowser){assert.equal(engine,'chromium');nativeController=await launchNativeChromium(playwright,fixture);({browser,context}=nativeController);}
+      else if(profile){context=await playwright[engine].launchPersistentContext(profile,{headless:!headed,timeout:20000,...options});browser=context.browser();}
+      else{browser=await playwright[engine].launch({headless:!headed,timeout:20000});context=await bounded(browser.newContext(options),15000,'context creation');}
     }catch(error){if(browser)await bounded(browser.close(),5000,'failed context cleanup').catch(()=>{});throw error;}
     let closed=false;const record={browser,context,async close(){
       if(closed)return;closed=true;const failures=[];
-      try{await bounded(context.close(),5000,'context cleanup');}catch(error){failures.push(String(error));}
+      if(!nativeController)try{await bounded(context.close(),5000,'context cleanup');}catch(error){failures.push(String(error));}
       if(browser?.isConnected())try{await bounded(browser.close(),5000,'browser cleanup');}catch(error){failures.push(String(error));}
+      if(nativeController)try{await bounded(nativeController.closeProcess(),11000,'owned native process cleanup');}catch(error){failures.push(String(error));}
       if(failures.length)throw Error(failures.join('; '));
     }};sessions.push(record);
     context.setDefaultTimeout(15000);context.setDefaultNavigationTimeout(20000);
@@ -356,7 +353,7 @@ const selectionText=process.env.FARPOINT_ACCEPTANCE_CASES||'*';
 const selection=selectionText==='*'?null:new Set(selectionText.split(',').map(name=>name.trim()).filter(Boolean));
 if(selection){assert(selection.size>0,'Empty case selection');for(const name of selection)assert(caseDefinitions.some(definition=>definition.name===name),'Unknown selected case: '+name);}
 report.case_selection={mode:selection?'selected':'all',names:selection?[...selection]:caseDefinitions.map(definition=>definition.name)};
-report.lifecycle_scope={persistence_offline_reopen_engines:['chromium','webkit','firefox'],native_background_engines:['chromium','firefox'],webkit_native_background:'unverified; stock Playwright WebKit forces activity and no supported disable is exposed; prior native beacon proof is not visibility proof'};
+report.lifecycle_scope={persistence_offline_reopen_engines:['chromium','webkit','firefox'],native_background_engines:['chromium'],native_background_driver:'fresh owned Chromium process attached to default context with documented connectOverCDP noDefaults:true; installed driver/browser unchanged',other_engine_native_background:'Firefox and WebKit unverified; earlier forced-focus attempts failed. Prior native beacon proof is not visibility proof'};
 for(const engine of engines)for(const definition of caseDefinitions)if((!selection||selection.has(definition.name))&&(!definition.engineOnly||definition.engineOnly===engine)&&(!definition.engineNames||definition.engineNames.includes(engine)))await execute(engine,definition);
 report.status=report.cases.every(item=>item.status==='PASS')?'PASS':'FAIL';
 await writeFile(resolve(evidence,'summary.json'),JSON.stringify(report,null,2)+'\n',{flag:'wx'});
