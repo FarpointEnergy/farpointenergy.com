@@ -42,6 +42,7 @@ jobs:
           set -o pipefail
           npm install --no-save --ignore-scripts --package-lock=false playwright@1.62.1 2>&1 | tee "$FARPOINT_ACCEPTANCE_EVIDENCE/npm-install.log"
           npx --no-install playwright install --with-deps "$FARPOINT_ACCEPTANCE_ENGINES" 2>&1 | tee "$FARPOINT_ACCEPTANCE_EVIDENCE/browser-install.log"
+          sudo apt-get install --no-install-recommends --yes openbox xdotool 2>&1 | tee "$FARPOINT_ACCEPTANCE_EVIDENCE/window-tools-install.log"
           command -v xvfb-run
       - name: Check evidence fixture and trace parser
         if: matrix.engine == 'chromium'
@@ -51,7 +52,12 @@ jobs:
       - name: Run remaining browser gates
         run: |
           set -o pipefail
-          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" node analytics/tests/browser/check-acceptance.mjs "$FARPOINT_ACCEPTANCE_EVIDENCE" 2>&1 | tee "$FARPOINT_ACCEPTANCE_EVIDENCE/browser.log"
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" bash -c '
+            openbox > "$FARPOINT_ACCEPTANCE_EVIDENCE/window-manager.log" 2>&1 &
+            manager_pid=$!
+            trap "kill $manager_pid 2>/dev/null || true" EXIT
+            node analytics/tests/browser/check-acceptance.mjs "$FARPOINT_ACCEPTANCE_EVIDENCE"
+          ' 2>&1 | tee "$FARPOINT_ACCEPTANCE_EVIDENCE/browser.log"
       - name: Preserve transfer artifact for permanent archive
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

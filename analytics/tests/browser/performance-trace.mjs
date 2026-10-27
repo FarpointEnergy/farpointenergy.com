@@ -8,6 +8,7 @@
  * https://chromedevtools.github.io/devtools-protocol/tot/Tracing/
  * https://github.com/ChromeDevTools/devtools-frontend/blob/main/front_end/models/trace/types/TraceEvents.ts
  * https://github.com/ChromeDevTools/devtools-frontend/blob/main/front_end/models/trace/handlers/SamplesHandler.ts
+ * https://github.com/ChromeDevTools/devtools-frontend/blob/main/front_end/models/cpu_profile/CPUProfileDataModel.ts
  */
 
 export const TRACE_CATEGORIES = Object.freeze([
@@ -56,7 +57,7 @@ function normalizeEvents(rawEvents, issues) {
     } else result.push(event);
   }
   for (const stack of stacks.values()) for (const event of stack) {
-    if(TASK_NAMES.has(event.name)||EXECUTION_NAMES.has(event.name))issues.push({code:'unfinished_execution_event',eventIndex:event.index,pid:event.pid,tid:event.tid});
+    if(TASK_NAMES.has(event.name)||EXECUTION_NAMES.has(event.name))issues.push({code:'unfinished_execution_event',eventIndex:event.index,pid:event.pid,tid:event.tid,tsUs:event.ts});
   }
   return result;
 }
@@ -76,7 +77,7 @@ function collectProfiles(events, mainThreads, issues) {
     } else if(event.name==='ProfileChunk')ensure(event).chunks.push(event);
   }
   const samples=[];
-  let profilesOnMainThread=0,validProfiles=0,invalidProfiles=0;
+  let profilesOnMainThread=0,validProfiles=0,invalidProfiles=0,negativeDeltaSamples=0,reorderedProfiles=0;
   for(const profile of profiles.values()) {
     const head=profile.head;
     // The Profile head has the sampled thread; chunks may be emitted elsewhere.
@@ -121,10 +122,15 @@ function collectProfiles(events, mainThreads, issues) {
     }
     let timestamp=head.ts;
     const decoded=[];
-    for(const entry of entries) {
-      if(!Number.isSafeInteger(entry.nodeId)||!finite(entry.delta)||entry.delta<0){problem('invalid_profile_sample',{chunkEventIndex:entry.chunkEventIndex,sampleIndex:entry.sampleIndex});continue;}
+    for(const [profileSampleIndex,entry] of entries.entries()) {
+      // Chrome's CPUProfileDataModel.convertTimeDeltas accumulates signed
+      // deltas; sortSamples then reorders timestamp/sample pairs together.
+      // Negative deltas represent out-of-order samples. Never clamp them to
+      // zero or drop them: either would shift later evidence to another task.
+      if(!Number.isSafeInteger(entry.nodeId)||!finite(entry.delta)){problem('invalid_profile_sample',{chunkEventIndex:entry.chunkEventIndex,sampleIndex:entry.sampleIndex});continue;}
+      if(entry.delta<0)negativeDeltaSamples++;
       timestamp+=entry.delta;
-      if(!validTimestamp(timestamp)){problem('invalid_profile_sample_clock',{chunkEventIndex:entry.chunkEventIndex,sampleIndex:entry.sampleIndex});continue;}
+      if(!validTimestamp(timestamp)||timestamp<head.ts){problem('invalid_profile_sample_clock',{chunkEventIndex:entry.chunkEventIndex,sampleIndex:entry.sampleIndex});continue;}
       let nodeId=entry.nodeId;const seen=new Set(),frames=[];
       while(nodeId!==undefined && nodeId!==null) {
         if(seen.has(nodeId)){problem('cyclic_profile_stack',{nodeId});break;}
@@ -137,12 +143,17 @@ function collectProfiles(events, mainThreads, issues) {
       }
       decoded.push({kind:'cpu_sample',pid:head.pid,tid:head.tid,ts:timestamp,
         profileEventIndex:head.index,chunkEventIndex:entry.chunkEventIndex,sampleIndex:entry.sampleIndex,
-        sampledNodeId:entry.nodeId,frames});
+        profileSampleIndex,rawDeltaUs:entry.delta,sampledNodeId:entry.nodeId,frames});
     }
     if(invalid)invalidProfiles++;
-    else {validProfiles++;samples.push(...decoded);}
+    else {
+      validProfiles++;
+      if(decoded.some((sample,index)=>index>0&&sample.ts<decoded[index-1].ts))reorderedProfiles++;
+      decoded.sort((a,b)=>a.ts-b.ts||a.profileSampleIndex-b.profileSampleIndex);
+      samples.push(...decoded);
+    }
   }
-  return {samples,profilesOnMainThread,validProfiles,invalidProfiles};
+  return {samples,profilesOnMainThread,validProfiles,invalidProfiles,negativeDeltaSamples,reorderedProfiles};
 }
 
 /**
@@ -176,7 +187,7 @@ export function analyzeTrace(trace, options={}) {
   });
   const events=normalizeEvents(rawEvents,issues);
   // A recording boundary on a non-renderer thread does not invalidate page cost.
-  const relevantIssues=issues.filter(issue=>issue.pid===undefined||mainThreads.has(`${issue.pid}:${issue.tid}`));
+  let relevantIssues=issues.filter(issue=>issue.pid===undefined||mainThreads.has(`${issue.pid}:${issue.tid}`));
   const mainEvents=events.filter(e=>mainThreads.has(threadKey(e)));
   let requiredSpanCoverage=null;
   if(requiredSpan){
@@ -190,6 +201,18 @@ export function analyzeTrace(trace, options={}) {
       if(!validMark(start)||!validMark(end)||threadKey(start)!==threadKey(end)||end.ts<=start.ts)relevantIssues.push({code:'invalid_required_span',startEventIndex:start.index,endEventIndex:end.index});
       else requiredSpanCoverage={...requiredSpanCoverage,complete:true,startUs:start.ts,endUs:end.ts,durationMs:(end.ts-start.ts)/1000};
     }
+  }
+  const postSpanUnfinishedEvents=[];
+  if(requiredSpanCoverage?.complete){
+    const end=requiredSpanCoverage.endMarkers[0];
+    // Stopping recording can cut a later task. A complete same-thread end mark
+    // bounds the requested interaction; retain those later beginnings as
+    // diagnostics. An unfinished event at/before the mark remains UNKNOWN.
+    // Complete containing tasks are never clipped to the measurement marks.
+    relevantIssues=relevantIssues.filter(issue=>{
+      if(issue.code==='unfinished_execution_event'&&issue.pid===end.pid&&issue.tid===end.tid&&validTimestamp(issue.tsUs)&&issue.tsUs>requiredSpanCoverage.endUs){postSpanUnfinishedEvents.push(issue);return false;}
+      return true;
+    });
   }
   const taskCandidates=mainEvents.filter(e=>TASK_NAMES.has(e.name)&&e.ph==='X');
   const tasks=[];
@@ -277,7 +300,7 @@ export function analyzeTrace(trace, options={}) {
   if(expectTracker)for(const task of mainTasks)if(task.durationMs>limitMs&&!task.trackerAttributed&&!task.sampledCoverage.sufficient)relevantIssues.push({code:task.mappedCpuSampleCount?'insufficient_long_task_sample_coverage':'long_task_without_sampled_attribution',eventIndex:task.eventIndex,durationMs:task.durationMs,maxGapMs:task.sampledCoverage.maxGapMs,maxAllowedGapMs:maxSampleGapMs});
   const assessment=relevantIssues.length?'UNKNOWN':trackerLongTasks.length?'FAIL':'PASS';
   return {
-    analysisVersion:2,assessment,trackerBasename,expectTracker,limitMs,maxSampleGapMs,
+    analysisVersion:3,assessment,trackerBasename,expectTracker,limitMs,maxSampleGapMs,
     attributionSupported,trackerObserved,
     attributionMethod:'Conservative enclosing main-thread task, supported by synchronous trace events or sampled CPU stack; not tracker self-time.',
     maxMainTaskMs:mainTasks.length?mainTasks.reduce((maximum,task)=>Math.max(maximum,task.durationMs),0):null,
@@ -286,8 +309,10 @@ export function analyzeTrace(trace, options={}) {
     coverage:{traceEvents:rawEvents.length,mainThreads:[...mainThreads.values()],mainTaskCount:mainTasks.length,
       sourceEvents,trackerSourceEvents,cpuProfiles:profileData.profilesOnMainThread,
       validCpuProfiles:profileData.validProfiles,invalidCpuProfiles:profileData.invalidProfiles,
+      negativeCpuDeltaSamples:profileData.negativeDeltaSamples,reorderedCpuProfiles:profileData.reorderedProfiles,
+      cpuTimestampNormalization:'Signed cumulative deltas from Profile.ts; paired samples stably ordered by timestamp, with raw delta and original sample positions retained.',
       cpuSamples:profileData.samples.length,mappedCpuSamples:mappedSamples,trackerCpuSamples:trackerSamples,
-      uncontainedTrackerEvidence,requireCpuSamples,maxSampleGapMs,requiredSpan:requiredSpanCoverage},
+      uncontainedTrackerEvidence,requireCpuSamples,maxSampleGapMs,requiredSpan:requiredSpanCoverage,postSpanUnfinishedEvents},
     issues:relevantIssues
   };
 }

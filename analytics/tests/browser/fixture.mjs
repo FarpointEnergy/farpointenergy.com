@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {createServer as createHttpsServer} from 'node:https';
 import {appendFile, mkdir, mkdtemp, readFile, writeFile} from 'node:fs/promises';
+import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {createHash, randomUUID} from 'node:crypto';
 import {tmpdir} from 'node:os';
@@ -189,4 +190,55 @@ export async function seedBacklog(page,count){
     }
     return records;
   },count);
+}
+
+// Runs inside a disposable browser context. Uses fresh keys exclusively and
+// progressively fills residual slack, rather than confusing a large failed
+// allocation with an inability to store one small event.
+export function fillStorageQuota(storage=window.localStorage){
+  const maximumAttemptedUtf16Bytes=32*1024*1024,stages=[];
+  let sequence=0,attemptedBytes=0,acceptedBytes=0,inserted=0,full=false;
+  for(const chars of [64*1024,1024,16,1]){
+    const stage={chars,attempts:0,inserted:0,first_sequence:sequence,exception:null};
+    for(let attempt=0;attempt<512;attempt++){
+      const key='synthetic-quota-filler-'+sequence++,value='x'.repeat(chars),bytes=2*(key.length+value.length);
+      if(attemptedBytes+bytes>maximumAttemptedUtf16Bytes)break;
+      if(storage.getItem(key)!==null)throw Error('Quota fixture refuses to overwrite an existing key');
+      attemptedBytes+=bytes;stage.attempts++;
+      try{storage.setItem(key,value);inserted++;stage.inserted++;acceptedBytes+=bytes;}
+      catch(error){stage.exception={name:error.name,message:error.message};if(error.name!=='QuotaExceededError')throw error;break;}
+    }
+    stages.push(stage);
+    if(chars===1&&stage.exception?.name==='QuotaExceededError')full=true;
+  }
+  return {inserted,stages,attempted_utf16_bytes:attemptedBytes,accepted_utf16_bytes:acceptedBytes,maximum_attempted_utf16_bytes:maximumAttemptedUtf16Bytes,smallest_new_item_refused:full};
+}
+
+export function ownedProcessChain(pid,ancestor=process.pid,readStat=id=>readFileSync('/proc/'+id+'/stat','utf8')){
+  const chain=[];
+  for(let depth=0;depth<64;depth++){
+    assert(Number.isSafeInteger(pid)&&pid>0,'Window PID must be a positive integer');
+    assert(!chain.includes(pid),'Process ancestry contains a cycle');chain.push(pid);
+    if(pid===ancestor)return chain;
+    const text=readStat(pid),tail=text.slice(text.lastIndexOf(')')+2).split(' ');
+    assert(text.includes(')')&&tail.length>=2,'Malformed Linux process record');pid=Number(tail[1]);
+  }
+  throw Error('Window process is not a descendant of this test runner');
+}
+
+export async function minimizeOwnedTestWindow(page,observe){
+  // These commands run only in the isolated CI Xvfb display. The active window
+  // must be this runner's child browser and visibly contain the fixture page.
+  const command=args=>execFileSync('xdotool',args,{encoding:'utf8',timeout:5000}).trim();
+  await page.bringToFront();await page.waitForFunction(()=>document.hasFocus());
+  const windowId=command(['getactivewindow']);assert(/^\d+$/.test(windowId));
+  const title=command(['getwindowname',windowId]);assert(title.startsWith('Request a quotation — Farpoint Energy'),'Active window is not the fixture quotation page');
+  const pid=Number(command(['getwindowpid',windowId])),ancestry=ownedProcessChain(pid);
+  await observe('owned_window_before_minimize',{window_id:windowId,title,pid,ancestry});
+  command(['windowminimize',windowId]);
+  return async()=>{
+    assert.equal(Number(command(['getwindowpid',windowId])),pid,'Owned test window changed');ownedProcessChain(pid);
+    command(['windowmap','--sync',windowId,'windowactivate','--sync',windowId]);
+    await observe('owned_window_restored',{window_id:windowId,pid});
+  };
 }

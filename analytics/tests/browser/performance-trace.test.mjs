@@ -266,6 +266,43 @@ test('CPU sample exactly on task boundary belongs to next task',()=>{
   assert.equal(result.mainTasks[0].trackerAttributed,false);assert.equal(result.mainTasks[1].trackerAttributed,true);
 });
 
+test('signed CPU deltas preserve paired sample order and exact chunk provenance',()=>{
+  const result=analyzeTrace([main(),task(1000,4000),profile(1000),
+    chunk([node(1,'tracker.js')],[1,1],[1000,1000]),chunk([],[1,1],[-500,1200])],{requireCpuSamples:true});
+  assert.equal(result.assessment,'PASS');
+  const samples=result.trackerTasks[0].trackerEvidence;
+  assert.deepEqual(samples.map(x=>x.ts),[2000,2500,3000,3700]);
+  assert.deepEqual(samples.map(x=>x.rawDeltaUs),[1000,-500,1000,1200]);
+  assert.deepEqual(samples.map(x=>x.profileSampleIndex),[0,2,1,3]);
+  assert.deepEqual(samples.map(x=>[x.chunkEventIndex,x.sampleIndex]),[[3,0],[4,0],[3,1],[4,1]]);
+  assert.equal(result.coverage.negativeCpuDeltaSamples,1);assert.equal(result.coverage.reorderedCpuProfiles,1);
+});
+
+test('negative delta moves tracker sample back to the true long task instead of clamping or dropping it',()=>{
+  const result=analyzeTrace([main(),task(0,50001),task(50001,1000),profile(),
+    chunk([node(1,'other.js'),node(2,'tracker.js')],[1,2],[50010,-11])],{requireCpuSamples:true});
+  assert.equal(result.assessment,'FAIL');assert.equal(result.maxTrackerTaskMs,50.001);
+  assert.equal(result.trackerLongTasks[0].trackerEvidence[0].ts,49999);
+  assert.equal(result.trackerLongTasks[0].trackerEvidence[0].rawDeltaUs,-11);
+});
+
+test('negative deltas cannot put samples before profile start or rescue malformed clocks',()=>{
+  for(const deltas of [[-1],[100,-101],[Infinity],[NaN],['1'],[Number.MAX_VALUE,Number.MAX_VALUE]]){
+    const events=[main(),task(1000,1000),call(1010,10),profile(1000),chunk([node(1,'tracker.js')],deltas.map(()=>1),deltas)];
+    const result=analyzeTrace(events,{requireCpuSamples:true});
+    assert.equal(result.assessment,'UNKNOWN');assert.equal(result.coverage.invalidCpuProfiles,1);
+  }
+});
+
+test('paired reordering keeps stable equal timestamps and does not fabricate dense coverage',()=>{
+  const events=unrelatedLongTrace([1000,2000,1500,1500]);
+  const result=analyzeTrace(events,{requireCpuSamples:true});
+  assert.equal(result.assessment,'UNKNOWN');assert(names(result).includes('insufficient_long_task_sample_coverage'));
+  assert.deepEqual(result.mainTasks[0].sampledCoverage.samples.map(x=>x.profileSampleIndex),[0,2,3,1]);
+  assert.equal(result.mainTasks[0].sampledCoverage.uniqueSampleTimestamps,3);
+  assert.equal(result.mainTasks[0].sampledCoverage.maxGapMs,88);
+});
+
 test('orphan profile chunks and missing profile ID cannot establish complete attribution',()=>{
   const base=[main(),task(0,1000),call(1,10)];
   assert.equal(analyzeTrace([...base,chunk([node(1,'tracker.js')],[1],[100])]).assessment,'UNKNOWN');
@@ -289,6 +326,35 @@ test('required trace span records ordered start/end marks and their provenance',
   assert.equal(result.coverage.requiredSpan.durationMs,0.999);
   assert.equal(result.coverage.requiredSpan.startMarkers[0].eventIndex,3);
   assert.equal(result.coverage.requiredSpan.endMarkers[0].eventIndex,4);
+});
+
+test('unfinished later tasks remain visible diagnostics after a completed same-thread span',()=>{
+  const events=[...spanBase(),{ph:'B',name:'RunTask',pid:1,tid:10,ts:1100},
+    {ph:'B',name:'FunctionCall',pid:1,tid:10,ts:1101,args:{data:{url:'tracker.js'}}}];
+  const result=analyzeTrace(events,{requiredSpan:span});
+  assert.equal(result.assessment,'PASS');assert.equal(result.issues.length,0);
+  assert.deepEqual(result.coverage.postSpanUnfinishedEvents.map(x=>[x.eventIndex,x.tsUs]),[[5,1100],[6,1101]]);
+  assert.equal(analyzeTrace(events).assessment,'UNKNOWN');
+  assert.equal(analyzeTrace(events,{requiredSpan:span,dataLossOccurred:true}).assessment,'UNKNOWN');
+});
+
+test('unfinished tasks at or crossing span end and other main threads remain UNKNOWN',()=>{
+  for(const ts of [100,999,-1,NaN,undefined]){
+    const events=[...spanBase(),{ph:'B',name:'RunTask',pid:1,tid:10,ts}];
+    const result=analyzeTrace(events,{requiredSpan:span});
+    assert.equal(result.assessment,'UNKNOWN');assert(names(result).includes('unfinished_execution_event'));
+    assert.equal(result.coverage.postSpanUnfinishedEvents.length,0);
+  }
+  const other=[...spanBase(),main(2,20),{ph:'B',name:'RunTask',pid:2,tid:20,ts:1100}];
+  assert.equal(analyzeTrace(other,{requiredSpan:span}).assessment,'UNKNOWN');
+  const missingEnd=spanBase().filter(event=>event.name!==span.end);
+  assert.equal(analyzeTrace([...missingEnd,{ph:'B',name:'RunTask',pid:1,tid:10,ts:1100}],{requiredSpan:span}).assessment,'UNKNOWN');
+});
+
+test('measurement marks never clip complete enclosing long tasks',()=>{
+  const result=analyzeTrace([main(),task(0,60000),call(100,1),mark(span.start,10),mark(span.end,200)],{requiredSpan:span});
+  assert.equal(result.assessment,'FAIL');assert.equal(result.maxTrackerTaskMs,60);
+  assert.equal(result.coverage.requiredSpan.durationMs,0.19);
 });
 
 test('missing, duplicate or wrong-category span marks reject truncated capture',()=>{

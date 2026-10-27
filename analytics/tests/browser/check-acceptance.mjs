@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {createRequire} from 'node:module';
 import {gzipSync} from 'node:zlib';
 import {randomUUID} from 'node:crypto';
-import {createFixture,repositoryRoot,hash,until,outbox,fillMinimal,rejectAndCheckForm,seedBacklog,formSentinel} from './fixture.mjs';
+import {createFixture,repositoryRoot,hash,until,outbox,fillMinimal,rejectAndCheckForm,seedBacklog,fillStorageQuota,minimizeOwnedTestWindow,formSentinel} from './fixture.mjs';
 import {analyzeTrace,TRACE_CATEGORIES} from './performance-trace.mjs';
 
 const require=createRequire(import.meta.url);
@@ -47,12 +47,15 @@ define('persistent-offline-background','BROWSER-01',async env=>{
   const after=await outbox(page);for(const [key,value] of Object.entries(before))assert.equal(after[key],value,'Close/reopen changed an unacknowledged event');
   await env.fixture.save('outbox-after-real-browser-reopen.json',after);
   assert.equal(await page.evaluate(()=>navigator.onLine),true);
-  const other=await reopened.context.newPage();await other.goto('about:blank');await page.bringToFront();
+  await page.bringToFront();
   await page.waitForFunction(()=>document.visibilityState==='visible');
   const backgroundId=await page.evaluate(()=>window.farpointTracker.record('technical_details_open',{location_code:'quotation'}));
-  await other.bringToFront();await page.waitForFunction(()=>document.visibilityState==='hidden');
-  await until(()=>env.fixture.requests.some(record=>record.accept!=='application/json'&&requestHas(record,backgroundId)),'native background beacon received');
-  await page.bringToFront();await page.waitForFunction(()=>document.visibilityState==='visible');
+  const restore=await minimizeOwnedTestWindow(page,env.fixture.observe);
+  try{
+    await page.waitForFunction(()=>document.visibilityState==='hidden');
+    await until(()=>env.fixture.requests.some(record=>record.accept!=='application/json'&&requestHas(record,backgroundId)),'native background beacon received');
+  }finally{await restore();}
+  await page.waitForFunction(()=>document.visibilityState==='visible');
   env.fixture.collectorMode='ack';await reopened.context.setOffline(true);await reopened.context.setOffline(false);
   await pendingZero(page);
   for(const [key,value] of Object.entries(before))assert(allEvents(env.fixture).some(event=>event.event_id===key.slice('farpoint-event-v1:'.length)&&JSON.stringify(event)===value));
@@ -108,11 +111,8 @@ define('injected-storage-denial','BROWSER-03',async env=>{
 define('actual-local-storage-quota','BROWSER-03',async env=>{
   env.fixture.collectorMode='drop';const {context}=await env.session();const page=await context.newPage();await page.goto(env.fixture.origin+'/blank.html');
   const before=await seedBacklog(page,20);await env.fixture.save('pre-quota-unacknowledged-events.json',before);
-  const quota=await page.evaluate(()=>{
-    const value='x'.repeat(64*1024);let inserted=0,exception=null;
-    for(let i=0;i<256;i++){try{localStorage.setItem('synthetic-quota-filler-'+i,value);inserted++;}catch(error){exception={name:error.name,message:error.message};break;}}
-    return {inserted,filler_chars_per_key:value.length,maximum_attempts:256,maximum_attempted_utf16_bytes:256*value.length*2,exception};
-  });assert.equal(quota.exception?.name,'QuotaExceededError');await env.fixture.save('actual-browser-quota.json',quota);
+  const quota=await page.evaluate(fillStorageQuota);
+  await env.fixture.save('actual-browser-quota.json',quota);assert.equal(quota.smallest_new_item_refused,true);
   await page.goto(env.fixture.origin+'/quote.html');await waitEnabled(page);
   const id=await page.evaluate(()=>window.farpointTracker.record('quotation_start'));
   const snapshot=await page.evaluate(()=>JSON.parse(window.farpointTracker.snapshot().body));
@@ -140,7 +140,8 @@ for(const mode of ['javascript-disabled','tracker-blocked','collector-blocked','
   const page=await context.newPage();await page.goto(env.fixture.origin+'/quote.html');
   if(mode==='collector-blocked')await waitEnabled(page);
   if(mode==='tracker-blocked')assert(env.fixture.observedCount('tracker_blocked')>0,'Tracker script block must actually occur');
-  assert.equal(await page.locator('header a[href="mailto:quotes@farpointenergy.com"]').count(),1);
+  const email=page.locator('header a[href^="mailto:quotes@farpointenergy.com"]');assert.equal(await email.count(),1);
+  assert.equal(new URL(await email.getAttribute('href')).pathname,'quotes@farpointenergy.com');
   await fillMinimal(page);env.fixture.providerMode='accepted';await page.locator('#quote-submit').click();
   if(mode==='javascript-disabled'){
     await page.waitForURL('https://formsubmit.co/quotes@farpointenergy.com');
@@ -164,14 +165,17 @@ for(const mode of ['javascript-disabled','tracker-blocked','collector-blocked','
   await env.fixture.save('unavailable-coverage.json',{mode,form_transport:mode==='javascript-disabled'?'native HTML POST intercepted':'enhanced fetch intercepted',form_values_preserved:true,browser_session_attribution_present:Boolean(payload['Farpoint browser ID']&&payload['Farpoint session ID']),delivery_verified:false,coverage_interpretation:mode==='collector-blocked'?'locally queued, remote receipt unavailable':'analytics unavailable; never interpreted as zero visits'});
 },{trackerMode:mode==='startup-exception'?'startup_exception':'normal',expectedPageErrors:mode==='startup-exception'?['SYNTHETIC_TRACKER_STARTUP_EXCEPTION']:[]});
 
-async function tabTo(page,selector,observe){
+async function tabTo(page,selector,observe,key='Tab'){
+  const path=[];
   for(let step=0;step<100;step++){
+    path.push(await page.evaluate(()=>({id:document.activeElement?.id,tag:document.activeElement?.tagName,document_has_focus:document.hasFocus()})));
     if(await page.locator(selector).evaluate(element=>document.activeElement===element)){
       const focus=await page.locator(selector).evaluate(element=>({id:element.id,tag:element.tagName,outline_style:getComputedStyle(element).outlineStyle,outline_width:getComputedStyle(element).outlineWidth}));
-      await observe('keyboard_focus',{selector,...focus});assert.notEqual(focus.outline_style,'none');assert(parseFloat(focus.outline_width)>0);return;
+      await observe('keyboard_focus',{selector,navigation_key:key,steps:step,...focus});assert.notEqual(focus.outline_style,'none');assert(parseFloat(focus.outline_width)>0);return;
     }
-    await page.keyboard.press('Tab');
+    await page.keyboard.press(key);
   }
+  await observe('keyboard_unreachable',{selector,navigation_key:key,focus_path:path});
   throw Error('Keyboard could not reach '+selector);
 }
 define('keyboard-path-and-reduced-motion','UX-02',async env=>{
@@ -206,13 +210,13 @@ define('keyboard-path-and-reduced-motion','UX-02',async env=>{
   }));
   assert(labels.every(item=>item.name.length>0));await env.fixture.save('keyboard-labels.json',labels);
   await page.screenshot({path:resolve(env.fixture.directory,'keyboard-error.png'),fullPage:true});
-  env.fixture.providerMode='accepted';await tabTo(page,'#quote-submit',env.fixture.observe);await page.keyboard.press('Enter');await page.waitForURL('**/thanks.html');
+  env.fixture.providerMode='accepted';await tabTo(page,'#quote-submit',env.fixture.observe,'Shift+Tab');await page.keyboard.press('Enter');await page.waitForURL('**/thanks.html');
   assert.equal(await page.locator('#thanks-heading').textContent(),'Your request was submitted.');
   await tabTo(page,'a[data-spec-email]',env.fixture.observe);assert((await page.locator('a[data-spec-email]').getAttribute('href')).startsWith('mailto:quotes@farpointenergy.com'));
   assert.equal(await page.evaluate(()=>document.getAnimations().length),0);
   await page.emulateMedia({reducedMotion:'no-preference'});assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).scrollBehavior),'smooth');
   await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).scrollBehavior),'auto');
-  await env.fixture.save('keyboard-summary.json',{navigation:'keyboard Tab/Enter/ArrowDown and text input only; no mouse or locator.focus()',form_validation_errors_associated:true,error_status_receives_focus:true,success_reached:true,reduced_motion_scroll:'auto',normal_scroll:'smooth',form_attempts:env.fixture.providerRequests.length});
+  await env.fixture.save('keyboard-summary.json',{navigation:'keyboard Tab/Shift+Tab/Enter/ArrowDown and text input only; no mouse or locator.focus()',form_validation_errors_associated:true,error_status_receives_focus:true,success_reached:true,reduced_motion_scroll:'auto',normal_scroll:'smooth',form_attempts:env.fixture.providerRequests.length});
 });
 
 define('deferred-parser-and-input-nonblocking','PERF-03',async env=>{

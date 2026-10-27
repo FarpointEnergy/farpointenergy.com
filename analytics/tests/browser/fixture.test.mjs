@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {request as httpsRequest} from 'node:https';
 import {mkdir,mkdtemp,readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {classifyRequest,createFixture,hash,until,repositoryRoot} from './fixture.mjs';
+import {classifyRequest,createFixture,fillStorageQuota,ownedProcessChain,hash,until,repositoryRoot} from './fixture.mjs';
 
 const evidenceRoot=process.env.FARPOINT_ACCEPTANCE_EVIDENCE||resolve(repositoryRoot,'..','farpoint-browser-acceptance-unit-evidence');
 await mkdir(evidenceRoot,{recursive:true});
@@ -90,4 +90,29 @@ test('malformed mocked provider JSON is journaled exactly before parse failure',
   const rows=(await readFile(resolve(fixture.directory,'observations.jsonl'),'utf8')).trim().split('\n').map(JSON.parse);
   assert(rows.findIndex(row=>row.kind==='mock_provider_request')<rows.findIndex(row=>row.kind==='route_error'));
   assert(!rows.some(row=>row.kind==='mock_provider_response'));assert.equal(rows.at(-1).kind,'fixture_finished');
+});
+test('quota filler consumes residual slack without overwriting existing event bytes',()=>{
+  const values=new Map([['farpoint-event-v1:existing','{"exact":"original"}']]);
+  const capacity=300000,storage={getItem:key=>values.get(key)??null,setItem(key,value){
+    assert(!values.has(key),'Every filler key must be new');
+    const bytes=[...values].reduce((n,[k,v])=>n+2*(k.length+v.length),0)+2*(key.length+value.length);
+    if(bytes>capacity)throw Object.assign(new Error('Test quota exceeded'),{name:'QuotaExceededError'});
+    values.set(key,value);
+  }};
+  const result=fillStorageQuota(storage);assert.equal(result.smallest_new_item_refused,true);
+  assert(result.stages[0].exception);assert(result.stages.slice(1).some(stage=>stage.inserted>0),'Must consume slack after a large allocation fails');
+  assert.equal(values.get('farpoint-event-v1:existing'),'{"exact":"original"}');
+  assert.throws(()=>storage.setItem('farpoint-event-v1:new','{"synthetic_event":"must remain in memory"}'),{name:'QuotaExceededError'});
+});
+test('quota fixture does not claim full when its bounded allocation budget is exhausted',()=>{
+  const values=new Map();const result=fillStorageQuota({getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value)});
+  assert.equal(result.smallest_new_item_refused,false);assert(result.attempted_utf16_bytes<=32*1024*1024);
+});
+test('window ownership guard permits only descendants of this runner and rejects malformed ancestry',()=>{
+  const parents=new Map([[301,201],[201,101],[900,1],[1,0]]);
+  const read=id=>`${id} (test process (nested)) S ${parents.get(id)} 0 0`;
+  assert.deepEqual(ownedProcessChain(301,101,read),[301,201,101]);
+  assert.throws(()=>ownedProcessChain(900,101,read));
+  assert.throws(()=>ownedProcessChain(301,101,()=> 'malformed process record'));
+  assert.throws(()=>ownedProcessChain(301,101,id=>`${id} (cycle) S ${id} 0 0`));
 });
