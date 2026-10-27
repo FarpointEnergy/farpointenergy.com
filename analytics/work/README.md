@@ -24,6 +24,7 @@ visitor-IP provenance, independent runtime recovery or production readiness.
 | `portable-runtime.mjs` | UTF-8, base64 and SHA-256 compatibility for Functions V8, which lacks browser Web APIs. UUID entropy comes from the OS. |
 | `archive-closure.mjs` / `evidence_archive.py` | Verify all remote manifest files, package every retained attempt and connector envelope, verify a downloaded ZIP, restore fresh files and replay archived numerical analysis before creating a separate closure record. |
 | `network-stage.mjs` / `network_stage.py` | Restore the pinned IPtoASN dataset and approved IP-proof artifacts, automatically generate offline network observations, and require private archive readback and offline regeneration before analysis. |
+| `company-stage.mjs` / `company_stage.py` | Optional, disabled-by-default offline company context with exact private dependency/source bindings, archive readback and replay. Compose beneath the mandatory network stage; see [COMPANY.md](COMPANY.md). No purchase, approval or activation is implied. |
 | `work.bundle.js` | Mechanically generated, self-contained Work entry point; source hash in header. Never hand-edit it. |
 
 The collector adapter follows **both** receipts and rejection-metadata

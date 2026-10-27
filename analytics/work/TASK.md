@@ -61,6 +61,14 @@ hosted export, private archive and unattended-permission gates pass.
    bypass it. Unverified source IPs remain unavailable observations. Network
    organizations do not become possible employers. Keep every stage attempt
    beneath this invocation's evidence root for the final closure.
+   Optional company context is disabled unless explicitly configured with the
+   exact private dataset, terms, owner-approval, reader and source bindings in
+   [COMPANY.md](COMPANY.md). If enabled, compose `createCompanyAnalyzer` beneath
+   the mandatory network callback as documented there; require its own private
+   upload/download, fresh restore and archived-source replay before analysis.
+   A code test or synthetic approval never activates the provider. Missing
+   required company configuration or failed stage verification blocks an
+   enabled run. Company-disabled runs retain the existing callback unchanged.
 3. If the run is incomplete, report the actual source failure. Do not turn a
    partial export into zero traffic or silently omit failed objects. A raw
    archive can be complete while its report authority is `needs_review`.
