@@ -37,7 +37,9 @@ export async function verifyStore01GithubOidc(request,env,run,{fetchJwks=fetch,n
     const expected={iss:STORE01_ISSUER,aud:'urn:farpoint:store01:'+run.id,repository:STORE01_REPOSITORY,repository_owner:'FarpointEnergy',repository_id:repositoryId,repository_owner_id:ownerId,ref:STORE01_REF,ref_type:'branch',workflow_ref:STORE01_WORKFLOW,workflow_sha:commit,sha:commit,run_id:runId,run_attempt:'1',event_name:'push',runner_environment:'github-hosted'};
     if(Object.entries(expected).some(([k,v])=>claims[k]!==v))return false;
     const subjects=['repo:'+STORE01_REPOSITORY+':ref:'+STORE01_REF,'repo:FarpointEnergy@'+ownerId+'/farpointenergy.com@'+repositoryId+':ref:'+STORE01_REF];
-    if(!subjects.includes(claims.sub)||claims.environment!==undefined||claims.job_workflow_ref!==undefined||claims.job_workflow_sha!==undefined||claims.head_ref!==''||claims.base_ref!=='')return false;
+    const jobWorkflowAbsent=claims.job_workflow_ref===undefined&&claims.job_workflow_sha===undefined;
+    const jobWorkflowMatches=claims.job_workflow_ref===STORE01_WORKFLOW&&claims.job_workflow_sha===commit;
+    if(!subjects.includes(claims.sub)||claims.environment!==undefined||(!jobWorkflowAbsent&&!jobWorkflowMatches)||claims.head_ref!==''||claims.base_ref!=='')return false;
     const at=Math.floor(now()/1000);
     if(!['iat','nbf','exp'].every(k=>Number.isSafeInteger(claims[k]))||claims.iat>at+30||claims.nbf>at+30||claims.exp<=at||claims.exp<=claims.iat||claims.exp-claims.iat>600||at-claims.iat>600||claims.nbf>claims.exp||typeof claims.jti!=='string'||!claims.jti||claims.jti.length>200)return false;
     if(new Date(now()).toISOString().slice(0,10)!==run.day)return false;

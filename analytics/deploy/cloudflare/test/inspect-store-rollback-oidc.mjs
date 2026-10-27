@@ -20,6 +20,7 @@ try{
   result.claim_equalities=Object.fromEntries(Object.entries(expected).map(([key,value])=>[key,{present:Object.hasOwn(claims,key),is_string:typeof claims[key]==='string',matches:claims[key]===value}]));
   result.header={keys:Object.keys(header).sort(),alg_RS256:header.alg==='RS256',typ_JWT:header.typ==='JWT',kid_nonempty_string:typeof header.kid==='string'&&header.kid.length>0};
   result.optional_claims=Object.fromEntries(['head_ref','base_ref','environment','job_workflow_ref','job_workflow_sha'].map(key=>[key,{present:Object.hasOwn(claims,key),empty_string:claims[key]==='',is_null:claims[key]===null}]));
+  result.job_workflow_matches={ref:claims.job_workflow_ref===STORE01_WORKFLOW,sha:claims.job_workflow_sha===process.env.GITHUB_SHA};
   result.subject_matches={legacy:claims.sub==='repo:'+STORE01_REPOSITORY+':ref:'+STORE01_REF,immutable:claims.sub==='repo:FarpointEnergy@328540327/farpointenergy.com@1367815671:ref:'+STORE01_REF};
   const at=Math.floor(Date.now()/1000);result.time={all_safe_integers:['iat','nbf','exp'].every(k=>Number.isSafeInteger(claims[k])),lifetime_seconds:Number.isSafeInteger(claims.exp)&&Number.isSafeInteger(claims.iat)?claims.exp-claims.iat:null,age_seconds:Number.isSafeInteger(claims.iat)?at-claims.iat:null,not_before_delta_seconds:Number.isSafeInteger(claims.nbf)?claims.nbf-at:null,not_expired:Number.isSafeInteger(claims.exp)&&claims.exp>at,jti_present:typeof claims.jti==='string'&&claims.jti.length>0};
   await save('safe-claim-comparisons.json',result);
