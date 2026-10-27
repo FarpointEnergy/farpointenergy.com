@@ -23,6 +23,7 @@ visitor-IP provenance, independent runtime recovery or production readiness.
 | `host-bridge.mjs` / `local_bridge.py` | Private create-only files and standard-library Python via hidden stdin. No credentials in shell arguments or files. |
 | `portable-runtime.mjs` | UTF-8, base64 and SHA-256 compatibility for Functions V8, which lacks browser Web APIs. UUID entropy comes from the OS. |
 | `archive-closure.mjs` / `evidence_archive.py` | Verify all remote manifest files, package every retained attempt and connector envelope, verify a downloaded ZIP, restore fresh files and replay archived numerical analysis before creating a separate closure record. |
+| `network-stage.mjs` / `network_stage.py` | Restore the pinned IPtoASN dataset and approved IP-proof artifacts, automatically generate offline network observations, and require private archive readback and offline regeneration before analysis. |
 | `work.bundle.js` | Mechanically generated, self-contained Work entry point; source hash in header. Never hand-edit it. |
 
 The collector adapter follows **both** receipts and rejection-metadata
@@ -52,6 +53,8 @@ owner_email: actual Drive folder owner
 gmail_link_id: connected Farpoint Gmail account
 mailbox: exact mailbox identity used by existing captures
 mail_query: versioned query covering the RFQ route, including in:anywhere
+network_dataset_artifact: exact private Drive ID, ZIP size/hash, manifest hash and selected dataset/provenance/license member paths
+network_provenance_artifacts: exact private Drive IDs, sizes/hashes and approved evidence reference names
 ```
 
 Load the **already generated** bundle with `exec_command` and keep its output in
@@ -69,8 +72,13 @@ const classifier = api.createFrozenClassifier({
 });
 const adapters = api.createNativeAdapters({
   tools, local, settings, classify: classifier,
-  analyze: input => local.analyze({...input, codeCommit: reviewedCommit,
-                                  companyObservations: frozenCompanyObservations})
+  analyze: api.createNetworkAnalyzer({
+    tools, local, settings, privateRoot, repositoryRoot,
+    codeCommit: reviewedCommit,
+    datasetArtifact: settings.network_dataset_artifact,
+    provenanceArtifacts: settings.network_provenance_artifacts,
+    companyObservations: frozenCompanyObservations
+  })
 });
 const result = await api.runLeadPipeline({runId, config, ...adapters});
 // Print only result status, nonsecret error categories and approved report links.
@@ -83,6 +91,33 @@ versioned observations. The runner overrides source-completeness booleans from
 actual operations and freezes the observation cutoff after capture. The Python
 archive retains exact analysis inputs/source and timezone bytes. It explicitly
 does not claim a complete portable runtime bundle.
+
+The network callback is required in the current task recipe. It restores the
+hash-pinned dataset ZIP through authenticated Drive download even on a fresh
+host; Python verifies the full ZIP and selected manifest members. Its settings
+use `manifest_name`, `expected_manifest_sha256`, `dataset_member`,
+`provenance_member`, and `evidence_members` in addition to the source file's
+`id`, `bytes`, and `sha256`. Each IP-proof artifact adds a `ref` to its exact
+Drive `id`, `bytes`, and `sha256`. Every reference allowed by
+`config.verified_ip_provenances` must be backed by these retained proof bytes;
+caller-supplied identity labels are insufficient.
+
+Receipt bytes are independently hash-checked and staged locally. The existing
+offline `network-context` CLI freezes the dataset, receipt/config inputs, source,
+license evidence and outputs. A new ZIP is uploaded by local path, downloaded,
+fully hash-verified, restored and regenerated offline before observations reach
+analysis. The dataset itself never travels through the V8 RPC. Missing datasets,
+bad proofs, integrity failures, failed uploads and replay mismatches fail the
+analysis callback and preserve failure evidence; they cannot quietly become an
+empty enrichment result. Valid unverified-IP or uncovered-network cases remain
+explicitly unavailable. Keep the entire `privateRoot` inside the later closure
+evidence root so every attempt and supporting file is retained.
+
+This stage supplies network organization only. It does not implement an
+IP-to-company provider or Firecrawl research stage, and does not close the
+controlled corporate/noncorporate usefulness test. All employer fields remain
+null. Existing separately approved company observations may still be supplied
+through the documented input contract without changing these network results.
 
 The host bridge uses a one-operation process with terminal echo and canonical
 line limits disabled, so large payloads travel through hidden stdin. The process

@@ -1,6 +1,6 @@
 # Versioned Work task — archive and RFQ report
 
-Task definition version: `farpoint-work-task/1.0.0`. This file is an executable
+Task definition version: `farpoint-work-task/1.1.0`. This file is an executable
 Work-agent recipe, not an active schedule. The agent uses the existing connected
 tools and the checked-in deterministic runner. Do not activate it before the
 hosted export, private archive and unattended-permission gates pass.
@@ -20,6 +20,17 @@ hosted export, private archive and unattended-permission gates pass.
    versioned job identity and correct UTC window derived from archived New York
    timezone data. Unreviewed messages become explicit unresolved candidates in
    this first archived diagnostic run.
+   The analysis callback must be `createNetworkAnalyzer`, with the pinned
+   owner-private dataset artifact and separately approved IP-provenance
+   artifacts from private settings. It automatically restores the dataset,
+   validates exact receipt/proof bytes, executes offline IPtoASN, and freezes
+   network observations before calling the existing numerical analyzer.
+   Require its archive upload, actual download, fresh restoration and offline
+   regeneration checks. A missing or failed stage is a failed analysis; do not
+   substitute `companyObservations: []` or call `local.analyze` directly to
+   bypass it. Unverified source IPs remain unavailable observations. Network
+   organizations do not become possible employers. Keep every stage attempt
+   beneath this invocation's evidence root for the final closure.
 3. If the run is incomplete, report the actual source failure. Do not turn a
    partial export into zero traffic or silently omit failed objects. A raw
    archive can be complete while its report authority is `needs_review`.
