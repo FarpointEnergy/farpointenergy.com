@@ -7,6 +7,11 @@ on:
       - '.github/workflows/browser-acceptance.yml'
       - 'analytics/tests/browser/**'
   workflow_dispatch:
+    inputs:
+      case_names:
+        description: 'Comma-separated cases, or * for all; default runs the remaining lifecycle cases.'
+        required: false
+        default: 'persistent-offline-close-reopen,native-window-background'
 
 permissions:
   contents: read
@@ -23,6 +28,7 @@ jobs:
     env:
       FARPOINT_ACCEPTANCE_ENGINES: ${{ matrix.engine }}
       FARPOINT_ACCEPTANCE_HEADED: '1'
+      FARPOINT_ACCEPTANCE_CASES: ${{ inputs.case_names || 'persistent-offline-close-reopen,native-window-background' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

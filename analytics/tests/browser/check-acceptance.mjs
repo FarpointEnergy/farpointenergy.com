@@ -28,8 +28,7 @@ const requestHas=(record,id)=>JSON.parse(Buffer.from(record.body_base64,'base64'
 const waitEnabled=page=>page.waitForFunction(()=>window.farpointTracker?.enabled===true);
 const pendingZero=page=>page.waitForFunction(()=>window.farpointTracker.pendingCount()===0,{},{timeout:45000});
 
-define('persistent-offline-background','BROWSER-01',async env=>{
-  assert(headed,'Actual foreground/background test requires headed browser under Xvfb');
+define('persistent-offline-close-reopen','BROWSER-01',async env=>{
   const profile=await mkdtemp(resolve(tmpdir(),'farpoint-owned-profile-'));
   const first=await env.session({profile});let page=await first.context.newPage();
   await page.goto(env.fixture.origin+'/quote.html');await waitEnabled(page);await pendingZero(page);
@@ -47,23 +46,46 @@ define('persistent-offline-background','BROWSER-01',async env=>{
   const after=await outbox(page);for(const [key,value] of Object.entries(before))assert.equal(after[key],value,'Close/reopen changed an unacknowledged event');
   await env.fixture.save('outbox-after-real-browser-reopen.json',after);
   assert.equal(await page.evaluate(()=>navigator.onLine),true);
+  env.fixture.collectorMode='ack';await reopened.context.setOffline(true);await reopened.context.setOffline(false);
+  await pendingZero(page);
+  for(const [key,value] of Object.entries(before))assert(allEvents(env.fixture).some(event=>event.event_id===key.slice('farpoint-event-v1:'.length)&&JSON.stringify(event)===value));
+  const lifecycle=await page.evaluate(()=>window.__acceptanceLifecycle);assert(lifecycle.some(row=>row.event==='online'));
+  await env.fixture.save('close-reopen-reconciliation.json',{offline_event_id:offlineId,events:lifecycle,all_original_event_bytes_preserved:true,remaining_pending:await page.evaluate(()=>window.farpointTracker.pendingCount()),native_background_exercised:false});
+});
+
+define('native-window-background','BROWSER-01',async env=>{
+  assert(headed,'Actual foreground/background test requires headed browser under Xvfb');
+  const browserOptions=env.engine==='firefox'?{firefoxUserPrefs:{'focusmanager.testmode':false}}:{};
+  const {context}=await env.session({browserOptions});const page=await context.newPage();
+  await page.goto(env.fixture.origin+'/quote.html');await waitEnabled(page);await pendingZero(page);
+  if(env.engine==='chromium'){
+    const client=await context.newCDPSession(page);
+    await client.send('Emulation.setFocusEmulationEnabled',{enabled:false});
+    await env.fixture.observe('automation_focus_override_removed',{engine:env.engine,method:'documented CDP Emulation.setFocusEmulationEnabled false; session remains attached until context closes'});
+  }else await env.fixture.observe('automation_focus_override_removed',{engine:env.engine,method:'documented launch firefoxUserPrefs focusmanager.testmode false'});
   await page.bringToFront();
-  await page.waitForFunction(()=>document.visibilityState==='visible');
+  await page.waitForFunction(()=>document.visibilityState==='visible',null,{polling:100});
+  env.fixture.collectorMode='drop';
   const backgroundId=await page.evaluate(()=>window.farpointTracker.record('technical_details_open',{location_code:'quotation'}));
+  const before=await outbox(page);await env.fixture.save('background-outbox-before.json',before);
   const restore=await minimizeOwnedTestWindow(page,env.fixture.observe);
   try{
-    await page.waitForFunction(()=>document.visibilityState==='hidden');
+    await page.waitForFunction(()=>document.visibilityState==='hidden',null,{polling:100});
     await until(()=>env.fixture.requests.some(record=>record.accept!=='application/json'&&requestHas(record,backgroundId)),'native background beacon received');
   }finally{await restore();}
-  await page.waitForFunction(()=>document.visibilityState==='visible');
-  env.fixture.collectorMode='ack';await reopened.context.setOffline(true);await reopened.context.setOffline(false);
+  await page.waitForFunction(()=>document.visibilityState==='visible',null,{polling:100});
+  const afterBeacon=await outbox(page);assert.equal(afterBeacon['farpoint-event-v1:'+backgroundId],before['farpoint-event-v1:'+backgroundId]);
+  await env.fixture.save('background-outbox-after-beacon.json',afterBeacon);
+  env.fixture.collectorMode='ack';await context.setOffline(true);await context.setOffline(false);
   await pendingZero(page);
   for(const [key,value] of Object.entries(before))assert(allEvents(env.fixture).some(event=>event.event_id===key.slice('farpoint-event-v1:'.length)&&JSON.stringify(event)===value));
   const lifecycle=await page.evaluate(()=>window.__acceptanceLifecycle);
   assert(lifecycle.some(row=>row.event==='visibilitychange'&&row.visibility==='hidden'));
+  assert(lifecycle.some(row=>row.event==='visibilitychange'&&row.visibility==='visible'));
   assert(lifecycle.some(row=>row.event==='online'));
-  await env.fixture.save('actual-lifecycle.json',{offline_event_id:offlineId,background_event_id:backgroundId,events:lifecycle,all_original_event_bytes_preserved:true});
-});
+  assert(env.fixture.requests.some(record=>record.accept==='application/json'&&record.acknowledged&&requestHas(record,backgroundId)),'Background event must receive a later hash-bound fetch ACK');
+  await env.fixture.save('actual-lifecycle.json',{background_event_id:backgroundId,events:lifecycle,all_original_event_bytes_preserved:true,beacon_did_not_clear_outbox:true,later_fetch_acknowledged:true,remaining_pending:await page.evaluate(()=>window.farpointTracker.pendingCount())});
+},{engineNames:['chromium','firefox']});
 
 define('concurrent-tabs-out-of-order-acks','BROWSER-02',async env=>{
   const {context}=await env.session();const a=await context.newPage(),b=await context.newPage();
@@ -287,12 +309,12 @@ async function execute(engine,definition){
   const name=engine+'-'+definition.name;console.log('Checking',name);
   const fixture=await createFixture({evidence,name,enabled:definition.enabled??true,trackerMode:definition.trackerMode||'normal'});
   const sessions=[],pageErrors=[],pending=[];let result={engine,name,gate:definition.gate,status:'RUNNING'},failure;
-  async function session({profile,contextOptions={},routeOptions={}}={}){
+  async function session({profile,contextOptions={},routeOptions={},browserOptions={}}={}){
     const options={serviceWorkers:'block',ignoreHTTPSErrors:true,viewport:{width:1366,height:900},...contextOptions};
     let browser,context;
     try{
-      if(profile){context=await playwright[engine].launchPersistentContext(profile,{headless:!headed,timeout:20000,...options});browser=context.browser();}
-      else{browser=await playwright[engine].launch({headless:!headed,timeout:20000});context=await bounded(browser.newContext(options),15000,'context creation');}
+      if(profile){context=await playwright[engine].launchPersistentContext(profile,{headless:!headed,timeout:20000,...options,...browserOptions});browser=context.browser();}
+      else{browser=await playwright[engine].launch({headless:!headed,timeout:20000,...browserOptions});context=await bounded(browser.newContext(options),15000,'context creation');}
     }catch(error){if(browser)await bounded(browser.close(),5000,'failed context cleanup').catch(()=>{});throw error;}
     let closed=false;const record={browser,context,async close(){
       if(closed)return;closed=true;const failures=[];
@@ -330,7 +352,12 @@ async function execute(engine,definition){
 }
 const gzipBytes=gzipSync(await readFile(resolve(repositoryRoot,'tracker.js'))).length;report.tracker_gzip_bytes=gzipBytes;
 report.cases.push({name:'tracker-gzip-budget',engine:'source',gate:'PERF-03',status:gzipBytes<=15*1024?'PASS':'FAIL',gzip_bytes:gzipBytes,limit_bytes:15*1024});
-for(const engine of engines)for(const definition of caseDefinitions)if(!definition.engineOnly||definition.engineOnly===engine)await execute(engine,definition);
+const selectionText=process.env.FARPOINT_ACCEPTANCE_CASES||'*';
+const selection=selectionText==='*'?null:new Set(selectionText.split(',').map(name=>name.trim()).filter(Boolean));
+if(selection){assert(selection.size>0,'Empty case selection');for(const name of selection)assert(caseDefinitions.some(definition=>definition.name===name),'Unknown selected case: '+name);}
+report.case_selection={mode:selection?'selected':'all',names:selection?[...selection]:caseDefinitions.map(definition=>definition.name)};
+report.lifecycle_scope={persistence_offline_reopen_engines:['chromium','webkit','firefox'],native_background_engines:['chromium','firefox'],webkit_native_background:'unverified; stock Playwright WebKit forces activity and no supported disable is exposed; prior native beacon proof is not visibility proof'};
+for(const engine of engines)for(const definition of caseDefinitions)if((!selection||selection.has(definition.name))&&(!definition.engineOnly||definition.engineOnly===engine)&&(!definition.engineNames||definition.engineNames.includes(engine)))await execute(engine,definition);
 report.status=report.cases.every(item=>item.status==='PASS')?'PASS':'FAIL';
 await writeFile(resolve(evidence,'summary.json'),JSON.stringify(report,null,2)+'\n',{flag:'wx'});
 console.log(JSON.stringify({evidence,...report},null,2));if(report.status!=='PASS')process.exitCode=1;

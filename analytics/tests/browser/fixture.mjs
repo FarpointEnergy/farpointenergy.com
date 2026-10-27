@@ -232,7 +232,8 @@ export async function minimizeOwnedTestWindow(page,observe){
   const command=args=>execFileSync('xdotool',args,{encoding:'utf8',timeout:5000}).trim();
   await page.bringToFront();await page.waitForFunction(()=>document.hasFocus());
   const windowId=command(['getactivewindow']);assert(/^\d+$/.test(windowId));
-  const title=command(['getwindowname',windowId]);assert(title.startsWith('Request a quotation — Farpoint Energy'),'Active window is not the fixture quotation page');
+  const title=command(['getwindowname',windowId]);await observe('active_window_title_observed',{window_id:windowId,title});
+  assert(title.startsWith('Request a quotation — Farpoint Energy'),'Active window is not the fixture quotation page');
   const pid=Number(command(['getwindowpid',windowId])),ancestry=ownedProcessChain(pid);
   await observe('owned_window_before_minimize',{window_id:windowId,title,pid,ancestry});
   command(['windowminimize',windowId]);
