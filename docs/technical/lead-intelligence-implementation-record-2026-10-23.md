@@ -51,7 +51,7 @@ The authenticated plugin became available and the candidate access policy was co
 
 One `candidate_storage_check` invocation reported PASS for `hosted_R2_create_only_collision_and_readback`: two original records plus a separate collision-test copy remained retained, a conditional overwrite of the copy was refused, and all three object hashes matched. Each object was 682 bytes. The result explicitly returned `retention_lock_verified: false`.
 
-The exact safe response and scope were saved in the new [hosted-check evidence document](https://docs.google.com/document/d/1IUcpF4G0gZZ0fFhFotl3QdV6FS2V6pvjSi921jiVKQU/edit?usp=drivesdk) in 07 Technical. This proves a hosted storage primitive and authenticated tool execution; it does not pass scheduled archive/report/watchdog acceptance or certify indefinite retention, IP provenance or production readiness.
+The exact safe response and scope were saved in a private hosted-check evidence document in 07 Technical. This proves a hosted storage primitive and authenticated tool execution; it does not pass scheduled archive/report/watchdog acceptance or certify indefinite retention, IP provenance or production readiness. Its locator is omitted from current public source; the original evidence and Git history remain preserved.
 
 ## Review corrections and retained history
 
