@@ -1,0 +1,27 @@
+name: Farpoint one-run synthetic store rollback proof
+on:
+  push:
+    branches: [codex/lead-intelligence-design-v1]
+permissions:
+  contents: read
+jobs:
+  store-proof:
+    if: contains(github.event.head_commit.message, '[farpoint-store-go]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: One authenticated fixed synthetic operation after arming window
+        env:
+          SYNTHETIC_RUN: 23e02fc0-d75b-4f62-af23-7cb8b62578a8
+        run: node analytics/deploy/cloudflare/test/check-store-rollback-oidc.mjs "$SYNTHETIC_RUN" "$RUNNER_TEMP/store01-safe-evidence"
+      - name: Preserve safe synthetic proof without credentials
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: store01-safe-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/store01-safe-evidence
+          if-no-files-found: error
