@@ -1,0 +1,14 @@
+{
+  "name": "farpoint-lead-collector-candidate",
+  "main": "REPLACE_WITH_GENERATED_WORKER_PATH",
+  "compatibility_date": "2026-10-26",
+  "workers_dev": true,
+  "preview_urls": false,
+  "r2_buckets": [
+    {"binding": "BUCKET", "bucket_name": "REPLACE_WITH_PRIVATE_CANDIDATE_BUCKET"}
+  ],
+  "vars": {
+    "CLOUDFLARE_DIRECT_IP_VERIFIED": "0",
+    "CLOUDFLARE_VERIFIED_IP_HOSTNAME": ""
+  }
+}
