@@ -64,8 +64,26 @@ export function createNativeAdapters({tools,local,settings,classify,analyze,now=
       try{
         const value=workToolValue(raw);nativeEnsure((value.id??value.message_id)===id,'mail_message_mismatch');
         const bytes=nativeRaw(value);artifacts.push({name:'message.eml',bytes});
+        // Gmail's raw representation may omit internalDate. Retrieve provider
+        // metadata for the same immutable message; never substitute the sender's
+        // Date header or an inferred timestamp for inbox receipt time.
+        let internalDate=value.internal_date??value.internalDate;
+        let metadataArtifact=null;
+        if(!/^[0-9]+$/.test(String(internalDate??''))){
+          const metadataRaw=await call('mcp__codex_apps__gmail_read_email',{link_id:settings.gmail_link_id,message_id:id,format:'metadata'});
+          metadataArtifact={name:'metadata-connector.json',bytes:workJSON(metadataRaw)};
+          artifacts.push(metadataArtifact);
+          const metadata=workToolValue(metadataRaw);
+          nativeEnsure((metadata.id??metadata.message_id)===id,'mail_metadata_message_mismatch');
+          const rawThread=value.thread_id??value.threadId,metadataThread=metadata.thread_id??metadata.threadId;
+          nativeEnsure(!rawThread||!metadataThread||rawThread===metadataThread,'mail_metadata_thread_mismatch');
+          internalDate=metadata.internal_date??metadata.internalDate;
+          nativeEnsure(/^[0-9]+$/.test(String(internalDate??'')),'missing_gmail_internal_date');
+        }
         // RFC2822 bytes include original MIME attachments and duplicate headers.
-        return await local.normalizeMail({raw:bytes,connector:raw,message_id:id,mailbox:settings.mailbox,captured_at:now(),internal_date:value.internal_date??value.internalDate});
+        const normalized=await local.normalizeMail({raw:bytes,connector:raw,message_id:id,mailbox:settings.mailbox,captured_at:now(),internal_date:internalDate});
+        if(metadataArtifact)normalized.artifacts.push(metadataArtifact);
+        return normalized;
       }catch(error){return {complete:false,reason:error instanceof WorkFailure?error.code:'mail_normalization_failed',capture:null,artifacts};}
     }
   };
