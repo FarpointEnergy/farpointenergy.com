@@ -5,6 +5,24 @@ on:
 permissions:
   contents: read
 jobs:
+  identity-diagnostic:
+    if: contains(github.event.head_commit.message, '[farpoint-store-diagnose]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Read-only OIDC claim comparisons without credentials or collector requests
+        run: node analytics/deploy/cloudflare/test/inspect-store-rollback-oidc.mjs 23e02fc0-d75b-4f62-af23-7cb8b62578a8 "$RUNNER_TEMP/store01-safe-diagnostics"
+      - name: Preserve safe identity comparisons
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: store01-safe-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/store01-safe-diagnostics
+          if-no-files-found: error
   store-proof:
     if: contains(github.event.head_commit.message, '[farpoint-store-go]')
     runs-on: ubuntu-24.04
