@@ -95,6 +95,20 @@ test('gated synthetic direct-edge fixtures accept well-formed IPv4 and IPv6', as
     assert.deepEqual(record.source_ip, {status:'verified', provenance:'cloudflare_direct_edge_v1', address:expected});
   }
 });
+test('temporary self-origin intake gate is exact, default-off and preserves existing production origins',async()=>{
+  const selfOrigin='https://'+host;
+  const on={...enabled(),CLOUDFLARE_SYNTHETIC_IP_PROBE:'1',CLOUDFLARE_SYNTHETIC_IP_PROBE_HOSTNAME:host,CLOUDFLARE_SYNTHETIC_INTAKE_PROOF:'1'};
+  for(const flag of [undefined,null,true,1,'true','0']){
+    const env={...on,BUCKET:new Bucket(),CLOUDFLARE_SYNTHETIC_INTAKE_PROOF:flag};assert.equal((await worker.fetch(request({headers:{Origin:selfOrigin}}),env)).status,403);
+  }
+  for(const delta of [{CLOUDFLARE_SYNTHETIC_IP_PROBE:'0'},{CLOUDFLARE_SYNTHETIC_IP_PROBE_HOSTNAME:'other.example.invalid'}])assert.equal((await worker.fetch(request({headers:{Origin:selfOrigin}}),{...on,BUCKET:new Bucket(),...delta})).status,403);
+  for(const foreign of ['https://other.example.invalid',selfOrigin+':444','http://'+host])assert.equal((await worker.fetch(request({headers:{Origin:foreign}}),{...on,BUCKET:new Bucket()})).status,403);
+  assert.equal((await worker.fetch(request({hostname:'other.example.invalid',headers:{Origin:selfOrigin}}),{...on,BUCKET:new Bucket()})).status,403);
+  const body=JSON.stringify({schema_version:1,tracker_version:'1.0.0',events:[{schema_version:1,event_id:'syn_intake_gate',sequence:0,event_name:'page_view',page_id:'home',tracker_version:'1.0.0',synthetic:true}]});
+  const {record,ack}=await receipt(request({body,headers:{Origin:selfOrigin,'CF-Connecting-IP':'203.0.113.6'}}),on);assert.equal(record.source_ip.status,'verified');assert.equal(record.origin,selfOrigin);assert.equal(ack.receipt_body_sha256,digest(new TextEncoder().encode(body)));
+  for(const production of ['https://farpointenergy.com','https://www.farpointenergy.com'])assert.equal((await worker.fetch(request({headers:{Origin:production}}),{...on,BUCKET:new Bucket()})).status,202);
+  assert.equal(module.syntheticIntakeProofEnabled(new Request('http://'+host+'/v1/events'),on),false);assert.equal(module.syntheticIntakeProofEnabled(new Request(selfOrigin+':444/v1/events'),on),false);
+});
 
 test('ordinary forwarded headers and payload addresses never override the selected edge value', async () => {
   const {record} = await receipt(request({headers:{'CF-Connecting-IP':'203.0.113.4','X-Forwarded-For':'198.51.100.99, 192.0.2.4','X-Real-IP':'198.51.100.2','True-Client-IP':'192.0.2.99'},body:'{"source_ip":"192.0.2.8"}'}), enabled());

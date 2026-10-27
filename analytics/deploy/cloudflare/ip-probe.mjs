@@ -2,6 +2,10 @@
 // explicitly enabled synthetic IP-provenance test. This is not an exporter.
 export const SYNTHETIC_IP_PROBE_PATH = '/__synthetic/ip-proof';
 export const SYNTHETIC_IP_PROBE_MAX_BYTES = 4096;
+export function syntheticIntakeProofEnabled(request,env){
+  const url=new URL(request.url),host=env.CLOUDFLARE_SYNTHETIC_IP_PROBE_HOSTNAME;
+  return env.CLOUDFLARE_SYNTHETIC_INTAKE_PROOF==='1'&&env.CLOUDFLARE_SYNTHETIC_IP_PROBE==='1'&&typeof host==='string'&&!!host&&url.hostname===host&&url.protocol==='https:'&&!url.port;
+}
 const IP_PROBE_HEADERS = {
   'Cache-Control': 'private, no-store, max-age=0',
   'Pragma': 'no-cache',
@@ -23,6 +27,8 @@ const IP_PROBE_HTML = String.raw`<!doctype html>
 <p>Run once on Wi-Fi, then switch this device to cellular or a phone hotspot and run again. An unavailable IPv6 connection is recorded as a test limitation. Different services can see different routes, so a saved test does not by itself verify an IP address.</p>
 <label for="network-label">Current connection<select id="network-label"><option value="unspecified">Current connection (unspecified)</option value="wifi">Wi-Fi</option><option value="cellular">Cellular or phone hotspot</option><option value="other">Other connection</option></select></label>
 <button id="automatic-probe" type="button">Run and save network test</button>
+<button id="intake-probe" type="button" data-enabled="false" disabled>Save synthetic intake test</button>
+<small>The separate intake test is available only during the temporary candidate check. It saves fresh network observations first, then sends one clearly marked synthetic page-view event through the actual intake endpoint. It does not submit an RFQ.</small>
 <small>No network checks run before you click. Results remain unverified test assertions until reviewed.</small>
 <details><summary>Manual test with an independently observed address</summary>
 <p>Use this option if you already independently observed the public egress IP for this browser. These entries are saved as unverified test assertions. Do not enter credentials or customer information.</p>
@@ -30,7 +36,7 @@ const IP_PROBE_HTML = String.raw`<!doctype html>
 <output id="result" aria-live="polite"></output>
 <div id="evidence-controls" hidden><p>The exact observations stay in this page until it closes. If saving is unconfirmed, retry the same observations or download them before leaving. The download may contain your network addresses; keep it private.</p><button id="retry-save" type="button" hidden>Retry saving the same observations</button> <button id="download-evidence" type="button">Download collected test evidence</button></div>
 <script>
-const f=document.getElementById('probe'),o=document.getElementById('result'),automatic=document.getElementById('automatic-probe'),manual=f.querySelector('button'),retry=document.getElementById('retry-save'),download=document.getElementById('download-evidence');
+const f=document.getElementById('probe'),o=document.getElementById('result'),automatic=document.getElementById('automatic-probe'),manual=f.querySelector('button'),retry=document.getElementById('retry-save'),download=document.getElementById('download-evidence'),intake=document.getElementById('intake-probe'),intakeEnabled=intake.dataset.enabled==='true';
 const diagnostics=Object.freeze([
   {id:'ipify_ipv4',label:'IPv4',url:'https://api.ipify.org?format=json',family:4},
   {id:'ipify_ipv6',label:'IPv6',url:'https://api6.ipify.org?format=json',family:6},
@@ -38,7 +44,7 @@ const diagnostics=Object.freeze([
 ]);
 const diagnosticCodes=new Set(['http_error','body_too_large','invalid_response','invalid_ip','unexpected_ip_family','timeout','network_error']);
 const attempts=[],saveOutcomes=[];let busy=false,pendingSave=null;
-function setBusy(value){busy=value;automatic.disabled=value;manual.disabled=value;retry.disabled=value;document.getElementById('network-label').disabled=value;}
+function setBusy(value){busy=value;automatic.disabled=value;manual.disabled=value;retry.disabled=value;intake.disabled=value||!intakeEnabled;document.getElementById('network-label').disabled=value;}
 function ipFamily(value){
   if(typeof value!=='string'||value.length>45)return null;
   if(/^(?:\d{1,3}\.){3}\d{1,3}$/.test(value)&&value.split('.').every(part=>Number(part)<=255&&!/^0\d/.test(part)))return 4;
@@ -69,23 +75,27 @@ async function observeDiagnostic(service){
     return {service:service.id,status:'failed',ip:null,family:null,http_status:status,error_code:code,elapsed_ms:Math.min(60000,Math.max(0,Date.now()-started))};
   }finally{clearTimeout(timer);}
 }
-async function saveEvidence(payload,prefix){
+async function saveEvidence(payload,prefix,target=location.pathname){
+  if(target!==location.pathname&&(target!=='/v1/events'||!intakeEnabled))throw new Error('target_not_allowed');
   const body=JSON.stringify(payload);
   if(new TextEncoder().encode(body).length>4096)throw new Error('bounded_test_payload_exceeded');
-  const attempt=Object.freeze({index:attempts.length,created_at:new Date().toISOString(),body,prefix});
+  const attempt=Object.freeze({index:attempts.length,created_at:new Date().toISOString(),body,prefix,target});
   attempts.push(attempt);document.getElementById('evidence-controls').hidden=false;
   return saveAttempt(attempt);
 }
 async function saveAttempt(attempt){
-  const {body,prefix}=attempt;pendingSave=attempt;retry.hidden=true;
+  const {body,prefix,target}=attempt;pendingSave=attempt;retry.hidden=true;
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
   try{
-    const response=await fetch(location.pathname,{method:'POST',credentials:'omit',cache:'no-store',redirect:'error',headers:{'Content-Type':'application/json'},body,signal:controller.signal});
+    const isIntake=target==='/v1/events';
+    const expectedBodyHash=isIntake?Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body))),byte=>byte.toString(16).padStart(2,'0')).join(''):null;
+    const response=await fetch(target,{method:'POST',credentials:'omit',cache:'no-store',redirect:'error',headers:{'Content-Type':'application/json'},body,signal:controller.signal});
     const value=await response.json();
-    const retained=response.status===202&&value.status==='retained'&&value.terminal===true&&value.ip_provenance_verified===false&&typeof value.proof_key==='string'&&/^ip-proof\/\d{4}\/\d{2}\/\d{2}\/[A-Za-z0-9_-]{8,100}\.json$/.test(value.proof_key)&&typeof value.proof_sha256==='string'&&/^[a-f0-9]{64}$/.test(value.proof_sha256);
-    saveOutcomes.push(Object.freeze({attempt_index:attempt.index,received_at:new Date().toISOString(),http_status:response.status,status:retained?'retained':'acknowledgement_unconfirmed',proof_key:retained?value.proof_key:null,proof_sha256:retained?value.proof_sha256:null}));
+    const retained=response.status===202&&value.status==='retained'&&value.terminal===true&&(isIntake?(value.analytical_status==='not_evaluated'&&typeof value.receipt_id==='string'&&/^[A-Za-z0-9_-]{8,100}$/.test(value.receipt_id)&&value.receipt_body_sha256===expectedBodyHash):(value.ip_provenance_verified===false&&typeof value.proof_key==='string'&&/^ip-proof\/\d{4}\/\d{2}\/\d{2}\/[A-Za-z0-9_-]{8,100}\.json$/.test(value.proof_key)&&typeof value.proof_sha256==='string'&&/^[a-f0-9]{64}$/.test(value.proof_sha256)));
+    saveOutcomes.push(Object.freeze({attempt_index:attempt.index,received_at:new Date().toISOString(),http_status:response.status,status:retained?'retained':'acknowledgement_unconfirmed',proof_key:retained&&!isIntake?value.proof_key:null,proof_sha256:retained&&!isIntake?value.proof_sha256:null,receipt_id:retained&&isIntake?value.receipt_id:null,receipt_body_sha256:retained&&isIntake?value.receipt_body_sha256:null}));
     if(retained)pendingSave=null;
-    o.textContent=prefix+(retained?'Synthetic evidence retained.\nProof: '+value.proof_key+'\nSHA-256: '+value.proof_sha256+'\nIP provenance is not yet verified.':'Test was not confirmed as retained. Please keep this page and report the status: '+response.status);
+    o.textContent=prefix+(retained?(isIntake?'Synthetic intake evidence retained.\nReceipt: '+value.receipt_id+'\nExact body SHA-256: '+value.receipt_body_sha256+'\nSource-IP comparison is still pending.':'Synthetic evidence retained.\nProof: '+value.proof_key+'\nSHA-256: '+value.proof_sha256+'\nIP provenance is not yet verified.'):'Test was not confirmed as retained. Please keep this page and report the status: '+response.status);
+    return retained?value:null;
   }catch{saveOutcomes.push(Object.freeze({attempt_index:attempt.index,received_at:new Date().toISOString(),http_status:null,status:'save_network_or_response_error',proof_key:null,proof_sha256:null}));o.textContent=prefix+'The save request failed or its receipt was not confirmed. No successful test is claimed. Retry the same observations or download the evidence below; a retry creates a separate record.';}
   finally{clearTimeout(timer);retry.hidden=!pendingSave;}
 }
@@ -114,6 +124,20 @@ f.addEventListener('submit',async event=>{
   catch{o.textContent='The test could not finish. No saved test is confirmed.';}
   finally{setBusy(false);}
 });
+intake.addEventListener('click',async()=>{
+  if(busy||!intakeEnabled)return;setBusy(true);o.textContent='Checking fresh network observations before the synthetic intake test…';
+  let prefix='';
+  try{
+    const observations=await Promise.all(diagnostics.map(observeDiagnostic));
+    prefix=observations.map((result,index)=>diagnostics[index].label+': '+(result.status==='observed'?'address observed (unverified)':result.error_code)).join('\n')+'\n\n';
+    const testId='browser-intake-'+Date.now()+'-'+crypto.randomUUID().slice(0,8);
+    const proof=await saveEvidence({synthetic:true,test_id:testId,expected_ip:null,diagnostic_assertions_status:'untrusted_client_assertions',diagnostic_observations:observations},prefix);
+    if(!proof)return;
+    const batch={schema_version:1,tracker_version:'1.0.0',events:[{schema_version:1,event_id:'syn_'+testId,sequence:0,event_name:'page_view',page_id:'home',tracker_version:'1.0.0',synthetic:true,client_timestamp:new Date().toISOString(),storage_status:'memory_only'}]};
+    await saveEvidence(batch,prefix+'Network proof retained: '+proof.proof_key+'\n','/v1/events');
+  }catch{o.textContent=prefix+'The synthetic intake test could not finish. No successful intake is claimed. Download any collected evidence below.';}
+  finally{setBusy(false);}
+});
 </script></html>`;
 
 function ipProbeJson(value, status) {
@@ -134,7 +158,7 @@ export function createSyntheticIpProbe({store, now=()=>new Date(), newId=()=>cry
     const url = new URL(request.url);
     if (url.pathname !== SYNTHETIC_IP_PROBE_PATH) return null;
     if (env.CLOUDFLARE_SYNTHETIC_IP_PROBE !== '1' || typeof env.CLOUDFLARE_SYNTHETIC_IP_PROBE_HOSTNAME !== 'string' || !env.CLOUDFLARE_SYNTHETIC_IP_PROBE_HOSTNAME || url.hostname !== env.CLOUDFLARE_SYNTHETIC_IP_PROBE_HOSTNAME) return ipProbeJson({error:'not_found'},404);
-    if (request.method === 'GET') return new Response(IP_PROBE_HTML, {headers:{...IP_PROBE_HEADERS,'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' https://api.ipify.org https://api6.ipify.org https://api64.ipify.org; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"}});
+    if (request.method === 'GET') return new Response(syntheticIntakeProofEnabled(request,env)?IP_PROBE_HTML.replace('data-enabled="false" disabled','data-enabled="true"'):IP_PROBE_HTML, {headers:{...IP_PROBE_HEADERS,'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self' https://api.ipify.org https://api6.ipify.org https://api64.ipify.org; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"}});
     async function reject(reason,status) {
       let recorded=false;
       try {

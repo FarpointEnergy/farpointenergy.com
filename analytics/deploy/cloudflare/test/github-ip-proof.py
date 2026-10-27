@@ -21,11 +21,13 @@ import uuid
 from datetime import datetime, timezone
 
 COLLECTOR = 'https://farpoint-lead-collector-candidate.farpointenergy.workers.dev/__synthetic/ip-proof'
+INTAKE = 'https://farpoint-lead-collector-candidate.farpointenergy.workers.dev/v1/events'
+INTAKE_ORIGIN = 'https://farpoint-lead-collector-candidate.farpointenergy.workers.dev'
 DIAGNOSTICS = (
     ('ipify_ipv4', 'https://api.ipify.org?format=json'),
     ('cloudflare_trace_ipv4', 'https://www.cloudflare.com/cdn-cgi/trace'),
 )
-ALLOWED_URLS = frozenset([COLLECTOR, *(url for _, url in DIAGNOSTICS)])
+ALLOWED_URLS = frozenset([COLLECTOR, INTAKE, *(url for _, url in DIAGNOSTICS)])
 STATUS_MARKER = b'\nFARPOINT_HTTP_STATUS:'
 PROXY_NAMES = ('HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'all_proxy')
 
@@ -39,7 +41,7 @@ def compact_json(value):
 
 
 def curl_request(url, body=None, run=subprocess.run):
-    if url not in ALLOWED_URLS or (body is not None and url != COLLECTOR):
+    if url not in ALLOWED_URLS or (body is not None and url not in (COLLECTOR, INTAKE)):
         raise ValueError('request_not_allowlisted')
     command = ['curl', '--disable', '--ipv4', '--proto', '=https', '--silent',
                '--connect-timeout', '8', '--max-time', '20', '--max-redirs', '0',
@@ -49,6 +51,9 @@ def curl_request(url, body=None, run=subprocess.run):
         if len(body) > 4096:
             raise ValueError('request_body_too_large')
         command += ['--request', 'POST', '--header', 'Content-Type: application/json', '--data-binary', '@-']
+        if url == INTAKE:
+            # Explicit test-origin admission, never identity or authorization.
+            command += ['--header', 'Origin: ' + INTAKE_ORIGIN]
     command.append(url)
     try:
         completed = run(command, input=body, capture_output=True, timeout=25, check=False)
@@ -104,6 +109,32 @@ def safe_ack(result):
             'proof_sha256': value['proof_sha256'] if valid else None}
 
 
+def synthetic_intake_batch(test_id):
+    return {'schema_version': 1, 'tracker_version': '1.0.0', 'events': [{
+        'schema_version': 1, 'event_id': 'syn_' + test_id, 'sequence': 0,
+        'event_name': 'page_view', 'page_id': 'home', 'tracker_version': '1.0.0',
+        'synthetic': True, 'client_timestamp': datetime.now(timezone.utc).isoformat(),
+        'storage_status': 'memory_only',
+    }]}
+
+
+def safe_intake_ack(result, expected_hash):
+    try:
+        value = json.loads(result['body'])
+        valid = (result['curl_exit_code'] == 0 and result['http_status'] == 202
+                 and value.get('status') == 'retained' and value.get('terminal') is True
+                 and value.get('analytical_status') == 'not_evaluated'
+                 and isinstance(value.get('receipt_id'), str)
+                 and re.fullmatch(r'[A-Za-z0-9_-]{8,100}', value['receipt_id'])
+                 and value.get('receipt_body_sha256') == expected_hash)
+    except (ValueError, TypeError, AttributeError):
+        valid = False
+    return {'retained': bool(valid), 'http_status': result['http_status'], 'curl_exit_code': result['curl_exit_code'],
+            'receipt_id': value['receipt_id'] if valid else None,
+            'receipt_body_sha256': value['receipt_body_sha256'] if valid else None,
+            'source_ip_comparison_pending': True}
+
+
 def run_probe(environment, request=curl_request):
     safe = {'scope': 'github_hosted_synthetic_ipv4', 'ip_provenance_verified': False,
             'production_flags_changed': False, 'requested_family': 4}
@@ -143,6 +174,14 @@ def run_probe(environment, request=curl_request):
     safe.update(receipt)
     safe['diagnostic_archive_confirmed'] = receipt['retained'] and not any(x['body_truncated'] or x['stderr_truncated'] for x in observations)
     safe['status'] = 'synthetic_evidence_retained' if receipt['retained'] else 'storage_not_confirmed'
+    if environment.get('FARPOINT_SYNTHETIC_INTAKE_PROOF') == '1':
+        if not complete:
+            safe['intake_test_status'] = 'blocked_pending_valid_network_proof'
+            return safe, 1
+        intake_body = compact_json(synthetic_intake_batch(payload['test_id']))
+        intake_receipt = safe_intake_ack(request(INTAKE, intake_body), sha256(intake_body))
+        safe['intake'] = {**intake_receipt, 'submitted_bytes': len(intake_body), 'submitted_sha256': sha256(intake_body)}
+        return safe, 0 if intake_receipt['retained'] else 1
     return safe, 0 if complete else 1
 
 

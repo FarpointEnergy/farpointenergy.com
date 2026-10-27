@@ -55,6 +55,7 @@ export default {
     if (probe) return probe;
     const collector = createCollector({
       store: new R2CreateOnlyStore(env.BUCKET),
+      ...(syntheticIntakeProofEnabled(request,env)?{allowedOrigins:['https://farpointenergy.com','https://www.farpointenergy.com','https://'+env.CLOUDFLARE_SYNTHETIC_IP_PROBE_HOSTNAME]}:{}),
       collectorVersion: BUILD_SOURCE_VERSION,
       verifiedSourceIp: request => cloudflareDirectSourceIp(request, env)
       // ownerIdentity and both identity trust modes remain at closed defaults.

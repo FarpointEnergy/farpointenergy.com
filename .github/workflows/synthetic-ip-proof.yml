@@ -22,6 +22,8 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
       - name: Record bounded synthetic IPv4 evidence privately
+        env:
+          FARPOINT_SYNTHETIC_INTAKE_PROOF: '1'
         run: python3 analytics/deploy/cloudflare/test/github-ip-proof.py
       # No secrets, artifacts, RFQs, deployment or recurring schedule. Raw own-
       # network diagnostics are sent only to the existing private probe record.

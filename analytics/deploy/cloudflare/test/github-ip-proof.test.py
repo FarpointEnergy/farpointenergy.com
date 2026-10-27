@@ -33,11 +33,14 @@ def acknowledged():
 
 
 class ProbeTests(unittest.TestCase):
-    def mock_requests(self, *, second_ip=IP, first=None, second=None, ack=None):
+    def mock_requests(self, *, second_ip=IP, first=None, second=None, ack=None, intake_ack=None):
         calls = []
 
         def request(url, body=None):
             calls.append((url, body))
+            if url == MODULE.INTAKE:
+                STORED_BODIES.append(body)
+                return intake_ack if intake_ack is not None else result(json.dumps({'status': 'retained', 'terminal': True, 'analytical_status': 'not_evaluated', 'receipt_id': 'synthetic-intake-1234', 'receipt_body_sha256': hashlib.sha256(body).hexdigest()}).encode(), status=202)
             if url == MODULE.COLLECTOR:
                 STORED_BODIES.append(body)
                 return ack if ack is not None else acknowledged()
@@ -165,6 +168,41 @@ class ProbeTests(unittest.TestCase):
         self.assertNotIn('uses: actions/upload-artifact', text)
         self.assertNotIn('\n  schedule:', text)
         self.assertNotIn('pull_request_target:', text)
+
+    def test_intake_phase_is_opt_in_after_retained_diagnostics_and_event_schema_is_valid(self):
+        for flag in [None, '', '0', 'true', 1]:
+            request, calls = self.mock_requests()
+            MODULE.run_probe({**ENV, 'FARPOINT_SYNTHETIC_INTAKE_PROOF': flag}, request)
+            self.assertNotIn(MODULE.INTAKE, [x[0] for x in calls])
+        request, calls = self.mock_requests()
+        safe, code = MODULE.run_probe({**ENV, 'FARPOINT_SYNTHETIC_INTAKE_PROOF': '1'}, request)
+        self.assertEqual(code, 0)
+        self.assertEqual([x[0] for x in calls][-2:], [MODULE.COLLECTOR, MODULE.INTAKE])
+        proof, intake = (json.loads(x[1]) for x in calls[-2:])
+        self.assertEqual(intake['events'][0]['event_id'], 'syn_' + proof['test_id'])
+        self.assertTrue(intake['events'][0]['synthetic'])
+        self.assertNotIn('browser_id', intake['events'][0])
+        self.assertNotIn('session_id', intake['events'][0])
+        self.assertEqual(safe['intake']['receipt_body_sha256'], hashlib.sha256(calls[-1][1]).hexdigest())
+        self.assertTrue(safe['intake']['source_ip_comparison_pending'])
+        self.assertNotIn(IP, json.dumps(safe))
+        sys.path.insert(0, str(Path(__file__).parents[3] / 'python'))
+        from farpoint_analytics.schema import validate_envelope, validate_event
+        for event in validate_envelope(intake):
+            validate_event(event)
+
+    def test_failed_network_proof_prevents_intake_and_bad_intake_hash_never_passes(self):
+        for options in [{'ack': result(b'{}', status=503)}, {'second_ip': '192.0.2.89'}]:
+            request, calls = self.mock_requests(**options)
+            safe, code = MODULE.run_probe({**ENV, 'FARPOINT_SYNTHETIC_INTAKE_PROOF': '1'}, request)
+            self.assertEqual(code, 1)
+            self.assertNotIn(MODULE.INTAKE, [x[0] for x in calls])
+        bad = result(json.dumps({'status': 'retained', 'terminal': True, 'analytical_status': 'not_evaluated', 'receipt_id': 'synthetic-intake-1234', 'receipt_body_sha256': 'a' * 64}).encode(), status=202)
+        request, calls = self.mock_requests(intake_ack=bad)
+        safe, code = MODULE.run_probe({**ENV, 'FARPOINT_SYNTHETIC_INTAKE_PROOF': '1'}, request)
+        self.assertEqual(code, 1)
+        self.assertFalse(safe['intake']['retained'])
+        self.assertIsNone(safe['intake']['receipt_id'])
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 import test,{after} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
-import {randomUUID,createHash} from 'node:crypto';
+import {randomUUID,createHash,webcrypto} from 'node:crypto';
 import {resolve,isAbsolute} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createContext,runInContext} from 'node:vm';
@@ -24,14 +24,15 @@ function req({method='POST',body='{"synthetic":true,"test_id":"network-01","expe
 function handler(store=new Store(),options={}){return{store,run:api.createSyntheticIpProbe({store,now:()=>new Date('2026-10-27T03:00:00Z'),...options})};}
 function first(store){return JSON.parse(Buffer.from(store.records.values().next().value).toString());}
 async function renderedUi(fetchImpl,timerOptions={}){
-  const {run}=handler();const html=await(await run(req({method:'GET'}),enabled)).text();
+  const {run}=handler();const html=await(await run(req({method:'GET'}),{...enabled,...(timerOptions.intakeEnabled?{CLOUDFLARE_SYNTHETIC_INTAKE_PROOF:'1'}:{})})).text();
   const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
   const elements={};
-  for(const id of ['probe','result','automatic-probe','manual-button','network-label','test-id','expected-ip','evidence-controls','retry-save','download-evidence'])elements[id]={value:'',textContent:'',disabled:false,hidden:true,listeners:{},addEventListener(event,callback){this.listeners[event]=callback;}};
+  for(const id of ['probe','result','automatic-probe','manual-button','network-label','test-id','expected-ip','evidence-controls','retry-save','download-evidence','intake-probe'])elements[id]={value:'',textContent:'',disabled:false,hidden:true,listeners:{},addEventListener(event,callback){this.listeners[event]=callback;}};
+  elements['intake-probe'].dataset={enabled:/id="intake-probe"[^>]*data-enabled="true"/.test(html)?'true':'false'};
   elements.probe.querySelector=()=>elements['manual-button'];
   elements['network-label'].value='wifi';elements['test-id'].value='manual-synthetic';elements['expected-ip'].value='192.0.2.7';
   const downloads=[];class TestURL extends URL{static createObjectURL(blob){downloads.push({blob});return 'blob:synthetic-download';}static revokeObjectURL(){}}
-  const context=createContext({document:{getElementById:id=>elements[id],createElement:()=>({click(){downloads.at(-1).clicked=true;}})},location:{pathname:path},fetch:fetchImpl,URL:TestURL,Blob,Uint8Array,TextDecoder,TextEncoder,AbortController,crypto:{randomUUID},Date,JSON,Math,setTimeout:timerOptions.setTimeout||((fn,ms)=>setTimeout(fn,ms===1000?1:ms)),clearTimeout});
+  const context=createContext({document:{getElementById:id=>elements[id],createElement:()=>({click(){downloads.at(-1).clicked=true;}})},location:{pathname:path},fetch:fetchImpl,URL:TestURL,Blob,Uint8Array,TextDecoder,TextEncoder,AbortController,crypto:{randomUUID,subtle:webcrypto.subtle},Date,JSON,Math,setTimeout:timerOptions.setTimeout||((fn,ms)=>setTimeout(fn,ms===1000?1:ms)),clearTimeout});
   runInContext(script,context);
   return {elements,context,downloads};
 }
@@ -124,6 +125,26 @@ test('unconfirmed save retains immutable exact bytes for retry and private downl
   await ui.elements['retry-save'].listeners.click();assert.equal(calls.length,5);assert.equal(calls.at(-1).url,path);assert.equal(calls.at(-1).options.body,original);assert.equal(ui.elements['retry-save'].hidden,true);assert.match(ui.elements.result.textContent,/Synthetic evidence retained/);
   ui.elements['download-evidence'].listeners.click();const after=JSON.parse(await ui.downloads[1].blob.text());assert.equal(after.attempts.length,1);assert.equal(after.attempts[0].body,original);assert.deepEqual(after.save_outcomes.map(x=>x.status),['save_network_or_response_error','retained']);
   await ui.elements['automatic-probe'].listeners.click();ui.elements['download-evidence'].listeners.click();const third=JSON.parse(await ui.downloads[2].blob.text());assert.equal(third.attempts.length,2);assert.equal(third.attempts[0].body,original);assert.notEqual(third.attempts[1].body,original);
+});
+test('actual intake UI is default-off and requires a retained fresh diagnostic proof before posting a valid synthetic event',async()=>{
+  let count=0;const off=await renderedUi(async()=>{count++;throw new Error('must not request');});await off.elements['intake-probe'].listeners.click();assert.equal(count,0);
+  const calls=[];const ui=await renderedUi(async(url,options)=>{
+    calls.push({url,options});if(url===path)return fakeAck();
+    if(url==='/v1/events')return new Response(JSON.stringify({status:'retained',terminal:true,analytical_status:'not_evaluated',receipt_id:'synthetic-intake-123',receipt_body_sha256:createHash('sha256').update(options.body).digest('hex')}),{status:202});
+    assert(diagnosticUrls.includes(url));return new Response(JSON.stringify({ip:url===diagnosticUrls[0]?'192.0.2.90':'2001:db8::90'}));
+  },{intakeEnabled:true});
+  assert.equal(calls.length,0);await ui.elements['intake-probe'].listeners.click();assert.equal(calls.length,5);assert.equal(calls[3].url,path);assert.equal(calls[4].url,'/v1/events');
+  const proof=JSON.parse(calls[3].options.body),batch=JSON.parse(calls[4].options.body),event=batch.events[0];
+  assert.deepEqual(Object.keys(batch).sort(),['events','schema_version','tracker_version']);assert.equal(batch.schema_version,1);assert.equal(batch.events.length,1);assert.equal(event.event_id,'syn_'+proof.test_id);assert.equal(event.synthetic,true);assert.equal(event.event_name,'page_view');assert.equal(event.page_id,'home');assert.equal(event.sequence,0);assert.equal(event.storage_status,'memory_only');assert.equal(event.browser_id,undefined);assert.equal(event.session_id,undefined);
+  assert.match(ui.elements.result.textContent,/Synthetic intake evidence retained/);assert.match(ui.elements.result.textContent,/Source-IP comparison is still pending/);assert(!ui.elements.result.textContent.includes('192.0.2.90'));
+  ui.elements['download-evidence'].listeners.click();const download=JSON.parse(await ui.downloads[0].blob.text());assert.equal(download.attempts[1].target,'/v1/events');assert.equal(download.attempts[1].body,calls[4].options.body);assert.equal(download.save_outcomes[1].receipt_id,'synthetic-intake-123');
+});
+test('failed diagnostic persistence prevents intake; invalid intake body hash remains unconfirmed and retries exact intake bytes',async()=>{
+  const failed=[];const blocked=await renderedUi(async(url,options)=>{failed.push(url);if(url===path)throw new Error('save unavailable');return new Response(JSON.stringify({ip:url===diagnosticUrls[0]?'192.0.2.91':'2001:db8::91'}));},{intakeEnabled:true});
+  await blocked.elements['intake-probe'].listeners.click();assert(!failed.includes('/v1/events'));assert.equal(blocked.elements['retry-save'].hidden,false);
+  const calls=[];let intakeSaves=0;const ui=await renderedUi(async(url,options)=>{calls.push({url,options});if(url===path)return fakeAck();if(url==='/v1/events'){intakeSaves++;return new Response(JSON.stringify({status:'retained',terminal:true,analytical_status:'not_evaluated',receipt_id:'synthetic-intake-456',receipt_body_sha256:intakeSaves===1?'a'.repeat(64):createHash('sha256').update(options.body).digest('hex')}),{status:202});}return new Response(JSON.stringify({ip:url===diagnosticUrls[0]?'192.0.2.92':'2001:db8::92'}));},{intakeEnabled:true});
+  await ui.elements['intake-probe'].listeners.click();const body=calls.at(-1).options.body;assert.match(ui.elements.result.textContent,/not confirmed as retained/);assert.equal(ui.elements['retry-save'].hidden,false);
+  await ui.elements['retry-save'].listeners.click();assert.equal(calls.length,6);assert.equal(calls.at(-1).url,'/v1/events');assert.equal(calls.at(-1).options.body,body);assert.match(ui.elements.result.textContent,/Synthetic intake evidence retained/);
 });
 test('private record retains exact body and selected unverified headers; public ack does not echo them',async()=>{
   const {store,run}=handler();const body=' {"test_id":"network-01", "expected_ip":"203.0.113.5", "synthetic":true}\n';
