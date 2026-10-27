@@ -81,7 +81,7 @@ yield unavailable. No real visitor IP is sent to an enrichment provider here.
 
 ## Report tables and company evidence
 
-Analysis rule `farpoint-analysis-1.1.0` adds deterministic `tables` for validated
+Analysis rule `farpoint-analysis-1.1.1` includes deterministic `tables` for validated
 event occurrences, trusted deduplicated events, derived sessions and campaign
 touches. The session table marks membership in the reporting cohort, preserves
 the ordered observed page path and links received inquiry keys. No page or funnel
@@ -139,6 +139,42 @@ matches. Invalid evidence links make the report incomplete.
 The CLI archives the exact source version used for these expanded outputs.
 Replaying an older `1.0.0` report requires its archived `1.0.0` source; do not use
 new transformations to overwrite an earlier report or claim identical replay.
+
+## Offline network observations
+
+The `network-context` command completes the local IPtoASN path. It makes no
+network requests and never sends visitor IPs to a provider. Supply a reviewed,
+checksummed combined IPv4/IPv6 TSV and its separate provenance JSON, including
+`source_url`, `license`, `dataset_sha256`, and explicit `retention_approved: true`.
+The command cannot verify the legal/provider basis for that approval itself.
+
+```sh
+PYTHONPATH=analytics/python python3 -m farpoint_analytics network-context \
+  --receipts /private/export/receipts.json \
+  --config /private/export/config.json \
+  --dataset /private/datasets/ipasn.tsv \
+  --dataset-sha256 REVIEWED_DATASET_SHA256 \
+  --dataset-provenance /private/datasets/ipasn-provenance.json \
+  --observed-at UTC_TIMESTAMP_WITH_OFFSET \
+  --run-id NEW_UNIQUE_NETWORK_RUN_ID \
+  --code-commit REVIEWED_40_CHARACTER_GIT_SHA \
+  --output /private/network-runs/NEW_UNIQUE_RUN_DIRECTORY
+```
+
+The resulting archive retains exact receipts, configuration, dataset and
+provenance bytes, generated observations, source and interpreter identity. Pass
+`outputs/company-observations.json` to the ordinary analysis command and retain
+the network archive as the referenced evidence. New runs append observations;
+they never edit old runs. Reusing a run ID when combining observations is invalid.
+Missing/unapproved receipt provenance produces explicit unavailable observations.
+Verified IPs without a dataset match remain unknown. Duplicate/corrupt receipt
+identities produce an incomplete diagnostic. Network ownership is not a possible
+company match or verified employment.
+
+The 1.1.1 analysis patch also rejects deeply nested invalid event fields before
+normalization and handles out-of-range UTC timestamp conversions as anomalies;
+admitted bytes remain intact. Prior source snapshots remain necessary to replay
+reports created by previous rule versions.
 
 ## Checks
 
