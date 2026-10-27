@@ -137,6 +137,12 @@ Notifications and real scheduled authorization remain acceptance tests; these
 functions do not themselves schedule or send anything. A Work-wide outage may
 also prevent the watchdog from warning at the time of failure.
 
+Work version `1.0.1` labels current-window receipts, session-cohort conversions,
+and all-history inquiry totals separately in the human report. The archive
+schema is unchanged: verification explicitly accepts `1.0.0` and `1.0.1` when
+completion/manifest versions match and all other integrity/scope checks pass.
+Unknown versions fail closed. Numerical replay still requires archived source.
+
 ## Build and tests
 
 ```sh
