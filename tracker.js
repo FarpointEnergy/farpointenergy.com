@@ -196,7 +196,9 @@
     const snap = snapshot(); if (!snap || !env.navigator?.sendBeacon) return false;
     try {
       // Returning true means queued by the browser, never a durable acknowledgement.
-      return env.navigator.sendBeacon(endpoint, new Blob([snap.body], {type:"application/json"}));
+      // Beacon always uses credentials=include. A safelisted MIME type avoids a
+      // credentialed CORS preflight; the collector accepts these same JSON bytes.
+      return env.navigator.sendBeacon(endpoint, new Blob([snap.body], {type:"text/plain;charset=UTF-8"}));
     } catch (_) { return false; }
   }
   function inquiryContext() {

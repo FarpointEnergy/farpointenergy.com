@@ -26,6 +26,16 @@ function check(fn){fn();assertions++;}
   }
   let t=env(),a=createTracker(t.e,config);a.start();check(()=>assert.equal(a.pendingCount(),2));let snap=a.snapshot();check(()=>assert(Object.isFrozen(snap)&&Object.isFrozen(snap.items)));check(()=>assert.deepEqual(JSON.parse(snap.body).events.map(e=>e.event_name),["page_view","quotation_view"]));
   await a.flush();check(()=>assert.equal(a.pendingCount(),0));check(()=>assert.equal(t.requests[0].init.referrerPolicy,"no-referrer"));check(()=>assert.equal(t.requests[0].init.credentials,"omit"));check(()=>assert.equal(t.requests[0].init.redirect,"error"));
+  // Native beacon must be CORS-safelisted: application/json would require a
+  // credentialed preflight, while the collector accepts no credentialed CORS.
+  const beacons=[];
+  t=env({override:{navigator:{sendBeacon:(url,body)=>{beacons.push({url,body});return true;}}}});a=createTracker(t.e,config);a.record("page_view");
+  const beaconSnapshot=a.snapshot();check(()=>assert.equal(a.beacon(),true));
+  check(()=>assert.equal(beacons[0].url,endpoint));check(()=>assert.equal(beacons[0].body.type,"text/plain;charset=utf-8"));
+  const beaconBytes=Buffer.from(await beacons[0].body.arrayBuffer());
+  check(()=>assert.deepEqual(beaconBytes,Buffer.from(beaconSnapshot.body,"utf8")));
+  check(()=>assert.equal(a.pendingCount(),1));await a.flush();
+  check(()=>assert.equal(t.requests[0].init.body,beaconSnapshot.body));check(()=>assert.equal(a.pendingCount(),0));
   // ACK-03: out-of-order delivery and new events are scoped to immutable snapshots.
   t=env();a=createTracker(t.e,config);a.record("page_view");a.record("quotation_start");const x=a.snapshot();a.record("quotation_attempt");const y=a.snapshot();await a.send(x);check(()=>assert.equal(a.pendingCount(),1));await a.send(x);check(()=>assert.equal(a.pendingCount(),1));await a.send(y);check(()=>assert.equal(a.pendingCount(),0));
   t=env();a=createTracker(t.e,config);a.record("page_view");const first=a.snapshot();a.record("quotation_start");await a.send(a.snapshot());await a.send(first);check(()=>assert.equal(a.pendingCount(),0));
