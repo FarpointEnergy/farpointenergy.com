@@ -1,6 +1,6 @@
 # Versioned Work task — archive and RFQ report
 
-Task definition version: `farpoint-work-task/1.1.0`. This file is an executable
+Task definition version: `farpoint-work-task/1.1.1`. This file is an executable
 Work-agent recipe, not an active schedule. The agent uses the existing connected
 tools and the checked-in deterministic runner. Do not activate it before the
 hosted export, private archive and unattended-permission gates pass.
@@ -20,6 +20,19 @@ hosted export, private archive and unattended-permission gates pass.
    versioned job identity and correct UTC window derived from archived New York
    timezone data. Unreviewed messages become explicit unresolved candidates in
    this first archived diagnostic run.
+   Load `analytics/work/campaign-registry.json` from that exact reviewed commit,
+   retain its original bytes and SHA-256 with the invocation settings, and pass
+   the parsed object as `config.campaign_registry` to the pipeline. Bind those
+   bytes explicitly in `config.campaign_registry_artifact` using their retained
+   relative `path`, `bytes`, `sha256`, and `source_commit`; verify that parsing
+   the retained bytes yields exactly `config.campaign_registry`. These fixed
+   tokens cover the existing prepared preview link: source `website`, medium
+   `referral`, campaign `power`. The registry is an explicit allowlist, never
+   populated from observed URL parameters, incoming event values or free text.
+   Unregistered values remain quarantined; tracker-side unknown values remain
+   `unknown_campaign`. A registry correction requires a new version and new run,
+   preserving all earlier inputs and reports. Registered synthetic events still
+   remain excluded from production traffic and inquiry totals.
    The analysis callback must be `createNetworkAnalyzer`, with the pinned
    owner-private dataset artifact and separately approved IP-provenance
    artifacts from private settings. It automatically restores the dataset,

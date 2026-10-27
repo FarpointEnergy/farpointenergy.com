@@ -32,10 +32,14 @@ recovery. No package download or old Git reference is assumed sufficient.
 
 ## Contracts
 
-`farpoint_analytics/schema-v1.json` defines the browser event contract and issued
-campaign registry. Initially there are no registered campaign tokens; unknown
-tokens must be replaced by `unknown_campaign` before sending. Registered tokens
-must be versioned with the tracker and archived configuration.
+`farpoint_analytics/schema-v1.json` defines the browser event contract and an
+empty fallback campaign registry. Work runs load the versioned explicit
+allowlist from `analytics/work/campaign-registry.json` into
+`config.campaign_registry`; it covers the prepared preview tokens `website`,
+`referral`, and `power`. Unknown tracker-side tokens must be replaced by
+`unknown_campaign` before sending. Never expand the allowlist from observed
+event values. Freeze registry bytes and their SHA-256 with each run. Synthetic
+events remain excluded in production even when their campaign tokens are valid.
 
 Receipt input is a JSON array of exact collector envelopes containing
 `receipt_id`, `received_at`, `receipt_body_sha256`, `body_base64`, and optionally

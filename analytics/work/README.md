@@ -92,6 +92,18 @@ actual operations and freezes the observation cutoff after capture. The Python
 archive retains exact analysis inputs/source and timezone bytes. It explicitly
 does not claim a complete portable runtime bundle.
 
+Load `campaign-registry.json` from the exact reviewed source commit and supply
+it as `config.campaign_registry`. Freeze its original bytes and SHA-256 beside
+the invocation settings. Set `config.campaign_registry_artifact` to their
+retained relative `path`, `bytes`, `sha256`, and reviewed `source_commit`; check
+that parsing those retained bytes equals the supplied registry. The fixed
+`website` / `referral` / `power` tokens match
+the prepared synthetic preview link; registration does not make synthetic
+events production traffic. This is an explicit allowlist, never a list inferred
+from incoming UTM fields. Other unregistered values remain quarantined and
+tracker-side unknown values remain `unknown_campaign`. Registry changes require
+a new run; earlier raw bytes, configs and results remain unchanged.
+
 The network callback is required in the current task recipe. It restores the
 hash-pinned dataset ZIP through authenticated Drive download even on a fresh
 host; Python verifies the full ZIP and selected manifest members. Its settings
