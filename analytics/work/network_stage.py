@@ -293,6 +293,41 @@ def _validate_proof_refs(config, evidence):
                  "unretained_provenance_evidence")
 
 
+def _validate_cloudflare_source_scope(config, receipts):
+    """Recheck source-version scope during generation and archived replay.
+
+    The authenticated JS adapter additionally compares account, bucket and host
+    against its fixed private acquisition settings. This function never changes
+    a receipt or treats an unavailable/unverified source as verified.
+    """
+    tag = "cloudflare_direct_edge_v1"
+    required = config.get("verified_ip_provenances", {}).get(tag)
+    if required is None:
+        return
+    scope = config.get("verified_ip_source_scope")
+    _require(isinstance(scope, dict) and type(scope.get("schema_version")) is int and scope["schema_version"] == 1
+             and scope.get("provenance") == tag, "network_source_scope_unverified")
+    versions, refs = scope.get("collector_versions"), scope.get("evidence_refs")
+    _require(isinstance(scope.get("hostname"), str)
+             and re.fullmatch(r"[a-z0-9][a-z0-9.-]{1,251}[a-z0-9]", scope["hostname"])
+             and isinstance(scope.get("cloudflare_account_id"), str)
+             and re.fullmatch(r"[a-f0-9]{32}", scope["cloudflare_account_id"])
+             and isinstance(scope.get("cloudflare_bucket_name"), str)
+             and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,61}[a-z0-9]", scope["cloudflare_bucket_name"])
+             and isinstance(versions, list) and versions
+             and all(isinstance(v, str) and re.fullmatch(r"farpoint-cloudflare-collector/1\.0\.0\+[a-f0-9]{64}", v) for v in versions)
+             and len(set(versions)) == len(versions)
+             and isinstance(required, list) and required and all(isinstance(r, str) for r in required)
+             and len(set(required)) == len(required)
+             and isinstance(refs, list) and all(isinstance(r, str) for r in refs)
+             and len(set(refs)) == len(refs) and set(refs) == set(required),
+             "network_source_scope_unverified")
+    for receipt in receipts:
+        source = receipt.get("source_ip") if isinstance(receipt, dict) else None
+        if isinstance(source, dict) and source.get("status") == "verified" and source.get("provenance") == tag:
+            _require(receipt.get("collector_version") in versions, "network_source_version_unreviewed")
+
+
 OFFLINE_RUNNER = r'''import argparse, json, pathlib, socket, sys
 sys.dont_write_bytecode = True
 def forbidden(*args, **kwargs):
@@ -535,6 +570,7 @@ def run_stage(request, root, repository_root):
         _validate_proof_refs(config, retained_proof)
         receipts = [_loads((stage / item["path"]).read_bytes()) for item in retained_receipts]
         _require(all(isinstance(r, dict) for r in receipts), "invalid_receipt_shape")
+        _validate_cloudflare_source_scope(config, receipts)
         _write(stage / "network-inputs/receipts.json", _json(receipts))
         _write(stage / "network-inputs/config.json", _json(config))
         binding = {"format": FORMAT, "run_id": run_id, "code_commit": commit,
@@ -609,6 +645,7 @@ def _verify_retained_inputs(stage, binding, checks):
     _validate_proof_refs(config, binding["provenance_evidence"])
     receipts = [_loads((stage / item["path"]).read_bytes()) for item in binding["receipts"]]
     _require(_json(receipts) == (stage / "network-inputs/receipts.json").read_bytes(), "merged_receipt_mismatch")
+    _validate_cloudflare_source_scope(config, receipts)
 
 
 def verify_stage(request, root, repository_root=None):

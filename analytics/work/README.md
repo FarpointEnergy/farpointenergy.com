@@ -163,6 +163,22 @@ controlled corporate/noncorporate usefulness test. All employer fields remain
 null. Existing separately approved company observations may still be supplied
 through the documented input contract without changing these network results.
 
+Direct Cloudflare IP approval is scoped, not a blanket trust in a provenance
+string. When `verified_ip_provenances.cloudflare_direct_edge_v1` is configured,
+also provide `config.verified_ip_source_scope` with `schema_version: 1`,
+`provenance: 'cloudflare_direct_edge_v1'`, the exact `hostname`,
+`cloudflare_account_id`, `cloudflare_bucket_name`, `collector_versions` and
+`evidence_refs`. Versions are complete reviewed collector-version strings, never
+wildcards or values copied from unreviewed observations. Proof references must
+exactly match that provenance's retained reference list. The hostname must equal
+private `settings.cloudflare_verified_ip_hostname`; account and bucket must equal
+the adapter's private acquisition settings. The stage preserves a scope audit
+and rejects a matching verified receipt from any other collector version before
+lookup. Python generation and archive replay independently repeat the version
+check. Unavailable/unverified sources are not rewritten or promoted. Changing a
+collector requires a new evidence-backed scope review and appended config;
+historical source evidence and empty-map baseline reports remain unchanged.
+
 The host bridge uses a one-operation process with terminal echo and canonical
 line limits disabled, so large payloads travel through hidden stdin. The process
 returns private structured data to the calling script; do not display it.

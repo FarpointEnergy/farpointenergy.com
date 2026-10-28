@@ -61,6 +61,16 @@ hosted export, private archive and unattended-permission gates pass.
    bypass it. Unverified source IPs remain unavailable observations. Network
    organizations do not become possible employers. Keep every stage attempt
    beneath this invocation's evidence root for the final closure.
+   Enabling `cloudflare_direct_edge_v1` in `verified_ip_provenances` also
+   requires `verified_ip_source_scope`: schema version 1, the same provenance,
+   exact tested hostname, private Cloudflare account and bucket, explicitly
+   reviewed collector-version strings and the same retained proof references.
+   Private settings must bind `cloudflare_verified_ip_hostname` to that tested
+   hostname. The adapter checks those settings and rejects a matching verified
+   receipt from an unreviewed collector version; offline generation and replay
+   repeat the version check. Never add a version merely because it appeared in
+   incoming data. An unavailable source remains unavailable. Preserve the empty
+   map in older frozen baselines and create new scope/config artifacts instead.
    Optional company context is disabled unless explicitly configured with the
    exact private dataset, terms, owner-approval, reader and source bindings in
    [COMPANY.md](COMPANY.md). If enabled, compose `createCompanyAnalyzer` beneath

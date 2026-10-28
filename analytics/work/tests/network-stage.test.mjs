@@ -4,7 +4,53 @@ import {randomBytes,createHash} from 'node:crypto';
 import {workJSON,workHash} from '../pipeline.mjs';
 import {createNetworkAnalyzer,createNetworkStageHost} from '../network-stage.mjs';
 
-async function fixture(fault){
+const cfVersion='farpoint-cloudflare-collector/1.0.0+'+'a'.repeat(64);
+const cfSettings={archive_folder_id:'private-folder',cloudflare_account_id:'a'.repeat(32),cloudflare_bucket_name:'synthetic-bucket',cloudflare_verified_ip_hostname:'synthetic.example.invalid'};
+async function scopedFixture({status='verified',provenance='cloudflare_direct_edge_v1',version=cfVersion,settings=cfSettings}={}){
+  const f=await fixture(undefined,{settings});
+  f.input.config.verified_ip_provenances={cloudflare_direct_edge_v1:['proof:approved']};
+  f.input.config.verified_ip_source_scope={schema_version:1,provenance:'cloudflare_direct_edge_v1',hostname:cfSettings.cloudflare_verified_ip_hostname,cloudflare_account_id:cfSettings.cloudflare_account_id,cloudflare_bucket_name:cfSettings.cloudflare_bucket_name,collector_versions:[cfVersion],evidence_refs:['proof:approved']};
+  const bytes=workJSON({collector_version:version,source_ip:{status,provenance,address:'192.0.2.1'},synthetic:true});
+  f.input.objects=[{namespace:'receipts',local_path:'raw/scoped.json',size:bytes.length,sha256:await workHash(bytes)}];
+  f.input.readLocal=()=>bytes;
+  return {...f,bytes};
+}
+
+test('reviewed Cloudflare source scope checks exact version and retains an audit without rewriting receipts',async()=>{
+  const f=await scopedFixture(),original=f.bytes.slice();
+  await f.analyze(f.input);assert.deepEqual(f.bytes,original);
+  const audit=JSON.parse(new TextDecoder().decode([...f.saved.entries()].find(([path])=>path.endsWith('/source-scope-verification.json'))[1]));
+  assert.equal(audit.verified_receipts.length,1);assert.equal(audit.verified_receipts[0].sha256,await workHash(original));assert.equal(audit.original_receipts_modified,false);
+});
+
+test('matching provenance with an unreviewed collector version fails before network generation',async()=>{
+  const f=await scopedFixture({version:'farpoint-cloudflare-collector/1.0.0+'+'b'.repeat(64)});
+  await assert.rejects(()=>f.analyze(f.input),error=>error.code==='network_source_version_unreviewed');
+  assert(!f.calls.includes('run'));assert(!f.calls.includes('analyze'));assert([...f.saved.keys()].some(x=>x.includes('/failure-')));
+});
+
+test('unavailable or unapproved receipt provenance remains unchanged instead of inheriting scope approval',async()=>{
+  for(const options of [{status:'unavailable',version:'old-unverified'},{provenance:'unverified',version:'other-source'}]){
+    const f=await scopedFixture(options),before=f.bytes.slice();await f.analyze(f.input);assert.deepEqual(f.bytes,before);
+    const audit=JSON.parse(new TextDecoder().decode([...f.saved.entries()].find(([path])=>path.endsWith('/source-scope-verification.json'))[1]));assert.equal(audit.verified_receipts.length,0);
+  }
+});
+
+test('Cloudflare scope is required and binds account bucket hostname and exact evidence refs',async()=>{
+  for(const alter of [
+    input=>delete input.config.verified_ip_source_scope,
+    input=>input.config.verified_ip_source_scope.cloudflare_account_id='b'.repeat(32),
+    input=>input.config.verified_ip_source_scope.cloudflare_bucket_name='another-bucket',
+    input=>input.config.verified_ip_source_scope.hostname='another.example.invalid',
+    input=>input.config.verified_ip_source_scope.evidence_refs=['proof:unretained'],
+    input=>input.config.verified_ip_source_scope.collector_versions=['*'],
+    input=>input.config.verified_ip_source_scope.collector_versions=[cfVersion,cfVersion]
+  ]){
+    const f=await scopedFixture();alter(f.input);await assert.rejects(()=>f.analyze(f.input),error=>error.code==='network_source_scope_unverified');assert.deepEqual(f.calls,[]);
+  }
+});
+
+async function fixture(fault,{settings={archive_folder_id:'private-folder'}}={}){
   const commit='a'.repeat(40),calls=[],saved=new Map(),body=workJSON({synthetic:true});
   const dataset={id:'dataset-zip',bytes:28709893,sha256:'b'.repeat(64),manifest_name:'ARCHIVE-MANIFEST.json',expected_manifest_sha256:'c'.repeat(64),dataset_member:'data/dataset.tsv',provenance_member:'data/provenance.json'};
   const proofs=[{id:'proof-file',bytes:200,sha256:'d'.repeat(64),ref:'proof:approved'}];
@@ -17,7 +63,7 @@ async function fixture(fault){
   const drive={assertPrivate:async()=>({verified:fault!=='privacy',owner_only:fault!=='privacy'}),verifyFile:async(id,expected)=>{calls.push('download:'+id);if(fault==='dataset'&&id==='dataset-zip')throw Error('not_downloadable');return {id,verified:fault!=='readback'||id!=='stage-zip',path:'/private/download/'+id,bytes:expected.bytes,sha256:expected.sha256,url:'https://drive.example/'+id};}};
   const tools={mcp__codex_apps__google_drive_upload_file:async value=>{calls.push('upload');assert.equal(typeof value.file_uri,'string');assert(!value.file_uri.includes('base64'));return {structuredContent:{id:'stage-zip'}};}};
   const makeHost=({privateRoot})=>({run:async request=>{calls.push('run');assert.equal(request.dataset_archive.path,'/private/download/dataset-zip');assert.equal(request.receipts.length,input.objects.filter(x=>x.namespace==='receipts').length);for(const r of request.receipts)assert(saved.has(r.path.slice('/private/'.length)),'all copies durable before host.run');assert.equal(request.provenance_evidence[0].ref,'proof:approved');return {result:{status:fault==='incomplete'?'partial':'complete',observations_base64:observationBase64,observations_sha256:observedHash,archive:{path:privateRoot+'/network.zip',bytes:50,sha256:'f'.repeat(64),manifest_sha256:'1'.repeat(64)},summary:{network_context:1,verified_employers:0}}};},verify:async()=>{calls.push('replay');return {result:{status:fault==='replay'?'failed':'verified',observations_match:fault!=='replay',observations_sha256:fault==='observations'?'0'.repeat(64):observedHash}};}});
-  const analyze=createNetworkAnalyzer({tools,local,settings:{archive_folder_id:'private-folder'},privateRoot:'/private',repositoryRoot:'/repo',codeCommit:commit,datasetArtifact:dataset,provenanceArtifacts:proofs,makeHost,makeAdapters:()=>({drive})});
+  const analyze=createNetworkAnalyzer({tools,local,settings,privateRoot:'/private',repositoryRoot:'/repo',codeCommit:commit,datasetArtifact:dataset,provenanceArtifacts:proofs,makeHost,makeAdapters:()=>({drive})});
   return {analyze,input,calls,saved,local,get analyzed(){return analyzed;}};
 }
 
