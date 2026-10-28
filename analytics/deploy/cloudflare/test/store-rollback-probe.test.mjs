@@ -8,12 +8,12 @@ import {createStoreRollbackProbe} from './store-rollback-probe.mjs';
 const origin='https://synthetic-store-proof.example.invalid';
 const all=[];
 class Bucket{
-  objects=new Map();calls=[];collisionThrows=false;failAttempt=0;corruptRead=false;
+  objects=new Map();calls=[];collisionThrows=false;collisionUntyped=false;failAttempt=0;corruptRead=false;
   async put(key,bytes,options){
     const row={operation:'put',key,body_base64:Buffer.from(bytes).toString('base64'),sha256:await sha256(bytes),options};this.calls.push(row);
     assert.deepEqual(options.onlyIf,{etagDoesNotMatch:'*'});
     if(this.calls.length===this.failAttempt){row.failed=true;throw new Error('synthetic provider outage');}
-    if(this.objects.has(key)){row.created=false;if(this.collisionThrows)throw Object.assign(new Error('conditional rejection'),{status:412});return null;}
+    if(this.objects.has(key)){row.created=false;if(this.collisionUntyped)throw new Error('synthetic untyped locked-object rejection');if(this.collisionThrows)throw Object.assign(new Error('conditional rejection'),{status:412});return null;}
     const entry={bytes:new Uint8Array(bytes),etag:randomUUID(),customMetadata:options.customMetadata};this.objects.set(key,entry);row.created=true;return {etag:entry.etag};
   }
   async head(key){const o=this.objects.get(key);return o?{size:o.bytes.length,etag:o.etag,customMetadata:o.customMetadata}:null;}
@@ -26,6 +26,7 @@ test('actual core forces conditional collision, reallocates, and verifies two pr
  const f=fixture(),result=await call(f);assert.equal(result.status,200);assert.equal(result.body.status,'pass');assert.deepEqual(f.bucket.calls.map(x=>x.created),[true,false,true]);assert.equal(f.bucket.objects.size,2);assert.equal(result.body.seed_before.sha256,result.body.seed_after.sha256);assert.equal(result.body.forward.allocated_ids,2);assert.equal(result.body.forward_after.exact_body_preserved,true);assert.equal(result.body.unsupported_body_schema_retained,true);
 });
 test('R2 412 conditional failure is recognized and retried under a fresh fixed ID',async()=>{const f=fixture();f.bucket.collisionThrows=true;const r=await call(f);assert.equal(r.body.status,'pass');assert.equal(r.body.observations[1].error_status,412);assert.equal(f.bucket.objects.size,2);});
+test('untyped locked collision is recovered by the real core with both original bytes verified',async()=>{const f=fixture();f.bucket.collisionUntyped=true;const r=await call(f);assert.equal(r.status,200);assert.equal(r.body.status,'pass');assert.equal(r.body.observations[1].error_status,null);assert.equal(r.body.observations[1].precondition_error,false);assert.deepEqual(f.bucket.calls.map(x=>x.created),[true,false,true]);assert.equal(r.body.seed_before.sha256,r.body.seed_after.sha256);assert.equal(r.body.forward_after.exact_body_preserved,true);assert.equal(f.bucket.objects.size,2);});
 test('wrong method, host, flag, token and query never touch storage',async()=>{
  const f=fixture();for(const options of [{method:'GET'},{host:'https://wrong.example.invalid'},{token:'wrong'},{path:'/__synthetic/store01?x=1'}])assert.equal((await call(f,options)).status,404);f.env.FARPOINT_STORE01_ENABLED='true';assert.equal((await call(f)).status,404);f.env.FARPOINT_STORE01_ENABLED='1';f.env.FARPOINT_STORE01_TOKEN='short';assert.equal((await call(f)).status,404);assert.equal(f.bucket.calls.length,0);assert.equal(await call(f,{path:'/v1/events'}),null);
 });

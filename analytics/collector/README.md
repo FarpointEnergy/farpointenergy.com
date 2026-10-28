@@ -17,6 +17,14 @@ An accepted body is written synchronously to `receipts/YYYY/MM/DD/<receipt_id>.j
 {"status":"retained","terminal":true,"receipt_id":"generated-random-id","receipt_body_sha256":"sha256-of-exact-http-bytes","analytical_status":"not_evaluated"}
 ```
 
+R2 bucket locks can reject an attempted replacement without a typed precondition
+error. After an untyped conditional-write exception, the adapter checks only that
+same key with authenticated `head`. An existing object permits trying a fresh
+key; an absent object or failed lookup preserves the original storage failure.
+The exception itself never produces an acknowledgement. If a write committed
+before its response was lost, that exact object remains and a later confirmed
+create may add a duplicate receipt. Both are retained for downstream deduplication.
+
 The terminal outcome means the exact batch is durable. It never says the events are valid. Validation and quarantine are versioned analysis observations; no JSON parser or schema validator can prevent retention. This implementation choice follows the design's separation of durable receipt from analytical validity and prevents invalid bodies retrying forever.
 
 ## Receipt v1

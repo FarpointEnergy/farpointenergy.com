@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Read-only OIDC claim comparisons without credentials or collector requests
-        run: node analytics/deploy/cloudflare/test/inspect-store-rollback-oidc.mjs 26aad5c6-0d5d-4a50-b11d-3927ae32e17c "$RUNNER_TEMP/store01-safe-diagnostics"
+        run: node analytics/deploy/cloudflare/test/inspect-store-rollback-oidc.mjs ab19413d-1028-4984-9058-1e4040ab641b "$RUNNER_TEMP/store01-safe-diagnostics"
       - name: Preserve safe identity comparisons
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: One authenticated fixed synthetic operation after arming window
         env:
-          SYNTHETIC_RUN: 26aad5c6-0d5d-4a50-b11d-3927ae32e17c
+          SYNTHETIC_RUN: ab19413d-1028-4984-9058-1e4040ab641b
         run: node analytics/deploy/cloudflare/test/check-store-rollback-oidc.mjs "$SYNTHETIC_RUN" "$RUNNER_TEMP/store01-safe-evidence"
       - name: Preserve safe synthetic proof without credentials
         if: always()

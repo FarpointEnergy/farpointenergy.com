@@ -124,6 +124,32 @@ test('STORE-01: conditional collision preserves old object and allocates new key
 test('STORE-01: repeated collisions return retry without replacing history',async()=>{
   const {bucket,collector}=setup({newId:()=> 'synthetic-collision'});await collect(collector,'old');const old=[...bucket.records.values()][0].bytes.slice();assert.equal((await collect(collector,'new')).response.status,503);assert.equal(bucket.records.size,1);assert.deepEqual([...bucket.records.values()][0].bytes,old);
 });
+test('STORE-01: untyped locked-object rejection allocates a fresh key and preserves history',async()=>{
+  const {bucket,collector}=setup();await collect(collector,'old');const old=[...bucket.records.values()][0].bytes.slice();
+  const put=bucket.put.bind(bucket);bucket.put=async(...args)=>{const result=await put(...args);if(!result)throw new Error('synthetic untyped locked-object rejection');return result;};
+  const ids=['synthetic-000001','synthetic-000002'];const second=setup({bucket,newId:()=>ids.shift()}).collector;
+  const result=await collect(second,'new');assert.equal(result.response.status,202);assert.equal(result.ack.receipt_id,'synthetic-000002');
+  assert.equal(bucket.records.size,2);assert.deepEqual([...bucket.records.values()][0].bytes,old);
+  assert.deepEqual(bucket.operations.map(o=>o.operation),['put','put','head','put']);
+  assert.equal(bucket.operations[1].key,bucket.operations[2].key);assert.notEqual(bucket.operations[2].key,bucket.operations[3].key);
+});
+test('STORE-03: failed new-key put with absent head is not a collision or acknowledgement',async()=>{
+  const {bucket,collector}=setup();bucket.failWrites=true;const result=await collect(collector,'new');
+  assert.equal(result.response.status,503);assert.equal(result.ack.status,'retry');assert.equal(result.ack.receipt_id,undefined);assert.equal(bucket.records.size,0);
+  assert.deepEqual(bucket.operations.map(o=>o.operation),['put','head']);assert.equal(bucket.operations[0].key,bucket.operations[1].key);
+});
+test('STORE-03: head failure preserves the original write failure and never acknowledges',async()=>{
+  const bucket=new MemoryR2(),original=new Error('synthetic original write failure');bucket.put=async()=>{throw original;};bucket.failReads=true;
+  await assert.rejects(new R2CreateOnlyStore(bucket).create('synthetic-key',enc.encode('new')),error=>error===original);
+  const result=await collect(setup({bucket}).collector,'new');assert.equal(result.response.status,503);assert.equal(result.ack.receipt_id,undefined);assert.equal(bucket.records.size,0);assert(!JSON.stringify(result.ack).includes('original'));
+});
+test('ACK-02: committed put with lost response retains duplicate and requires a later confirmed create',async()=>{
+  const bucket=new MemoryR2(),put=bucket.put.bind(bucket);let attempted=0;
+  bucket.put=async(...args)=>{const result=await put(...args);if(++attempted===1)throw new Error('synthetic lost write response');return result;};
+  const result=await collect(setup({bucket}).collector,'synthetic-same-body');assert.equal(result.response.status,202);assert.equal(result.ack.receipt_id,'synthetic-000002');
+  const records=receipts(bucket);assert.equal(records.length,2);assert.equal(records[0].receipt_body_sha256,records[1].receipt_body_sha256);assert.notEqual(records[0].receipt_id,records[1].receipt_id);
+  assert.deepEqual(bucket.operations.map(o=>o.operation),['put','head','put']);
+});
 test('STORE-03 / HIST-02: a new handler instance preserves prior data; no mutation API exists',async()=>{
   const {bucket,collector}=authorized();await seed(collector,2);const next=authorized({bucket}).collector;assert.equal((await allPages(next)).length,2);
   for(const method of ['DELETE','PUT','PATCH']){const response=await next.fetch(new Request('https://candidate.example/receipts/2026/10/23/synthetic-000001.json',{method}));assert.equal(response.status,404);}

@@ -59,6 +59,11 @@ export class R2CreateOnlyStore {
       return object ? {created:true,sha256:hash,etag:object.etag} : {created:false};
     } catch(error) {
       if(error?.status===412 || error?.statusCode===412 || error?.code==='PreconditionFailed') return {created:false};
+      // Locked R2 objects can reject the conditional write without a typed 412.
+      // A same-key existence check permits a fresh key, never an overwrite or
+      // an acknowledgement of this uncertain attempt. A write that committed
+      // before its response was lost may therefore leave a preserved duplicate.
+      try { if(await this.bucket.head(key))return {created:false}; } catch {}
       throw error;
     }
   }
