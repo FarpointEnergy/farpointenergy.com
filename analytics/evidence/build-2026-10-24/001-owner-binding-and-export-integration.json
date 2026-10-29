@@ -1,0 +1,116 @@
+{
+  "record_type": "private_collector_feasibility_checkpoint",
+  "recorded_at": "2026-10-24T23:26:51.917Z",
+  "scope": "owner-private synthetic only",
+  "audience": {
+    "observed_at": "2026-10-24T23:24:24.003Z",
+    "access_mode": "custom",
+    "role": "owner",
+    "owner_count": 1,
+    "user_count": 1,
+    "editor_count": 0,
+    "group_count": 0,
+    "external_count": 0
+  },
+  "owner_binding": {
+    "scope": "authenticated_owner_binding_only",
+    "identity_present": true,
+    "owner_secret_configured": true,
+    "identity_matches_owner": true,
+    "ordinary_export_gate_enabled": false,
+    "source_version": "farpoint-collector/1.0.0+c5b59899b641798ee5a654ff8a47ecafe54bd015dc1f1bdc7d8a36b84328f6d8",
+    "observed_at": "2026-10-24T23:20:47.468Z",
+    "status": "PASS"
+  },
+  "no_identity_probe_original": {
+    "scope": "service_access_without_visitor_identity",
+    "observed_at": "2026-10-24T23:19:14.022319+00:00",
+    "tool": "candidate_owner_binding_check",
+    "identity_headers_sent": false,
+    "uses_bypass_as_identity": false,
+    "http_status": 401,
+    "recognized_application_denial": false,
+    "status": "UNVERIFIED"
+  },
+  "no_identity_interpretation": {
+    "status": "PASS",
+    "scope": "access_denial_only",
+    "layer": "Sites edge",
+    "application_guard_executed": "not established",
+    "bypass_token_accepted": "not established"
+  },
+  "export_disabled_result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "McpServerError: Owner authorization required"
+      }
+    ],
+    "structuredContent": {
+      "error": "McpServerError: Owner authorization required",
+      "error_code": "FORBIDDEN",
+      "error_data": {
+        "type": "http_error",
+        "code": 403,
+        "message": "Owner authorization required",
+        "payload": {
+          "jsonrpc": "2.0",
+          "id": "ff26c3b9-6a65-4dee-9444-5028fba20eb9",
+          "error": {
+            "code": -32001,
+            "message": "Owner authorization required"
+          }
+        },
+        "url": "https://farpoint-lead-collector.karanuppal.chatgpt.site/mcp"
+      }
+    },
+    "isError": true
+  },
+  "private_export_attempt": {
+    "status": "FAIL",
+    "reason": "invalid_arguments",
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "invalid_arguments"
+        }
+      ],
+      "structuredContent": {
+        "error_code": "INVALID_ARGUMENT"
+      },
+      "isError": true
+    },
+    "explicit_null_retry": {
+      "content": [
+        {
+          "type": "text",
+          "text": "invalid_arguments"
+        }
+      ],
+      "structuredContent": {
+        "error_code": "INVALID_ARGUMENT"
+      },
+      "isError": true
+    }
+  },
+  "suspended_deployment": {
+    "id": "appgdep_6add3e8cb6e88191bbff15cfda204d16",
+    "project_id": "appgprj_6adbbaca1c548191aa47200d710de59b",
+    "title": "Farpoint Lead Collector",
+    "version_id": "appgprj_6adbbaca1c548191aa47200d710de59b~appgver_63d030059f5c819189f03ec1853a9ba7",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://farpoint-lead-collector.karanuppal.chatgpt.site",
+    "has_mcp": true,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6adbbaca1c548191aa47200d710de59b",
+    "failure_message": null,
+    "env_set_revision": 5,
+    "updated_at": "2026-10-24T23:26:11.943683+00:00"
+  },
+  "public_tracking_enabled": false,
+  "storage_probe_rerun": false,
+  "records_deleted_or_overwritten": false,
+  "interpretation": "Authenticated owner match passed. Ordinary export exposed a protocol-validation integration bug; no storage failure demonstrated."
+}

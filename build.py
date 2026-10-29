@@ -5,6 +5,24 @@ from content import *
 from inquiry import render_form, thanks_content
 OUT = pathlib.Path(__file__).parent
 E = H.escape
+
+# Public, nonsecret release configuration. Collection stays off until hosted gates pass.
+ANALYTICS = json.loads((OUT / "analytics-config.json").read_text())
+if type(ANALYTICS.get("enabled")) is not bool:
+    raise ValueError("Analytics enabled must be a boolean")
+if ANALYTICS.get("tracker_version") != "1.0.0":
+    raise ValueError("Analytics tracker/config versions differ")
+if set(ANALYTICS) - {"enabled", "endpoint", "privacy_disclosure_version", "tracker_version", "campaign_registry", "referrer_domains"}:
+    raise ValueError("Unexpected public analytics configuration key")
+if ANALYTICS.get("enabled"):
+    from urllib.parse import urlsplit
+    endpoint = urlsplit(ANALYTICS.get("endpoint", ""))
+    if endpoint.scheme != "https" or not endpoint.netloc or endpoint.path != "/v1/events" or endpoint.query or endpoint.fragment or endpoint.username or endpoint.password:
+        raise ValueError("Enabled analytics requires the exact HTTPS collector endpoint")
+    if ANALYTICS.get("privacy_disclosure_version") != "1":
+        raise ValueError("Enabled analytics requires the matching Privacy disclosure")
+(OUT / "analytics-config.js").write_text("/* Generated from analytics-config.json; no credentials belong here. */\nwindow.farpointAnalyticsConfig = Object.freeze(" + json.dumps(ANALYTICS, sort_keys=True, separators=(",", ":")) + ");\n")
+
 MARK = '<svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><rect x="1" y="1" width="38" height="38" fill="none" stroke="#C4732C" stroke-width="3"/><line x1="7" y1="28" x2="33" y2="28" stroke="currentColor" stroke-width="3"/><circle cx="29" cy="13" r="4" fill="#C4732C"/></svg>'
 NAV = [("Products", "products.html"), ("Applications", "applications.html"), ("Manufacturing base", "manufacturing.html"),
        ("Quality", "quality.html"), ("Delivery & warranty", "delivery.html"), ("About", "about.html")]
@@ -129,7 +147,7 @@ section[id],#main{scroll-margin-top:140px}
 
 def page(title, body, current, desc):
     VER = __import__("hashlib").md5(CSS.encode()).hexdigest()[:8]
-    script_versions = {name: __import__("hashlib").sha256((OUT / name).read_bytes()).hexdigest()[:10] for name in ("site.js", "inquiry.js")}
+    script_versions = {name: __import__("hashlib").sha256((OUT / name).read_bytes()).hexdigest()[:10] for name in ("site.js", "analytics-config.js", "tracker.js", "inquiry.js")}
     route = current or "404.html"
     canonical = SITE['domain'].rstrip('/') + ('/' if route == 'index.html' else '/' + route)
     robots = '<meta name="robots" content="noindex,follow">' if route in {'thanks.html','404.html'} else ''
@@ -145,7 +163,7 @@ def page(title, body, current, desc):
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css?v={VER}">
-<script src="site.js?v={script_versions['site.js']}" defer></script><script src="inquiry.js?v={script_versions['inquiry.js']}" defer></script>
+<script src="site.js?v={script_versions['site.js']}" defer></script><script src="analytics-config.js?v={script_versions['analytics-config.js']}" defer></script><script src="tracker.js?v={script_versions['tracker.js']}" defer></script><script src="inquiry.js?v={script_versions['inquiry.js']}" defer></script>
 </head><body><a class="skip" href="#main">Skip to content</a>
 <nav class="nav" aria-label="Main navigation"><div class="wrap"><a class="brand" href="index.html">{MARK}FARPOINT&nbsp;<span>ENERGY</span></a>
 <button type="button" class="navbtn" aria-controls="site-menu" aria-expanded="false" hidden><i aria-hidden="true"></i>Menu</button>
@@ -278,10 +296,11 @@ about = hero("About", a['h'], a['intro']) + f"""
 (OUT/"about.html").write_text(page("About — Farpoint Energy", about, "about.html", "Farpoint Energy supplies power and distribution transformers for the US grid, based in New York."))
 
 # ---------- PRIVACY
+analytics_privacy = ("Farpoint uses first-party website analytics to understand visits, product interest, quotation steps and technical errors. Random browser and session identifiers use browser storage; permitted campaign codes and broad referring-source categories describe how a visit arrived. The tracker does not collect typed form contents, names, email addresses, specification text or attachments. Technical request records include available IP metadata; network information may indicate an organization but does not identify a person or establish their employer. Collection is processed through Cloudflare Workers and private Cloudflare R2 object storage. Private raw records and report versions are retained without automatic expiry, with archives and analysis through ChatGPT Work and Google Drive. Unacknowledged events may remain in your browser until successfully received; browser blocking or cleared storage can leave gaps. Inquiry identifiers connect observed website activity to requests actually received by Farpoint." if ANALYTICS.get("enabled") else "This website does not currently send inquiry analytics to a tracking service.")
 privacy = hero("Privacy", "Inquiry information", "How information sent through this website is handled.") + f"""
 <section class="s"><div class="wrap"><h2>Information you send</h2><p class="mt">The quotation form collects your contact details and the project information you choose to provide. Farpoint uses it to review your requirement, prepare a response and communicate about the potential supply.</p>
 <h2 class="mt">Form and email processing</h2><p class="mt">The form is submitted through <a href="https://formsubmit.co/privacy.pdf">FormSubmit</a> and routed to {SITE['email']}. Email attachments go directly to that business inbox. FormSubmit and the email provider process information as part of those services. Contact us first if a project requires a separate confidential document process.</p>
-<h2 class="mt">Website services</h2><p class="mt">This static website is hosted on GitHub Pages and uses Google Fonts. Those services receive technical request information when your browser loads their resources. This website does not currently send inquiry analytics to a tracking service.</p><p>After an accepted form submission, temporary browser session storage may display the confirmation. It is cleared after the confirmation is displayed. A source or campaign code may be included with an inquiry; personal information is not added to page URLs.</p>
+<h2 class="mt">Website services</h2><p class="mt">This static website is hosted on GitHub Pages and uses Google Fonts. Those services receive technical request information when your browser loads their resources. {analytics_privacy}</p><p>After an accepted form submission, temporary browser session storage may display the confirmation. It is cleared after the confirmation is displayed. A source or campaign code may be included with an inquiry; personal information is not added to page URLs.</p>
 <h2 class="mt">Questions and requests</h2><p class="mt">For questions about information you have sent, or to request correction or deletion, email <a href="mailto:{SITE['email']}">{SITE['email']}</a>.</p></div></section>"""
 (OUT/"privacy.html").write_text(page("Privacy — Farpoint Energy", privacy, "privacy.html", "How contact and project information submitted through the Farpoint website is processed."))
 
@@ -303,9 +322,11 @@ Static GitHub Pages site. Edit `content.py` for copy and `build.py` for layout, 
 
 ## Review checks
 
-Run `python3 check_site.py`, `node check_inquiry.js`, and `node check_context.js`. These check baseline preservation, local navigation, reproducible builds, and mocked inquiry/context behavior. They do not send email or prove delivery. Browser review and one controlled inquiry receipt check are required before release.
+Run `python3 check_site.py`, `node check_inquiry.js`, `node check_context.js`, and `node check_tracker.js`. These check baseline preservation, local navigation, reproducible builds, and mocked inquiry/context behavior. They do not send email or prove delivery. Browser review and one controlled inquiry receipt check are required before release.
 
-The quote form progressively enhances a native FormSubmit POST. Only explicit provider acceptance shows success; uncertain transport results retain the entered values. No analytics destination is configured. Preview snapshots must disable submissions and indexing.
+`node check_browser.mjs` exercises actual Chromium, WebKit and Firefox engines against the local website, an isolated local HTTPS collector and synthetic form responses. Install OpenSSL, Playwright 1.62.1 and its browser engines first, or use the `Browser QA` GitHub Actions workflow. Missing engines are BLOCKED and fail the check. These tests never submit a real RFQ or certify inbox delivery. Preserve every run's screenshots, reports and logs in the permanent R2/Drive evidence archive; GitHub artifacts are temporary transfer buffers.
+
+The quote form progressively enhances a native FormSubmit POST. Only explicit provider acceptance shows success; uncertain transport results retain the entered values. The first-party tracker is configured in `analytics-config.json`. Release activation requires passed hosted acceptance checks, the exact HTTPS collector endpoint and matching Privacy disclosure. Preview snapshots must disable submissions and indexing.
 
 Power and distribution are sections of Products. The four former standalone draft routes are compatibility redirects. Catalog PDFs remain unchanged and unlinked.
 """)

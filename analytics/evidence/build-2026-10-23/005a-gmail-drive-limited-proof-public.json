@@ -1,0 +1,56 @@
+{
+  "record_type": "limited_hosted_gmail_drive_archive_evidence",
+  "date": "2026-10-23",
+  "status": "PASS",
+  "scope": "One existing controlled synthetic FormSubmit message; exact Gmail raw capture and create-only Drive archive with byte readback.",
+  "source": {
+    "gmail_representation": "raw RFC2822 base64url",
+    "strict_decode_verified": true,
+    "raw_message_bytes": 15302,
+    "mime_type": "text/html",
+    "body_business_field_rows": 20,
+    "attachment_count": 0
+  },
+  "checks": {
+    "new_files_only": true,
+    "folder_sole_owner_verified": true,
+    "each_uploaded_file_sole_owner_verified": true,
+    "source_files_exact_drive_byte_readback": 3,
+    "separate_completion_created_after_source_verification": true,
+    "completion_exact_drive_byte_readback": true,
+    "source_messages_unchanged": true,
+    "no_data_deleted_or_overwritten": true
+  },
+  "archived_files": [
+    {
+      "name": "gmail-connector-capture.json",
+      "bytes": 21066,
+      "sha256": "2a10790b17c7c04002cc45c2b79bd2e2e8f3f6640c5cd933a36a20a68daa4201"
+    },
+    {
+      "name": "controlled-formsubmit-message.eml",
+      "bytes": 15302,
+      "sha256": "c1f1db127c550a2a419a39fcc217f8b366fb32d83b2fa58d9db1ffcd7aa02edc"
+    },
+    {
+      "name": "capture-manifest.json",
+      "bytes": 1475,
+      "sha256": "3e6668379ec19a3a209a97be8591a2c578e778affd50e62046767635a1d772be"
+    },
+    {
+      "name": "archive-completion.json",
+      "bytes": 2769,
+      "sha256": "b0a398d782fcd9c0bdbb7d2841d139675c354a89bfbe703698e71171cf12849b"
+    }
+  ],
+  "final_readback_verified_at": "2026-10-23T21:31:09.981811+00:00",
+  "clarified_capability": "The newly available Gmail read_email raw representation supplies original RFC2822 bytes after base64url decoding; earlier read-thread-only limitation no longer applies to this message.",
+  "limits": [
+    "Does not certify mailbox-history completeness or pagination.",
+    "No attachment was present; attachment capture remains untested.",
+    "Does not verify new form correlation fields or browser-to-inbox funnel.",
+    "Does not certify retention locks, disaster recovery or future unattended reliability.",
+    "Existing original request-value manifest was not available; 20 observed received rows are not a new field-by-field comparison claim."
+  ],
+  "privacy": "Public-safe evidence summary. Gmail IDs, Drive IDs/links, mailbox identifiers, raw headers/body and temporary signed download references are deliberately excluded."
+}

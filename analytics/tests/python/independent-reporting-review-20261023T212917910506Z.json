@@ -1,0 +1,75 @@
+{
+  "reviewer": "independent-staff-reporting-review",
+  "reviewed_at": "2026-10-23T21:29:17.910138+00:00",
+  "scope": "Python attribution, declared contacts, company observation history and exact archive replay; synthetic local review only",
+  "decision": "changes_requested",
+  "source_sha256": {
+    "analytics/python/farpoint_analytics/reporting.py": "e7e14fbc59d4d6c68d95245878070e5105c75fbf632a5681ed701e07ceaa31c6",
+    "analytics/python/farpoint_analytics/analysis.py": "fa8326f64889337274714b89a6d1b8270f58ab05bb4144d56f3ca1e2f2ea51ef",
+    "analytics/python/farpoint_analytics/__main__.py": "298c7be6df3cb86684dc1247f8e8f5e352a028c22a3f0585812b8cc3c39075f2",
+    "analytics/tests/python/test_reporting.py": "0edc1ef2599ec3385b8d31f140b2133bfd4ce4279cbe8f8db146dd9dcd46dc16",
+    "docs/technical/lead-intelligence-design-v1.1.md": "c6a1714d7c135044d477b7279fe86039270e8199eba0c3ccaf0917f92b0c7d51",
+    "docs/technical/lead-intelligence-test-plan-v1.md": "1d33157e62942fba37ed4fb44495505cb045ceeee75e55b7306656a97772b952"
+  },
+  "baseline_test_result": {
+    "command": "PYTHONPATH=analytics/python python3 -m unittest discover -s analytics/tests/python -v",
+    "tests": 40,
+    "outcome": "passed",
+    "duration_seconds": 0.61
+  },
+  "findings": [
+    {
+      "id": "REPORT-REVIEW-01",
+      "severity": "medium",
+      "summary": "Distinct accepted observation times inside one millisecond are collapsed before latest-evidence selection.",
+      "expected": "Only the later corporate correction is active; earlier VPN remains historical.",
+      "actual": {
+        "session_id": "derived_19028dd15ca7a4cdd4986534",
+        "employer": null,
+        "identity_category": "unknown",
+        "possible_company": null,
+        "network_organizations": [],
+        "reason": "noncorporate_or_conflicting_evidence",
+        "observation_ids": [
+          "synthetic-correction",
+          "synthetic-network-observation"
+        ],
+        "active_observation_ids": [
+          "synthetic-correction",
+          "synthetic-network-observation"
+        ]
+      },
+      "proposed": "Compare original parsed datetimes, preserve original timestamp precision and add regression."
+    },
+    {
+      "id": "REPORT-REVIEW-02",
+      "severity": "medium",
+      "summary": "Equivalent equal-time mail classifications select evidence based on input order.",
+      "expected": "Canonical report identical after input order reversal.",
+      "actual_equal": false,
+      "first_contact_ids": [
+        "syn_C_G1"
+      ],
+      "reversed_contact_ids": [
+        "synthetic-same-meaning-new-id"
+      ],
+      "proposed": "Select deterministic canonical classification or retain all equivalent evidence; add regression."
+    }
+  ],
+  "positive_findings": [
+    "Cohort denominators and nonexclusive product/application/reference engagement preserve session counts.",
+    "Declared contacts are derived only from selected verified new-inquiry classifications linked to exact capture hashes; conflicts remain explicit.",
+    "Company observation booleans alone cannot establish original-IP provenance; exact trusted receipt and approved provenance tags are required.",
+    "Network owner remains distinct from possible company; no verified-employer claim.",
+    "Exact company-observation input and expanded report are included in archive and offline byte-identical replay.",
+    "Frozen golden fixture counts remain passing."
+  ],
+  "not_certified": [
+    "Hosted source-IP provenance",
+    "Provider license and retention approval",
+    "Owner-only export authorization",
+    "Remote archive read-back",
+    "Storage retention locks",
+    "Production tracking readiness"
+  ]
+}

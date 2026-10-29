@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-10-23T21:45:23.595435+00:00",
+  "reviewer": "independent work pipeline reviewer",
+  "disposition": "approved_for_reviewed_code_scope",
+  "scope": "Work orchestration, native connector adapters, local host bridge, generated Functions bundle, explicit two-pass Work classification recipe, synthetic fault tests. No production-readiness approval.",
+  "source_hashes": {
+    "README.md": "4117ea620a462c473ff960ebbbf361b668e721e6a2e8ff3c7071027f0e67e3b1",
+    "TASK.md": "8cc2a75dda7368cea82f65ec56f94921d125f24cbf1983c773ef28da632ffb20",
+    "build-bundle.mjs": "a8fe6dcd8e77b3cb1203f802c6003289f60c8d74b0fc3c8aef766dd693027610",
+    "host-bridge.mjs": "8d5f95f8734ad0fde2eb0ac19a59db00286d6cae72f8273c8056e5e92c9531fb",
+    "local_bridge.py": "13bb81b045cb046ba8e72bc43a85bb4ce32100fac04cc37e60055a3631e1efa0",
+    "native-adapters.mjs": "2713ff5094d2799ad001951a22ebfa6062d685337db235d5fbfb02410ff4f6a5",
+    "pipeline.mjs": "2a4525714b9f8b01f049a8b7b7dfc7fcc56a3c15609d60c35c257d2ff678e171",
+    "portable-runtime.mjs": "17d900448c1a3a49d355330f43a141abf98b808f43da1cdfbb96072cb5b47ae6",
+    "work.bundle.js": "db127601b87c2d44eed5e72345c9d549d1ca758f77b3f9f5db560688faa56d3b"
+  },
+  "checks": {
+    "record": "analytics/work/evidence/independent-final-20261023T214446345362Z/checks.json",
+    "sha256": "5cb430fb3aae7f34a5db50f2651c5c7dc13ede50d5fb04283228cefd6ea95576",
+    "source_unchanged": true,
+    "javascript_passed": 32,
+    "python_passed": 5,
+    "failed": 0,
+    "actual_functions_v8_bundle_load_unicode_sha256": "PASS",
+    "mechanical_bundle_exact_match": true,
+    "bundle_source_sha256": "ec8817d558e131d0d63eb270dd94e2999c100bbf8323c12ae67ccfa59da4c599",
+    "bundle_sha256": "db127601b87c2d44eed5e72345c9d549d1ca758f77b3f9f5db560688faa56d3b"
+  },
+  "closed_findings": [
+    {
+      "id": "WORK-REVIEW-01",
+      "resolution": "Watchdog binds exact job identity/version/scope/kind and reporting window; unrelated/stale/pending report runs cannot suppress the expected warning. Later reviewed run can satisfy interval while prior pending history remains."
+    },
+    {
+      "id": "WORK-REVIEW-02",
+      "resolution": "Source completeness separated from report authority in JSON, Markdown and manifests; TASK.md supplies executable two-pass Work classification recipe with evidence/prompt/model/rule/commit metadata and no separate hosted model."
+    },
+    {
+      "id": "WORK-REVIEW-03",
+      "resolution": "Repeated collector key requires matching listed size and hash; discrepancy preserves raw observations and makes source partial."
+    },
+    {
+      "id": "WORK-REVIEW-04",
+      "resolution": "Failure evidence retains known created IDs, paths, hashes, verification state, prior successes and ambiguous no-ID creates; post-upload native metadata errors carry known ID; analysis failure best-effort archives acquired raw data."
+    },
+    {
+      "id": "WORK-REVIEW-05",
+      "resolution": "Explicit reviewed versus unreviewed provenance prevents archived automatic defaults from becoming reviewed on re-ingest. New reviewed observation required; originals retained."
+    },
+    {
+      "id": "WORK-REVIEW-06",
+      "resolution": "Future or noncanonical/finer precision review timestamps stay pending; only visible canonical millisecond UTC review observations clear pending, preserving original finer-precision records."
+    }
+  ],
+  "additional_hardening": [
+    "Per-file private sharing checked on upload verification and every read.",
+    "Raw malformed mail and available artifacts survive normalization failure."
+  ],
+  "unresolved_code_findings": [],
+  "release_limits": [
+    "Hosted owner authorization and original-IP provenance remain separate release gates.",
+    "Retention controls and full storage recovery are not certified by this review.",
+    "Actual unattended full export/archive/report/watchdog and notification paths remain unproven.",
+    "Full mailbox pagination, large raw messages and attachments remain live acceptance tests.",
+    "Required portable runtime/dependency archive and independent offline recovery remain explicit acceptance work.",
+    "Ambiguous no-ID uploads require observed-ID inventory reconciliation without overwrite or deletion."
+  ]
+}

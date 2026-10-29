@@ -1,0 +1,209 @@
+{
+  "record_type": "public_synthetic_intake_feasibility",
+  "recorded_at": "2026-10-25T18:52:06.025861+00:00",
+  "collector_source_commit": "397304703f819c111b6a5706c436ce75c87deef4",
+  "authorized_public_window": {
+    "opened": {
+      "mode": "public",
+      "revision": 2,
+      "updated_at": "2026-10-25T18:40:48.752201+00:00",
+      "owners": 1,
+      "other_users": 0,
+      "groups": 0,
+      "external": 0
+    },
+    "closed": {
+      "mode": "custom",
+      "revision": 3,
+      "updated_at": "2026-10-25T18:42:16.482586+00:00",
+      "owners": 1,
+      "other_users": 0,
+      "groups": 0,
+      "external": 0
+    },
+    "config_during_public": {
+      "GATEWAY_IDENTITY_VERIFIED": "0",
+      "PRIVATE_CANDIDATE_BOOTSTRAP": "0",
+      "PRIVATE_OWNER_EXPORT_ENABLED": "0"
+    },
+    "authorization": "User approved temporary public synthetic tests and return to owner-private."
+  },
+  "http_verification": {
+    "scope": "anonymous_synthetic_http_evidence_only",
+    "verified_at": "2026-10-25T18:47:02.400483+00:00",
+    "expected_check_count": 14,
+    "observed_check_count": 14,
+    "complete_check_set": true,
+    "all_http_checks_passed": true,
+    "six_distinct_valid_receipt_ids": true,
+    "duplicate_request_bytes_match": true,
+    "boundary_and_malformed_fixture_bytes_match": true,
+    "original_ip_provenance_verified": false,
+    "storage_readback_verified": false,
+    "browser_cors_enforcement_verified": false,
+    "application_owner_guard_verified": false,
+    "bootstrap_handler_disabled_verified": false,
+    "checks": [
+      {
+        "name": "health",
+        "status": 200,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "preflight",
+        "status": 204,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "json",
+        "status": 202,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "duplicate",
+        "status": 202,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "text-plain",
+        "status": 202,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "malformed-json",
+        "status": 202,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "invalid-utf8",
+        "status": 202,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "max-body",
+        "status": 202,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "unsupported-type",
+        "status": 415,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "foreign-origin",
+        "status": 403,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "missing-origin",
+        "status": 403,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "oversize",
+        "status": 413,
+        "passed": true,
+        "errors": []
+      },
+      {
+        "name": "anonymous-export",
+        "status": 401,
+        "passed": true,
+        "errors": [],
+        "scope": "edge_access_denied_application_handler_unverified"
+      },
+      {
+        "name": "disabled-bootstrap",
+        "status": 401,
+        "passed": true,
+        "errors": [],
+        "scope": "edge_access_denied_application_handler_unverified"
+      }
+    ]
+  },
+  "storage_verification": {
+    "status": "PASS",
+    "scope": "captured_http_to_authenticated_object_bytes",
+    "total_objects_verified": 13,
+    "object_bytes_verified": 51036,
+    "original_objects_unchanged": 3,
+    "new_receipts_exact": 6,
+    "rejections_verified": 4,
+    "duplicate_receipts_distinct": true,
+    "unexpected_objects": 0,
+    "source_ip": "unavailable_unverified_null_in_all_new_receipts",
+    "retention_policy_verified": false,
+    "browser_cors_verified": false,
+    "public_gateway_identity_verified": false,
+    "production_ready": false
+  },
+  "independent_review": {
+    "approved_scope": "captured_http_and_authenticated_storage_evidence",
+    "http_regressions_passed": 12,
+    "storage_corruption_cases_rejected": 4
+  },
+  "private_archive": {
+    "owner_only_verified": true,
+    "actual_remote_readback_verified": true,
+    "fresh_directory_restore_verified": true,
+    "files": 71,
+    "total_uncompressed_bytes": 4429289,
+    "zip_bytes": 190687,
+    "zip_sha256": "9697243a89e7702fbc280a04bc82652f4cf779885cae699ed27b5a1f028bac95",
+    "manifest_sha256": "d1eb0a7fba062cda992447cbbf7a5961eb6c7157f8166f2372f7eadb1584ce12",
+    "private_destinations": "omitted"
+  },
+  "final_deployment": {
+    "id": "appgdep_6ade4e3fa8c4819193274f9ea45d2da7",
+    "project_id": "appgprj_6adbbaca1c548191aa47200d710de59b",
+    "title": "Farpoint Lead Collector",
+    "version_id": "appgprj_6adbbaca1c548191aa47200d710de59b~appgver_235cb9ae0d8c8191abf4af16ce4628ab",
+    "type": "publish",
+    "status": "succeeded",
+    "has_mcp": true,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6adbbaca1c548191aa47200d710de59b",
+    "failure_message": null,
+    "env_set_revision": 9,
+    "updated_at": "2026-10-25T18:45:26.320366+00:00"
+  },
+  "final_access": {
+    "mode": "custom",
+    "revision": 3,
+    "owner_count": 1,
+    "user_count": 1,
+    "group_count": 0,
+    "external_count": 0
+  },
+  "final_flags": {
+    "GATEWAY_IDENTITY_VERIFIED": "0",
+    "PRIVATE_CANDIDATE_BOOTSTRAP": "0",
+    "PRIVATE_OWNER_EXPORT_ENABLED": "0"
+  },
+  "final_authenticated_export_status": 403,
+  "first_public_health_status": 401,
+  "later_fresh_public_health_status": 200,
+  "initial_denial_cause": "unresolved",
+  "limitations": [
+    "HTTP Origin headers are not browser CORS enforcement",
+    "anonymous MCP edge denial does not verify app owner guard",
+    "current wrapper does not extract verified visitor IP",
+    "bound-bucket retention policy unverified",
+    "remaining hosted auth, RFQ, scheduled operation and full runtime recovery gates remain pending"
+  ],
+  "production_ready": false,
+  "live_tracking_enabled": false,
+  "rfq_submitted": false,
+  "recurring_reporting_enabled": false
+}

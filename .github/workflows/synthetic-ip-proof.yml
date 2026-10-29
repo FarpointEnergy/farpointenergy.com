@@ -1,0 +1,30 @@
+name: One-shot synthetic IP proof
+
+on:
+  push:
+    branches: [codex/lead-intelligence-design-v1]
+    paths:
+      - '.github/workflows/synthetic-ip-proof.yml'
+      - 'analytics/deploy/cloudflare/test/github-ip-proof.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-ip-proof:
+    if: github.repository == 'FarpointEnergy/farpointenergy.com'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Record bounded synthetic IPv4 evidence privately
+        env:
+          FARPOINT_SYNTHETIC_INTAKE_PROOF: '1'
+        run: python3 analytics/deploy/cloudflare/test/github-ip-proof.py
+      # No secrets, artifacts, RFQs, deployment or recurring schedule. Raw own-
+      # network diagnostics are sent only to the existing private probe record.
+      # Logs contain allowlisted status, receipt keys and hashes, never IPs.

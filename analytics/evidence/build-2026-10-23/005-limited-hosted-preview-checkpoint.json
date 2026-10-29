@@ -1,0 +1,119 @@
+{
+  "record_type": "append_only_limited_hosted_and_preview_evidence",
+  "record_id": "build-2026-10-23-checkpoint-005",
+  "created_at": "2026-10-23T21:36:05.925393+00:00",
+  "previous_acceptance_checkpoint": "004-evidence-metadata-correction.json",
+  "previous_acceptance_checkpoint_sha256": "f17e68efe528d11a65f39bf17e00a1042ca1f02a28bca8027e4525b79b280d71",
+  "acceptance_case_status_updates": [],
+  "interpretation": "These narrow results add evidence and supersede only the specifically stated earlier capability/configuration observations. They do not close full mailbox/export/archive/browser/recovery/operations gates, and do not change the82case accounting in004. No private customer archive IDs,mail IDs,account addresses,rawmail or credentials are included.",
+  "safe_evidence_copies": [
+    {
+      "path": "005a-gmail-drive-limited-proof-public.json",
+      "bytes": 2476,
+      "sha256": "f005b3022631722ff334d7499ff98e1c901d7642e5d676375a98c286604e689f"
+    },
+    {
+      "path": "005b-form-provider-denial-public.json",
+      "bytes": 1986,
+      "sha256": "e119b6d29b4149f75a0b5645de12023b53158b348450f7d1f2e02bea82502032"
+    }
+  ],
+  "collector_configuration": {
+    "status": "PASS",
+    "scope": "Same saved candidate version redeployed with environment revision2;ordinaryexports still fail closed.",
+    "deployment_id": "appgdep_6adbcf748e4881919fdfcf70cff640f0",
+    "succeeded_at": "2026-10-23T21:20:52.777675Z",
+    "source_change": false,
+    "environment_revision": 2,
+    "GATEWAY_IDENTITY_VERIFIED": "0",
+    "ordinary_list_probe": {
+      "operation": "list_records",
+      "limit": 1,
+      "http_status": 403,
+      "expected_outcome": "Owner authorization denied while gateway-verification gate remains disabled.",
+      "not_proven": "Successful owner-only export or gateway anti-spoofing."
+    },
+    "supersedes": "Earlier environment revision2saved-but-not-redeployed observation only."
+  },
+  "mail_archive": {
+    "status": "PASS",
+    "scope": "One existing controlled message fetched as rawRFC2822;three source files and a separate completion uploaded as new restrictedDrivefiles and eachbyte-readback verified.",
+    "raw_message_bytes": 15302,
+    "observed_received_business_rows": 20,
+    "attachments_present": 0,
+    "not_proven": [
+      "Current browser-to-inbox submission",
+      "Six new form correlation fields",
+      "Original submitted-value comparison",
+      "Full mailbox-history completeness",
+      "Attachments",
+      "Retention locks",
+      "Disaster recovery",
+      "Future unattended reliability"
+    ],
+    "supersedes": "Earlier read-thread-only raw-message format limitation for this tested message."
+  },
+  "new_form_attempt": {
+    "status": "BLOCKED",
+    "attempts": 1,
+    "http_status": 403,
+    "provider_error": "Cloudflare1010browser_signature_banned",
+    "provider_acceptance_observed": false,
+    "field_comparison_status": "NOT RUN",
+    "bypass_attempted": false,
+    "retry_attempted": false,
+    "inbox_match_count": 0,
+    "not_proven": "Absence of a match from this explicitly denied request is not evidence of permanentloss or ordinarybrowser failure."
+  },
+  "private_website_preview": {
+    "url": "https://farpoint-analytics-review.karanuppal.chatgpt.site",
+    "source_commit": "c161d743ede2b1523f17ecb3edabb6fd367a89bc",
+    "deployment_id": "appgdep_6adbd1863ff88191a08da226236255dc",
+    "succeeded_at": "2026-10-23T21:28:46Z",
+    "tracking_enabled": false,
+    "submissions_enabled": false,
+    "indexing_enabled": false,
+    "snapshot_note": "An inquiry uncertainty-text edit followed this preview publication; refreshsource mappingbeforeclaimingthisisthelatestworkingtree."
+  },
+  "browser_checks": {
+    "status": "PASS",
+    "scope": "Implementation-owner-observed Chromium CSSiframe responsive preview checks only.",
+    "widths_css_pixels": [
+      320,
+      390,
+      768,
+      1366
+    ],
+    "page_horizontal_overflow": false,
+    "opening_offer_and_email_visible": true,
+    "reference_and_entered_requirements_preserved": true,
+    "optional_details_initially_collapsed": true,
+    "simulated_fetch_error_fields_preserved": true,
+    "simulated_fetch_error_mailto_and_retry_visible": true,
+    "keyboard_menu": "Observed working",
+    "pointer_menu": "Inconclusive",
+    "not_proven": [
+      "Actual desktopSafari/WebKit",
+      "Actual mobileSafari or touchdevice",
+      "Firefox",
+      "Real formprovider delivery",
+      "Real cross-tab/lifecycle persistence",
+      "Mobile performance traces"
+    ]
+  },
+  "hosting_next_access": {
+    "status": "NOT RUN",
+    "recommendation": "IfSitescannotexposeessentialretention/IPcontrol,use the same smallcollectorandobjectstore under a Farpoint-controlledCloudflareaccount; no database or analysisserver is implied.",
+    "available_plugin_search": "Cloudflare search returned an empty plugin list in thisrun; this is not a claim that everypossibleintegration was exhausted.",
+    "official_sources_checked_on": "2026-10-23",
+    "official_sources": [
+      "https://developers.cloudflare.com/agents/model-context-protocol/cloudflare/servers-for-cloudflare/",
+      "https://developers.cloudflare.com/r2/buckets/bucket-locks/"
+    ],
+    "documented_access": "OAuthMCP endpoint https://mcp.cloudflare.com/mcp exposes account APIoperations forWorkers/R2. Actualaccountconnectionandpermissions remainrequired.",
+    "documented_retention": "R2supportsindefinitebucketlockrulesandinspectionAPI;privilegedadministratorscanremoverules,so thisisnotadmin-proofimmutability.",
+    "production_infrastructure_changed": false
+  },
+  "production_tracking_enabled": false,
+  "production_release_approved": false
+}

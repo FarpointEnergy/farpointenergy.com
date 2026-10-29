@@ -1,0 +1,13 @@
+{
+  "test_suite": "cross-language",
+  "command": [
+    "node",
+    "analytics/tests/collector/cross-language.mjs"
+  ],
+  "started_at": "2026-10-23T21:47:25.628650+00:00",
+  "ended_at": "2026-10-23T21:47:25.826569+00:00",
+  "exit_code": 0,
+  "status": "PASS",
+  "stdout_sha256": "c639398b0586fe71e4ec814cf4d31a458faad8397aac9a6cc9c09b0fef9c15da",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

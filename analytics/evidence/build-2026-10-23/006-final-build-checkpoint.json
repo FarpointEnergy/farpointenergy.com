@@ -1,0 +1,1418 @@
+{
+  "record_type": "append_only_final_build_checkpoint",
+  "record_id": "build-2026-10-23-checkpoint-006",
+  "created_at": "2026-10-23T21:48:29.763638+00:00",
+  "previous_acceptance_checkpoint": {
+    "path": "analytics/evidence/build-2026-10-23/004-evidence-metadata-correction.json",
+    "sha256": "f17e68efe528d11a65f39bf17e00a1042ca1f02a28bca8027e4525b79b280d71"
+  },
+  "previous_limited_checkpoint": {
+    "path": "analytics/evidence/build-2026-10-23/005-limited-hosted-preview-checkpoint.json",
+    "sha256": "0deff0d73f42d9826d507218c120654f8c2f3b299e771d842c878812606228f4"
+  },
+  "normative_design": {
+    "path": "docs/technical/lead-intelligence-design-v1.1.md",
+    "sha256": "c6a1714d7c135044d477b7279fe86039270e8199eba0c3ccaf0917f92b0c7d51"
+  },
+  "normative_plan": {
+    "path": "docs/technical/lead-intelligence-test-plan-v1.md",
+    "sha256": "1d33157e62942fba37ed4fb44495505cb045ceeee75e55b7306656a97772b952"
+  },
+  "source_baseline": "3e48ca35cf3414d40b677cac8839d052602ab1e9",
+  "implementation_commit_at_execution": null,
+  "source_inventory": {
+    "path": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/source-before.json",
+    "sha256": "ef7131e30859d744e25e489563e05d1e5e00bd2c5d41a42e9d40bb0b1123103e"
+  },
+  "source_file_count": 83,
+  "source_unchanged_during_checks": true,
+  "local_execution": {
+    "path": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+    "sha256": "062e8412c3a7ad32a82318333afd55dbee95abc8c8153acb4c02f7525bdaa282"
+  },
+  "local_results": {
+    "commands_passed": 13,
+    "commands_failed": 0,
+    "collector_tests": 35,
+    "python_analysis_tests": 42,
+    "tracker_assertions": 149,
+    "tracker_gzip_bytes": 4967,
+    "context_cases": 71,
+    "wrapper_tests": 5,
+    "work_javascript_tests": 32,
+    "work_python_bridge_tests": 5,
+    "inquiry_mocked_suite": "PASS",
+    "cross_language_integration": "PASS",
+    "website_routes": 17,
+    "website_build_reproducible": true,
+    "work_bundle_reproducible": true,
+    "preview_matching_source_assets": 26,
+    "diff_whitespace": "PASS",
+    "count_interpretation": "Unit tests, assertions, cases and commands are different measures; do not sum them or substitute them for the82-case acceptance plan."
+  },
+  "independent_code_reviews": [
+    {
+      "path": "analytics/tests/python/independent-reporting-approval-20261023T213400069280Z.json",
+      "sha256": "feac877416c10bc6dad95dc37174772dcb494177d284b310964ef38beb5ade10"
+    },
+    {
+      "path": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+      "sha256": "9059d279f389194da8cf6c00297fc977a8b0268e8db13916d28d61921931db0a"
+    }
+  ],
+  "isolated_actual_native_drive_proof": {
+    "path": "analytics/work/evidence/native-drive-proof-20261023214557927.json",
+    "sha256": "64b2db041317aef3c27fd41db5a3691261c7c4262de17a83e8dfc9395c6fd396"
+  },
+  "native_drive_scope": "One244-byte synthetic file created via actual FunctionsV8 bundle/native Drive adapter, owner-only and parent checked, exact bytes read back. No collector/mail/RFQ calls; not full pipeline or retention proof.",
+  "preview": {
+    "url": "https://farpoint-analytics-review.karanuppal.chatgpt.site",
+    "source_commit": "cf5137e35105af9e1d70596fbada5e4b669fe52f",
+    "version_id": "appgprj_6adbd0ce52e8819184153c7324db481e~appgver_c7ee440d902c8191b02cdf3d8cc4a62e",
+    "deployment_id": "appgdep_6adbd419cf2881918fcf0ad6b0cd825f",
+    "succeeded_at": "2026-10-23T21:39:43.853442Z",
+    "source_manifest_sha256": "0d63eb78419292944bf5f112cfddf4055418d235569801db9ddf1b3a9c347197",
+    "asset_count": 26,
+    "exact_source_mapping_verified": true,
+    "audience": "private",
+    "tracking_enabled": false,
+    "form_submissions_enabled": false,
+    "indexing_enabled": false,
+    "browser_scope": "Earlier Chromium CSS iframe responsive/failure-state QA. Final normalization only changed whitespace/cache identifiers; final source mapping was verified locally. Actual mobile engines, pointer menu behavior and performance remain separate gates."
+  },
+  "correction_to_005": {
+    "field": "private_website_preview.snapshot_note",
+    "explanation": "The earlier preview already contained the shorter inquiry uncertainty copy, verified by source-manifest hashes. The supposed subsequent text edit was an observation error. Later EOF normalization and regenerated cache references were republished as final previewv3; its26-asset manifest exactly matches the final source."
+  },
+  "configuration_state": {
+    "collector_owner_secret": "Stored only as a Site secret; not included in public evidence.",
+    "environment_revision": 2,
+    "environment_revision_deployed": true,
+    "GATEWAY_IDENTITY_VERIFIED": "0",
+    "ordinary_list_probe_http_status": 403,
+    "ordinary_list_interpretation": "Expected fail-closed denial, not proof of successful authorized export.",
+    "retention_lock_verified": false,
+    "production_tracking_enabled": false,
+    "recurring_jobs_activated": false
+  },
+  "summary": {
+    "NOT RUN": 47,
+    "PASS": 5,
+    "BLOCKED": 30,
+    "FAIL": 0
+  },
+  "cases": [
+    {
+      "case_id": "RAW-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "python",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "RAW-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "python",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "RAW-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "python",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "RAW-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "python",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "RAW-05",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "python",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "RAW-06",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted admission/receipt/retrieval and retained-evidence sequence before full acceptance.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "python",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "HASH-01",
+      "status": "PASS",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Shared canonical bytes and hashes agree in JS/Python against independently specified vectors.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "tracker",
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "HASH-02",
+      "status": "PASS",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Invalid raw/canonical numeric/string/key/schema cases are rejected in the tested strict analytical path, with raw preservation separately exercised.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "tracker",
+          "python",
+          "collector"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "HASH-03",
+      "status": "PASS",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Rebatched identical events retain distinct receipt hashes and one analytical identity; changed payload variants remain conflicted.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "ACK-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable integrated hosted acknowledgement/browser failure sequence before full acceptance.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "tracker",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "ACK-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable integrated hosted acknowledgement/browser failure sequence before full acceptance.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "tracker",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "ACK-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable integrated hosted acknowledgement/browser failure sequence before full acceptance.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "tracker",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "ACK-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable integrated hosted acknowledgement/browser failure sequence before full acceptance.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "tracker",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "ACK-05",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable integrated hosted acknowledgement/browser failure sequence before full acceptance.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "tracker",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "BROWSER-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Run the actual supported browser lifecycle, tabs, denied-storage and absent-instrumentation paths; mocks are components only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "tracker",
+          "inquiry"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "BROWSER-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Run the actual supported browser lifecycle, tabs, denied-storage and absent-instrumentation paths; mocks are components only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "tracker",
+          "inquiry"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "BROWSER-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Run the actual supported browser lifecycle, tabs, denied-storage and absent-instrumentation paths; mocks are components only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "tracker",
+          "inquiry"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "BROWSER-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Run the actual supported browser lifecycle, tabs, denied-storage and absent-instrumentation paths; mocks are components only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "tracker",
+          "inquiry"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "STORE-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted collector collision-allocation/redeploy/capacity sequence; the hosted primitive probe alone does not exercise every case step.",
+      "hosted_component": {
+        "status": "PASS",
+        "scope": "R2 conditional-create collision and readback only",
+        "evidence": "002-hosted-storage-check.json"
+      },
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "wrapper"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "STORE-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Available Sites controls have not enabled verification of actual bucket lifecycle, expiry and retention-lock policy.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "wrapper"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "STORE-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable hosted collector collision-allocation/redeploy/capacity sequence; the hosted primitive probe alone does not exercise every case step.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "wrapper"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "HIST-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete the cross-system history/correction/deployment inspection and retained originals evidence.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "HIST-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete the cross-system history/correction/deployment inspection and retained originals evidence.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "EXPORT-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete actual authenticated hosted multi-page/chunk export and remote reconciliation evidence; local simulated provider coverage only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "EXPORT-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete actual authenticated hosted multi-page/chunk export and remote reconciliation evidence; local simulated provider coverage only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "EXPORT-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete actual authenticated hosted multi-page/chunk export and remote reconciliation evidence; local simulated provider coverage only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "EXPORT-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete actual authenticated hosted multi-page/chunk export and remote reconciliation evidence; local simulated provider coverage only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "EXPORT-05",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete actual authenticated hosted multi-page/chunk export and remote reconciliation evidence; local simulated provider coverage only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "ARCHIVE-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Remote export-to-Drive byte/count/hash readback and separate completion not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      },
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "ARCHIVE-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Remote ambiguous/partial upload reconciliation not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      },
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "ARCHIVE-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Dedicated private customer archive destination and unauthorized-access test not established; shared documentation folder is unsuitable.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      },
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "ARCHIVE-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish applicable independently retained remote archive and failure evidence.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      },
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "RESTORE-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish isolated archive-only recovery with all required source/runtime/evidence inputs.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      },
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "RESTORE-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Only existing-interpreter local numerical replay passed; retained portable runtime/OS artifacts and isolated offline reconstruction remain unproved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      },
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "RESTORE-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish isolated archive-only recovery with all required source/runtime/evidence inputs.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      },
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "AUTH-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted owner/anonymous/other-user/revoked caller matrix pending; ordinary export remains fail-closed.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "wrapper"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "AUTH-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted trusted-gateway anti-spoofing and initialization boundary not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "wrapper"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "AUTH-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted bypass-token/guessing/direct-route negatives not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "wrapper"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "AUTH-04",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted authenticated cursor/chunk operation matrix not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "wrapper"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "AUTH-05",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted owner-to-anonymous cache-isolation sequence not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "wrapper"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "AUTH-06",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Run actual intended hosted path against the case matrix; local authorization tests are not gateway proof.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "wrapper"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "IP-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Two independent controlled egress networks and supported IPv4/IPv6 comparisons not available as verified evidence.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "IP-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual gateway forwarding/spoof tests not proved; source IP remains unavailable.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "IP-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Exact deployment path source-IP provenance not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "PRIV-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete release/configuration/sentinel/hostile-data review across actual browser, hosted, archive and processing paths as applicable.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "tracker",
+          "inquiry",
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "PRIV-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete release/configuration/sentinel/hostile-data review across actual browser, hosted, archive and processing paths as applicable.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "tracker",
+          "inquiry",
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "PRIV-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete release/configuration/sentinel/hostile-data review across actual browser, hosted, archive and processing paths as applicable.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "tracker",
+          "inquiry",
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "PRIV-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete release/configuration/sentinel/hostile-data review across actual browser, hosted, archive and processing paths as applicable.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "tracker",
+          "inquiry",
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "PRIV-05",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete release/configuration/sentinel/hostile-data review across actual browser, hosted, archive and processing paths as applicable.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "collector",
+          "tracker",
+          "inquiry",
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "ENRICH-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete applicable approved-provider and research-boundary evidence; offline classifications do not prove employer matching.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "ENRICH-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Selected real provider retention/account terms and live provider path not approved; local failure classification only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "ENRICH-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Trustworthy visitor IP and consenting known corporate/noncorporate comparison unavailable; company-identification goal remains open.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "GOLD-01",
+      "status": "PASS",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Corrected explicit S8 fixture matches the fixed oracle counts, attribution and outcomes at both cutoffs.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "GOLD-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish case-level evidence/independent acceptance for every prescribed ambiguity, exclusion and frozen replay condition.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "GOLD-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish case-level evidence/independent acceptance for every prescribed ambiguity, exclusion and frozen replay condition.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "GOLD-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish case-level evidence/independent acceptance for every prescribed ambiguity, exclusion and frozen replay condition.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "FORM-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual controlled minimal-inquiry delivery/route/correlation evidence not captured.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "inquiry",
+          "tracker",
+          "context"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "FORM-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual all-fields and reference-prefilled inquiry receipt comparisons not captured.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "inquiry",
+          "tracker",
+          "context"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "FORM-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish real browser and integrated controlled form case with preserved fields/reference/fallback and required inbox evidence.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "inquiry",
+          "tracker",
+          "context"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "FORM-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish real browser and integrated controlled form case with preserved fields/reference/fallback and required inbox evidence.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "inquiry",
+          "tracker",
+          "context"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "FORM-05",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual no-JavaScript/analytics-blocked inbox receipt paths not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "inquiry",
+          "tracker",
+          "context"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "FORM-06",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish real browser and integrated controlled form case with preserved fields/reference/fallback and required inbox evidence.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "inquiry",
+          "tracker",
+          "context"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "MAIL-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "One earlier controlled message was retrieved raw and archived, but a new provider request was explicitly denied HTTP403 before acceptance. Original submitted values and all28 received business/legacy/correlation fields were not compared for the current form.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "MAIL-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Direct-email attachment delivery and byte-hash capture not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "MAIL-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish applicable live connector and independent raw capture/archive evidence in addition to local fixtures.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "MAIL-04",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "One exact raw RFC2822 message and its connector response were archived and read back. Full history pagination, large messages and attachments are not yet proved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "MAIL-05",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish applicable live connector and independent raw capture/archive evidence in addition to local fixtures.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "python"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "UX-01",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish actual responsive/keyboard/buyer review and retain versioned browser evidence; source checks are components only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "site",
+          "context",
+          "inquiry"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "UX-02",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish actual responsive/keyboard/buyer review and retain versioned browser evidence; source checks are components only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "site",
+          "context",
+          "inquiry"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "UX-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Chromium responsive CSS frames were checked at320/390/768/1366px; required actual WebKit/mobileSafari/touch and Firefox evidence remains absent.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "site",
+          "context",
+          "inquiry"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "UX-04",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish actual responsive/keyboard/buyer review and retain versioned browser evidence; source checks are components only.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "site",
+          "context",
+          "inquiry"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "JOB-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Reviewed portable Work bundle and one isolated native Drive create/readback passed. Actual scheduled complete collector export, mailbox capture, analysis, archive and report pipeline has not been run.",
+      "hosted_component": null,
+      "related_suite_evidence": null,
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "JOB-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Separate missed-run watchdog execution and notification latency not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": null,
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "JOB-03",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Scheduled common-mode outage and catch-up behavior not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": null,
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "JOB-04",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual canary-to-independent-archive chain and false-zero health comparison not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": null,
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "JOB-05",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Actual scheduled failure evidence/notification/catch-up matrix not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": null,
+      "additional_local_evidence": {
+        "record": "analytics/work/evidence/independent-approval-20261023T214523595396Z.json",
+        "relationship": "Approved code and synthetic fault tests; not execution of this full acceptance case."
+      }
+    },
+    {
+      "case_id": "PERF-01",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted load envelope has not been run after confirmed quota/budget bounds.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "tracker"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "PERF-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Bounded hosted burst and durable reconciliation have not been run.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "tracker"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "PERF-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Complete three-run repeatable mobile profile and main-thread traces; gzip-size/backlog checks are only components.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "tracker"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "RELEASE-01",
+      "status": "PASS",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "All13 final local commands passed on one unchanged83-file source inventory, including existing preservation/form/context checks, meaningful analytics/Work tests, deterministic bundle and reproducible website build.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "site",
+          "inquiry",
+          "context",
+          "tracker",
+          "collector",
+          "python",
+          "wrapper",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "RELEASE-02",
+      "status": "BLOCKED",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Hosted additive deploy/code rollback preserving old and new exported raw history not proved.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "site",
+          "context",
+          "inquiry",
+          "tracker",
+          "collector",
+          "python",
+          "wrapper",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    },
+    {
+      "case_id": "RELEASE-03",
+      "status": "NOT RUN",
+      "status_scope": "Full named acceptance case, not individual test/assertion count. NOT RUN can include passed local components but is not full case completion.",
+      "rationale": "Finish final public artifact/secret/candidate-hook scan and exact pushed source/version mapping; no website migration is claimed.",
+      "hosted_component": null,
+      "related_suite_evidence": {
+        "suites": [
+          "site",
+          "context",
+          "inquiry",
+          "tracker",
+          "collector",
+          "python",
+          "wrapper",
+          "cross-language"
+        ],
+        "execution_record": "analytics/evidence/build-2026-10-23/final-integrated-20261023T214723Z-c6a3759a-2f26-4b52-b854-721b77a1f0ea/execution.json",
+        "relationship": "These passing suites concern nearby code only. They do not establish that this case or any prescribed case step was executed. Use the explicit full case status/rationale and case-specific execution evidence."
+      }
+    }
+  ],
+  "gate_status": {
+    "G1": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G2": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G3": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G4": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G5": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G6": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G7": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    },
+    "G8": {
+      "status": "BLOCKED",
+      "reason": "All mandatory case evidence for the enabled fixed-goal capability is not complete."
+    }
+  },
+  "release_approved": false,
+  "limitations": [
+    "Neither independent code approval nor passing local suites certify production readiness.",
+    "Hosted IP provenance, owner-only exports, storage retention, full mailbox/form delivery, remote recovery, unattended operations, required browser engines and performance remain incomplete.",
+    "The minimum architecture and fixed business goals are unchanged; no database or always-on analysis runtime has been added."
+  ]
+}

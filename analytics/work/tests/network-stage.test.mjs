@@ -1,0 +1,138 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {randomBytes,createHash} from 'node:crypto';
+import {workJSON,workHash} from '../pipeline.mjs';
+import {createNetworkAnalyzer,createNetworkStageHost} from '../network-stage.mjs';
+
+const cfVersion='farpoint-cloudflare-collector/1.0.0+'+'a'.repeat(64);
+const cfSettings={archive_folder_id:'private-folder',cloudflare_account_id:'a'.repeat(32),cloudflare_bucket_name:'synthetic-bucket',cloudflare_verified_ip_hostname:'synthetic.example.invalid'};
+async function scopedFixture({status='verified',provenance='cloudflare_direct_edge_v1',version=cfVersion,settings=cfSettings}={}){
+  const f=await fixture(undefined,{settings});
+  f.input.config.verified_ip_provenances={cloudflare_direct_edge_v1:['proof:approved']};
+  f.input.config.verified_ip_source_scope={schema_version:1,provenance:'cloudflare_direct_edge_v1',hostname:cfSettings.cloudflare_verified_ip_hostname,cloudflare_account_id:cfSettings.cloudflare_account_id,cloudflare_bucket_name:cfSettings.cloudflare_bucket_name,collector_versions:[cfVersion],evidence_refs:['proof:approved']};
+  const bytes=workJSON({collector_version:version,source_ip:{status,provenance,address:'192.0.2.1'},synthetic:true});
+  f.input.objects=[{namespace:'receipts',local_path:'raw/scoped.json',size:bytes.length,sha256:await workHash(bytes)}];
+  f.input.readLocal=()=>bytes;
+  return {...f,bytes};
+}
+
+test('reviewed Cloudflare source scope checks exact version and retains an audit without rewriting receipts',async()=>{
+  const f=await scopedFixture(),original=f.bytes.slice();
+  await f.analyze(f.input);assert.deepEqual(f.bytes,original);
+  const audit=JSON.parse(new TextDecoder().decode([...f.saved.entries()].find(([path])=>path.endsWith('/source-scope-verification.json'))[1]));
+  assert.equal(audit.verified_receipts.length,1);assert.equal(audit.verified_receipts[0].sha256,await workHash(original));assert.equal(audit.original_receipts_modified,false);
+});
+
+test('matching provenance with an unreviewed collector version fails before network generation',async()=>{
+  const f=await scopedFixture({version:'farpoint-cloudflare-collector/1.0.0+'+'b'.repeat(64)});
+  await assert.rejects(()=>f.analyze(f.input),error=>error.code==='network_source_version_unreviewed');
+  assert(!f.calls.includes('run'));assert(!f.calls.includes('analyze'));assert([...f.saved.keys()].some(x=>x.includes('/failure-')));
+});
+
+test('unavailable or unapproved receipt provenance remains unchanged instead of inheriting scope approval',async()=>{
+  for(const options of [{status:'unavailable',version:'old-unverified'},{provenance:'unverified',version:'other-source'}]){
+    const f=await scopedFixture(options),before=f.bytes.slice();await f.analyze(f.input);assert.deepEqual(f.bytes,before);
+    const audit=JSON.parse(new TextDecoder().decode([...f.saved.entries()].find(([path])=>path.endsWith('/source-scope-verification.json'))[1]));assert.equal(audit.verified_receipts.length,0);
+  }
+});
+
+test('Cloudflare scope is required and binds account bucket hostname and exact evidence refs',async()=>{
+  for(const alter of [
+    input=>delete input.config.verified_ip_source_scope,
+    input=>input.config.verified_ip_source_scope.cloudflare_account_id='b'.repeat(32),
+    input=>input.config.verified_ip_source_scope.cloudflare_bucket_name='another-bucket',
+    input=>input.config.verified_ip_source_scope.hostname='another.example.invalid',
+    input=>input.config.verified_ip_source_scope.evidence_refs=['proof:unretained'],
+    input=>input.config.verified_ip_source_scope.collector_versions=['*'],
+    input=>input.config.verified_ip_source_scope.collector_versions=[cfVersion,cfVersion]
+  ]){
+    const f=await scopedFixture();alter(f.input);await assert.rejects(()=>f.analyze(f.input),error=>error.code==='network_source_scope_unverified');assert.deepEqual(f.calls,[]);
+  }
+});
+
+async function fixture(fault,{settings={archive_folder_id:'private-folder'}}={}){
+  const commit='a'.repeat(40),calls=[],saved=new Map(),body=workJSON({synthetic:true});
+  const dataset={id:'dataset-zip',bytes:28709893,sha256:'b'.repeat(64),manifest_name:'ARCHIVE-MANIFEST.json',expected_manifest_sha256:'c'.repeat(64),dataset_member:'data/dataset.tsv',provenance_member:'data/provenance.json'};
+  const proofs=[{id:'proof-file',bytes:200,sha256:'d'.repeat(64),ref:'proof:approved'}];
+  const observation={kind:'network',provider:'IPtoASN',employer:null,network_organization:'SYNTHETIC NETWORK'};
+  const observedBytes=workJSON([fault==='identity'?{...observation,company:'invented'}:observation]),observedHash=await workHash(observedBytes);
+  const observationBase64=Buffer.from(fault==='observation-bytes'?workJSON([{...observation,network_organization:'DRIFTED'}]):observedBytes).toString('base64');
+  const input={objects:[{namespace:'receipts',local_path:'raw/receipt.json',size:body.length,sha256:await workHash(body)}],readLocal:()=>fault==='receipt'?workJSON({wrong:true}):body,config:{execution_code_commit:commit,verified_ip_provenances:{synthetic:['proof:approved']}}};
+  let analyzed=null;
+  const local={create:async(path,bytes)=>{assert(!saved.has(path));saved.set(path,bytes);return '/private/'+path;},analyze:async value=>{calls.push('analyze');analyzed=value;return {report:{status:'complete'},artifacts:[]};}};
+  const drive={assertPrivate:async()=>({verified:fault!=='privacy',owner_only:fault!=='privacy'}),verifyFile:async(id,expected)=>{calls.push('download:'+id);if(fault==='dataset'&&id==='dataset-zip')throw Error('not_downloadable');return {id,verified:fault!=='readback'||id!=='stage-zip',path:'/private/download/'+id,bytes:expected.bytes,sha256:expected.sha256,url:'https://drive.example/'+id};}};
+  const tools={mcp__codex_apps__google_drive_upload_file:async value=>{calls.push('upload');assert.equal(typeof value.file_uri,'string');assert(!value.file_uri.includes('base64'));return {structuredContent:{id:'stage-zip'}};}};
+  const makeHost=({privateRoot})=>({run:async request=>{calls.push('run');assert.equal(request.dataset_archive.path,'/private/download/dataset-zip');assert.equal(request.receipts.length,input.objects.filter(x=>x.namespace==='receipts').length);for(const r of request.receipts)assert(saved.has(r.path.slice('/private/'.length)),'all copies durable before host.run');assert.equal(request.provenance_evidence[0].ref,'proof:approved');return {result:{status:fault==='incomplete'?'partial':'complete',observations_base64:observationBase64,observations_sha256:observedHash,archive:{path:privateRoot+'/network.zip',bytes:50,sha256:'f'.repeat(64),manifest_sha256:'1'.repeat(64)},summary:{network_context:1,verified_employers:0}}};},verify:async()=>{calls.push('replay');return {result:{status:fault==='replay'?'failed':'verified',observations_match:fault!=='replay',observations_sha256:fault==='observations'?'0'.repeat(64):observedHash}};}});
+  const analyze=createNetworkAnalyzer({tools,local,settings,privateRoot:'/private',repositoryRoot:'/repo',codeCommit:commit,datasetArtifact:dataset,provenanceArtifacts:proofs,makeHost,makeAdapters:()=>({drive})});
+  return {analyze,input,calls,saved,local,get analyzed(){return analyzed;}};
+}
+
+test('network receipt batches are bounded and durably flushed before generation',async()=>{
+  const f=await fixture();f.input.config.local_write_mode='bounded_batches_v1';
+  f.input.objects=Array.from({length:65},(_,i)=>({...f.input.objects[0],local_path:'raw/'+i}));
+  const groups=[];f.local.createMany=async rows=>{assert(rows.length<=64);assert(rows.reduce((n,x)=>n+x.bytes.length,0)<=256*1024);groups.push(rows.length);return Promise.all(rows.map(x=>f.local.create(x.path,x.bytes)));};
+  await f.analyze(f.input);assert.deepEqual(groups,[64,1]);assert(f.calls.includes('run'));
+});
+
+test('late receipt-integrity failure flushes valid staged prefix but never starts network generation',async()=>{
+  const f=await fixture();f.input.config.local_write_mode='bounded_batches_v1';
+  f.input.objects=Array.from({length:66},(_,i)=>({...f.input.objects[0],local_path:'raw/'+i}));f.input.objects[65].sha256='0'.repeat(64);
+  const groups=[];f.local.createMany=async rows=>{groups.push(rows.length);return Promise.all(rows.map(x=>f.local.create(x.path,x.bytes)));};
+  await assert.rejects(()=>f.analyze(f.input),/network_receipt_integrity_mismatch/);
+  assert.deepEqual(groups,[64,1]);assert(!f.calls.includes('run'));assert.equal([...f.saved.keys()].filter(x=>x.includes('/receipts/')).length,65);
+});
+
+test('network batch failure retains copied prefix and prevents host.run or analysis',async()=>{
+  const f=await fixture();f.input.config.local_write_mode='bounded_batches_v1';f.input.objects=[f.input.objects[0],{...f.input.objects[0],local_path:'raw/second'}];
+  f.local.createMany=async rows=>{await f.local.create(rows[0].path,rows[0].bytes);throw Error('synthetic local write interrupted');};
+  await assert.rejects(()=>f.analyze(f.input),/network_stage_operation_failed/);
+  assert.equal([...f.saved.keys()].filter(x=>x.includes('/receipts/')).length,1);assert(!f.calls.includes('run'));assert(!f.calls.includes('analyze'));
+});
+
+test('automatic network stage restores pinned data, freezes observations, verifies archive replay before analysis',async()=>{
+  const f=await fixture();const result=await f.analyze(f.input);
+  assert.deepEqual(f.calls,['download:dataset-zip','download:proof-file','run','upload','download:stage-zip','replay','analyze']);
+  assert.equal(f.analyzed.companyObservations.length,1);assert.equal(f.analyzed.companyObservations[0].employer,null);
+  assert.equal(result.artifacts[0].name,'network-stage-verification.json');
+  assert([...f.saved.keys()].some(x=>x.endsWith('/verified.json')));
+});
+
+test('privacy, dataset, receipt, generation, identity, readback and replay failures cannot silently become empty observations',async()=>{
+  for(const fault of ['privacy','dataset','receipt','incomplete','identity','observation-bytes','readback','replay','observations']){
+    const f=await fixture(fault);await assert.rejects(()=>f.analyze(f.input));assert(!f.calls.includes('analyze'),fault);
+    assert([...f.saved.keys()].some(x=>x.includes('/failure-')),fault);
+  }
+});
+
+test('network execution source must equal frozen report source commit',async()=>{
+  const f=await fixture();f.input.config.execution_code_commit='0'.repeat(40);
+  await assert.rejects(()=>f.analyze(f.input),/network_stage_execution_commit_mismatch/);
+  assert.equal(f.calls.length,0);
+});
+
+test('stage retry appends a new attempt and never replaces an earlier observation',async()=>{
+  const f=await fixture();await f.analyze(f.input);await f.analyze(f.input);
+  assert.equal([...f.saved.keys()].filter(x=>x.endsWith('/verified.json')).length,2);
+});
+
+test('private stage cannot be created inside the versioned repository',()=>{
+  assert.throws(()=>createNetworkStageHost({tools:{},privateRoot:'/repo/private',repositoryRoot:'/repo'}),/private_network_stage_inside_repository/);
+  assert.throws(()=>createNetworkStageHost({tools:{},privateRoot:'/repo',repositoryRoot:'/repo'}),/private_network_stage_inside_repository/);
+  assert.throws(()=>createNetworkStageHost({tools:{},privateRoot:'/repo/../escape',repositoryRoot:'/repo'}),/invalid_network_stage_path/);
+  assert.throws(()=>createNetworkStageHost({tools:{},privateRoot:'/repo/./private',repositoryRoot:'/repo'}),/invalid_network_stage_path/);
+});
+
+test('network host transports only bounded observation chunks with full integrity checks',async()=>{
+  const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+  const expected=randomBytes(30000).toString('base64'),bytes=Buffer.from(JSON.stringify({status:'ok',result:{observations:[expected]}}));
+  const path='bridge-results/00000000-0000-4000-8000-000000000000.json';let chunks=0;
+  const tools={exec_command:async()=>({session_id:1,output:'READY\n'}),write_stdin:async({chars})=>{
+    const request=JSON.parse(chars);assert.equal(request.stream_results,true);
+    if(request.op==='run')return {output:JSON.stringify({status:'ok',result_stream:{path,bytes:bytes.length,sha256:hash(bytes),encoding:'utf-8-json'}})};
+    assert.equal(request.op,'read_result');assert.equal(request.max_bytes,8192);chunks++;
+    const part=bytes.subarray(request.offset,request.offset+8192);
+    return {output:JSON.stringify({status:'ok',path,offset:request.offset,total_bytes:bytes.length,bytes:part.length,sha256:hash(part),base64:part.toString('base64')})};
+  }};
+  const host=createNetworkStageHost({tools,privateRoot:'/private/stage',repositoryRoot:'/repo'});
+  const result=await host.run({});assert.equal(result.result.observations[0],expected);assert(chunks>4);
+});

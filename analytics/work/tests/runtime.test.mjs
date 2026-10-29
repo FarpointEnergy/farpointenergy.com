@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createHash,randomBytes} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
+import {WORK_VERSION} from '../pipeline.mjs';
+import {portableEncode,portableDecode,portableSHA256,portableBase64,portableUnbase64,createPortableRuntime} from '../portable-runtime.mjs';
+test('SHA256 matches independent Node crypto across block boundaries and binary inputs',()=>{for(const n of [0,1,55,56,63,64,65,127,128,1024,32768,65536]){const b=randomBytes(n);assert.equal(Buffer.from(portableSHA256(b)).toString('hex'),createHash('sha256').update(b).digest('hex'));}});
+test('UTF8 encoding matches native including astral Unicode and isolated surrogates',()=>{for(const s of ['', 'ASCII','Farpoint — 电力 🧑🏽‍🚀','\uD800','\uDFFF']){const bytes=portableEncode(s);assert.deepEqual(bytes,new TextEncoder().encode(s));assert.equal(portableDecode(bytes),new TextDecoder('utf-8',{fatal:true}).decode(bytes));}});
+test('malformed UTF8 and invalid base64 fail closed',()=>{for(const bytes of [[0xc0,0x80],[0xed,0xa0,0x80],[0xf4,0x90,0x80,0x80],[0xe2,0x82]])assert.throws(()=>portableDecode(Uint8Array.from(bytes)));assert.throws(()=>portableUnbase64('abc!'));});
+test('base64 roundtrips independent binary vectors',()=>{for(const n of [0,1,2,3,4,31,32,4096]){const bytes=randomBytes(n);assert.equal(portableBase64(bytes),bytes.toString('base64'));assert.deepEqual(portableUnbase64(bytes.toString('base64')),new Uint8Array(bytes));}});
+test('UUID stream requires supplied OS entropy and yields distinct correctly formed IDs',()=>{assert.throws(()=>createPortableRuntime('AAAA'),/os_entropy_required/);const runtime=createPortableRuntime(randomBytes(32).toString('base64')),ids=new Set();for(let i=0;i<1000;i++){const id=runtime.crypto.randomUUID();assert.match(id,/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/);ids.add(id);}assert.equal(ids.size,1000);});
+test('reviewed bundle loads without relying on host Web APIs',async()=>{const source=await readFile(new URL('../work.bundle.js',import.meta.url),'utf8');const api=new Function('entropyBase64',source)(randomBytes(32).toString('base64'));assert.equal(api.WORK_VERSION,WORK_VERSION);assert.equal(await api.workHash(api.workJSON({a:1})),createHash('sha256').update('{"a":1}').digest('hex'));});

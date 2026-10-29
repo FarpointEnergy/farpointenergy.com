@@ -1,0 +1,45 @@
+name: Farpoint one-run synthetic store rollback proof
+on:
+  push:
+    branches: [codex/lead-intelligence-design-v1]
+permissions:
+  contents: read
+jobs:
+  identity-diagnostic:
+    if: contains(github.event.head_commit.message, '[farpoint-store-diagnose]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Read-only OIDC claim comparisons without credentials or collector requests
+        run: node analytics/deploy/cloudflare/test/inspect-store-rollback-oidc.mjs 46ec98a4-21e0-4a23-8ed2-0463d6d01305 "$RUNNER_TEMP/store01-safe-diagnostics"
+      - name: Preserve safe identity comparisons
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: store01-safe-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/store01-safe-diagnostics
+          if-no-files-found: error
+  store-proof:
+    if: contains(github.event.head_commit.message, '[farpoint-store-go]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: One authenticated fixed synthetic operation after arming window
+        env:
+          SYNTHETIC_RUN: 46ec98a4-21e0-4a23-8ed2-0463d6d01305
+        run: node analytics/deploy/cloudflare/test/check-store-rollback-oidc.mjs "$SYNTHETIC_RUN" "$RUNNER_TEMP/store01-safe-evidence"
+      - name: Preserve safe synthetic proof without credentials
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: store01-safe-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/store01-safe-evidence
+          if-no-files-found: error

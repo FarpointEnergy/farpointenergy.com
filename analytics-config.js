@@ -1,0 +1,2 @@
+/* Generated from analytics-config.json; no credentials belong here. */
+window.farpointAnalyticsConfig = Object.freeze({"campaign_registry":{"campaign":["power"],"medium":["referral"],"source":["website"]},"enabled":true,"endpoint":"https://farpoint-lead-collector-candidate.farpointenergy.workers.dev/v1/events","privacy_disclosure_version":"1","referrer_domains":{"bing.com":"search","duckduckgo.com":"search","google.com":"search","linkedin.com":"social","www.bing.com":"search","www.google.com":"search","www.linkedin.com":"social"},"tracker_version":"1.0.0"});

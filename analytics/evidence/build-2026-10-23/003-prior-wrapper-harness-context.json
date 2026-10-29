@@ -1,0 +1,11 @@
+{
+  "record_type": "historical_attempt_context",
+  "created_at": "2026-10-23T21:21:09.984035+00:00",
+  "scope": "Preserve known earlier failed wrapper-harness attempt without inventing an original log.",
+  "status": "FAIL",
+  "attempt": "Initial wrapper test harness",
+  "reported_failure": "JavaScript harness syntax error",
+  "correction": "Harness corrected before final successful five-test execution; application source unchanged by this documentation checkpoint.",
+  "evidence_limit": "Original console output was retained in conversation history but no exact standalone failure log is available to this record author. This contextual record is not a reconstructed original log.",
+  "later_success": "analytics/evidence/build-2026-10-23/final-local-20261023T211710Z-5e3595aa-c7f9-424d-9cf5-ff0867d403f3/wrapper.json"
+}

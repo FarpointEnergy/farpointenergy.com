@@ -1,0 +1,14 @@
+{
+  "test_suite": "collector",
+  "command": [
+    "node",
+    "--test",
+    "analytics/tests/collector/collector.test.mjs"
+  ],
+  "started_at": "2026-10-23T21:47:23.726645+00:00",
+  "ended_at": "2026-10-23T21:47:24.230603+00:00",
+  "exit_code": 0,
+  "status": "PASS",
+  "stdout_sha256": "521eb117c0990d45eb898095b1da187b8ed1eece1ac7e406363a0769bcdd3b0b",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

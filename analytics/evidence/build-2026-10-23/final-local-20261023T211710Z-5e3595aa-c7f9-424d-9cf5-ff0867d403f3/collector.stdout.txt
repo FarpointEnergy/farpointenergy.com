@@ -1,0 +1,43 @@
+✔ RAW-01 / ACK-01: exact raw body/hash only after completed storage write (20.34222ms)
+✔ RAW-02 / RAW-05 / RAW-06 / ACK-05: malformed and unsupported bytes retained without parsing or echoes (15.151903ms)
+✔ RAW-03: accepts and retains exactly 32767 body bytes (4.784502ms)
+✔ RAW-03: accepts and retains exactly 32768 body bytes (4.408356ms)
+✔ RAW-03: overflow is rejected without falsely retaining truncated bytes (1.517876ms)
+✔ RAW-03: chunked absent-length overflow checks received bytes (1.476398ms)
+✔ RAW-03: 49/50/51-event batches all preserved; analyst applies event-count boundary later (2.776731ms)
+✔ RAW-03: unsupported compression retained as rejection metadata only (1.399201ms)
+✔ PRIV-02: body stream exception codes cannot echo arbitrary sensitive strings (1.554298ms)
+✔ ACK-01 / STORE-03: storage failure returns retry and never leaks exception (1.903539ms)
+✔ ACK-01: ambiguous/unconfirmed adapter return cannot produce accepted acknowledgement (1.253103ms)
+✔ ACK-01: asynchronous write must resolve before response (11.277169ms)
+✔ ACK-02: lost response/retry leaves both raw receipts and equal body hashes (1.531822ms)
+✔ STORE-01: conditional collision preserves old object and allocates new key (2.372543ms)
+✔ STORE-01: repeated collisions return retry without replacing history (2.388583ms)
+✔ STORE-03 / HIST-02: a new handler instance preserves prior data; no mutation API exists (4.298426ms)
+✔ AUTH-01/02: owner configuration and proven gateway identity are both mandatory (1.940592ms)
+✔ AUTH-01/02/03: anonymous, other owner, forged email, duplicate header and bypass token denied locally (3.509982ms)
+✔ AUTH-01: correctly configured simulated owner may list/read only allowed record namespaces (4.217057ms)
+✔ AUTH-03: guessed raw routes, owner arguments and wrong methods cannot read private data (1.071185ms)
+✔ AUTH-04: modified, wrong-scope, expired and different-owner cursors are denied (8.7186ms)
+✔ AUTH-04: chunk traversal, malformed keys and invalid offsets fail closed (3.279034ms)
+✔ AUTH-05: all successful and denied data responses are no-store and vary by identity (1.669151ms)
+✔ AUTH-06: explicit origins and preflight; CORS is not used as read authentication (3.278153ms)
+✔ IP-02/PRIV-01: unproven headers never become an address; sensitive headers never stored (1.125551ms)
+✔ IP adapter failure degrades attribution only; never prevents durable receipt (0.939136ms)
+✔ EXPORT-01/03: provider short pages and 2P+7 keys across dates export exactly; resume works (22.624268ms)
+✔ EXPORT-01: response budget fails explicitly; smaller-page rescan loses no objects (39.644741ms)
+✔ EXPORT-02: near-limit receipt reconstructs exact bytes through multiple chunks (23.379244ms)
+✔ EXPORT-04: later records before prior cursor appear on complete reconciliation (6.736798ms)
+✔ EXPORT-05: storage faults, malformed pages and incomplete chunks never claim completion (2.263192ms)
+✔ EXPORT-05: empty, oversized and repeated provider cursors never produce unresumable continuation (4.210414ms)
+✔ EXPORT-01/02: complete MCP responses fit declared byte budgets including duplicate representations (9.567301ms)
+✔ EXPORT-01: escaped JSON-RPC IDs are counted exactly in the full response budget (38.815203ms)
+✔ MCP discovery exposes only capability schemas before bootstrap; health exposes no identities (1.317514ms)
+ℹ tests 35
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 389.329763

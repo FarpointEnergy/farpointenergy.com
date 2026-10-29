@@ -1,0 +1,417 @@
+[
+  {
+    "path": ".gitignore",
+    "bytes": 163,
+    "sha256": "895b0ed2c760a748647b4bf4fa6121f5d43b362f10d02763544750415a93031b"
+  },
+  {
+    "path": ".nojekyll",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "404.html",
+    "bytes": 3713,
+    "sha256": "48c6bbf2e1ac557fe86868ef90d5b22e2791d59e2c577dbb80ccbddda2e89814"
+  },
+  {
+    "path": "CNAME",
+    "bytes": 19,
+    "sha256": "9d23bbc4d5321a7bf36d405cd9cfe3f703771a28757d1de64888545fcb9748ae"
+  },
+  {
+    "path": "Farpoint_Energy_Product_Catalog_2026.pdf",
+    "bytes": 191072,
+    "sha256": "5cd4fb8414867c6f1b3c5e08f0b20a6ca2907a893c62a4d2a17ab3740a523b7f"
+  },
+  {
+    "path": "Farpoint_Energy_Product_Catalog_2026_Solar_Storage_Edition.pdf",
+    "bytes": 191072,
+    "sha256": "5cd4fb8414867c6f1b3c5e08f0b20a6ca2907a893c62a4d2a17ab3740a523b7f"
+  },
+  {
+    "path": "README.md",
+    "bytes": 1138,
+    "sha256": "49ce1eebc030d43ac2f98fe43010a0eb7e44b57cb324e3c3aa53f9ec7e7ee309"
+  },
+  {
+    "path": "about.html",
+    "bytes": 5145,
+    "sha256": "2889fe24199f76d74a7170696da4da46fcbe9d868958879ed1b6d3c9ead413cc"
+  },
+  {
+    "path": "analytics-config.js",
+    "bytes": 462,
+    "sha256": "743e8932436360a9e6a2c83fd050e1522cd8d12324fd52aa5b33f5040b447227"
+  },
+  {
+    "path": "analytics-config.json",
+    "bytes": 404,
+    "sha256": "7979464f69695b56c0bc25d251509618c5b729d95235405a8c3ec015b2985fe4"
+  },
+  {
+    "path": "analytics/collector/README.md",
+    "bytes": 7347,
+    "sha256": "283d34e5ea553d113b5dddd54a91300305eabfd38811c48adba33ff4a06ddc5f"
+  },
+  {
+    "path": "analytics/collector/core.mjs",
+    "bytes": 18662,
+    "sha256": "86a0775591bc49aa999e01b674b52bf2b1534d0333389643c9f9a1bff0690e8f"
+  },
+  {
+    "path": "analytics/deploy/build-review-preview.py",
+    "bytes": 2100,
+    "sha256": "1841c707808aa6820802d63e49529826a1b7c48c85257c59d5e3db5c8ce440a2"
+  },
+  {
+    "path": "analytics/deploy/sites/build-site.mjs",
+    "bytes": 1048,
+    "sha256": "fe1bed68e107b756f93161a25034692aee9c1332c0fc0ec3128403c9bfa33e66"
+  },
+  {
+    "path": "analytics/deploy/sites/wrapper.mjs",
+    "bytes": 6277,
+    "sha256": "3220eb07df34e5ee2fd2707cee0c94168016c968101fe7a3abaee06a74a332b2"
+  },
+  {
+    "path": "analytics/deploy/sites/wrapper.test.mjs",
+    "bytes": 4543,
+    "sha256": "c7187694d10d1b97deaf3b1474258cdf753ddfeb9b020afbd4b13b1a8f24bb6e"
+  },
+  {
+    "path": "analytics/python/.gitignore",
+    "bytes": 45,
+    "sha256": "62300dcdb3c9da05931f571458e017173e2cfb7d2ca41529c905541768092168"
+  },
+  {
+    "path": "analytics/python/README.md",
+    "bytes": 8797,
+    "sha256": "4a52fdaafb853aecf3718f1611a0fae0aa9098630cf2b271bf806c425f249cd0"
+  },
+  {
+    "path": "analytics/python/farpoint_analytics/__init__.py",
+    "bytes": 103,
+    "sha256": "70db6fe180dafe5b6ef2c546ade235ccf7f74587bb1c47230995667aaa2a96d4"
+  },
+  {
+    "path": "analytics/python/farpoint_analytics/__main__.py",
+    "bytes": 6095,
+    "sha256": "298c7be6df3cb86684dc1247f8e8f5e352a028c22a3f0585812b8cc3c39075f2"
+  },
+  {
+    "path": "analytics/python/farpoint_analytics/analysis.py",
+    "bytes": 31189,
+    "sha256": "ca76d220b474b8fe820eb116863a6caa2b8901192b3215b421662f79ceed2b9b"
+  },
+  {
+    "path": "analytics/python/farpoint_analytics/archive.py",
+    "bytes": 8991,
+    "sha256": "2e7989e938c984dcf57a8015cae0bf83113bb8b6c3ecc417da6651c232e14a5d"
+  },
+  {
+    "path": "analytics/python/farpoint_analytics/canonical.py",
+    "bytes": 3098,
+    "sha256": "071848527aab09ff872495e490bf03c67e6700ecf867cb5f3c37b2bb82a18b0b"
+  },
+  {
+    "path": "analytics/python/farpoint_analytics/enrichment.py",
+    "bytes": 3636,
+    "sha256": "154e0d5b1c899b8add27a7abbdcc272fb33d854277ba9acaf4c24cdb98b76e42"
+  },
+  {
+    "path": "analytics/python/farpoint_analytics/reporting.py",
+    "bytes": 16706,
+    "sha256": "63036f2749756039bec09c0b80225a92e6403513cba2d994d245dcf0a9a93e38"
+  },
+  {
+    "path": "analytics/python/farpoint_analytics/schema-v1.json",
+    "bytes": 1809,
+    "sha256": "a52093f169de79742e72d527f54b2b91a8f07ad06b9cea0d5a1ebc29db7f7c7e"
+  },
+  {
+    "path": "analytics/python/farpoint_analytics/schema.py",
+    "bytes": 3434,
+    "sha256": "48b37dd0b1d86fab13572f3bd9c5df3cdeb37287f53bb313fae77db600d73da6"
+  },
+  {
+    "path": "analytics/tests/collector/collector.test.mjs",
+    "bytes": 26890,
+    "sha256": "2b77168688263d096e8cd8eef5a73a6af912314fc43992be36e80d24b5c3cfa6"
+  },
+  {
+    "path": "analytics/tests/collector/cross-language.mjs",
+    "bytes": 7200,
+    "sha256": "55308ec8d26bb80c531be84edc0a7304dfee3728ce1a1631bcd5dfe532e1db3e"
+  },
+  {
+    "path": "analytics/tests/python/.gitignore",
+    "bytes": 46,
+    "sha256": "06c8f725853bd8d02fb61ec32e17073a5d30881c3c20d4c17c5232140b694cca"
+  },
+  {
+    "path": "analytics/tests/python/fixtures/__init__.py",
+    "bytes": 54,
+    "sha256": "43b557cd53b4241272f60741ed7e83b4365399b57eea102d8c0f82fca90bd59d"
+  },
+  {
+    "path": "analytics/tests/python/fixtures/canonical-vectors-v1.json",
+    "bytes": 2656,
+    "sha256": "54ef2ebab7a123403d903541c712d689d33b7984f1748bd1d6a823f71dc838f0"
+  },
+  {
+    "path": "analytics/tests/python/fixtures/golden-expected.json",
+    "bytes": 2046,
+    "sha256": "79f489c1133d82f42da9f356f4519a1dcb2dbbed31b76b60ae7351d614f97d9b"
+  },
+  {
+    "path": "analytics/tests/python/fixtures/golden.py",
+    "bytes": 7083,
+    "sha256": "f4d7057d548ea274c7a844f89a8ec810545a938fc20f9bd8dc394ed496e7d45d"
+  },
+  {
+    "path": "analytics/tests/python/reporting-review-fixes-20261023T213317182858Z.json",
+    "bytes": 1522,
+    "sha256": "4918ea9fa6d1b93dfa0947bb52ff3eb96ce53f049fc19a2322ab2240508564e8"
+  },
+  {
+    "path": "analytics/tests/python/reporting-test-results-2026-10-23.json",
+    "bytes": 1372,
+    "sha256": "c50580983f016d2fc7fee7867dc70933334c0c027f3b9e10220b69f98a3dd2f2"
+  },
+  {
+    "path": "analytics/tests/python/review-results-2026-10-23.json",
+    "bytes": 5068,
+    "sha256": "1c4d4a80c959c0f11ae448953063ff3be94f3fb97ab3fbbc2433d83e256addb5"
+  },
+  {
+    "path": "analytics/tests/python/test_analysis.py",
+    "bytes": 21557,
+    "sha256": "05ac31ff2bb326cdad0bd262f10b50f35b77387341e10f6c74c9923628810243"
+  },
+  {
+    "path": "analytics/tests/python/test_archive.py",
+    "bytes": 9197,
+    "sha256": "a5343c15581b62ea5e9b51247f58ab2c640be43938ac8bea36c31c46252f857c"
+  },
+  {
+    "path": "analytics/tests/python/test_reporting.py",
+    "bytes": 13169,
+    "sha256": "4ed057fe4b3f8273ae7c9e3fdce3a1c44bb58078282a22a1154f0486ba0d3bb7"
+  },
+  {
+    "path": "analytics/work/README.md",
+    "bytes": 8569,
+    "sha256": "4117ea620a462c473ff960ebbbf361b668e721e6a2e8ff3c7071027f0e67e3b1"
+  },
+  {
+    "path": "analytics/work/TASK.md",
+    "bytes": 7255,
+    "sha256": "8cc2a75dda7368cea82f65ec56f94921d125f24cbf1983c773ef28da632ffb20"
+  },
+  {
+    "path": "analytics/work/build-bundle.mjs",
+    "bytes": 1044,
+    "sha256": "a8fe6dcd8e77b3cb1203f802c6003289f60c8d74b0fc3c8aef766dd693027610"
+  },
+  {
+    "path": "analytics/work/host-bridge.mjs",
+    "bytes": 2546,
+    "sha256": "8d5f95f8734ad0fde2eb0ac19a59db00286d6cae72f8273c8056e5e92c9531fb"
+  },
+  {
+    "path": "analytics/work/local_bridge.py",
+    "bytes": 9507,
+    "sha256": "13bb81b045cb046ba8e72bc43a85bb4ce32100fac04cc37e60055a3631e1efa0"
+  },
+  {
+    "path": "analytics/work/native-adapters.mjs",
+    "bytes": 9108,
+    "sha256": "2713ff5094d2799ad001951a22ebfa6062d685337db235d5fbfb02410ff4f6a5"
+  },
+  {
+    "path": "analytics/work/pipeline.mjs",
+    "bytes": 25389,
+    "sha256": "2a4525714b9f8b01f049a8b7b7dfc7fcc56a3c15609d60c35c257d2ff678e171"
+  },
+  {
+    "path": "analytics/work/portable-runtime.mjs",
+    "bytes": 5665,
+    "sha256": "17d900448c1a3a49d355330f43a141abf98b808f43da1cdfbb96072cb5b47ae6"
+  },
+  {
+    "path": "analytics/work/tests/.gitignore",
+    "bytes": 24,
+    "sha256": "a7ab047134cf7c87530b83a1460c6050e63090aac2b979608f8eca8437b70d7e"
+  },
+  {
+    "path": "analytics/work/tests/pipeline.test.mjs",
+    "bytes": 18118,
+    "sha256": "ffc19496387bf6ba73a09c886ab07de9ad8ac6cdca5e0e93a3002c566e87b0ba"
+  },
+  {
+    "path": "analytics/work/tests/runtime.test.mjs",
+    "bytes": 2312,
+    "sha256": "601e3c6d756396c05e2a4963b3d4ea084556b789d1c5802b0286370191ffa7ce"
+  },
+  {
+    "path": "analytics/work/tests/test_local_bridge.py",
+    "bytes": 3467,
+    "sha256": "12754bbc650f3bf79b7a0ab30f95a343a692dcc27afe3fc2891ee3b0ec87bd16"
+  },
+  {
+    "path": "analytics/work/work.bundle.js",
+    "bytes": 42887,
+    "sha256": "db127601b87c2d44eed5e72345c9d549d1ca758f77b3f9f5db560688faa56d3b"
+  },
+  {
+    "path": "applications.html",
+    "bytes": 12005,
+    "sha256": "f6dafdea26668620bd09455006f33d9f79abf35f829361a219571ab3a8be5d12"
+  },
+  {
+    "path": "build.py",
+    "bytes": 40903,
+    "sha256": "7eb1e958589a5549f6966be63630838e894f7ce372ddd93cc8a1eac221af6978"
+  },
+  {
+    "path": "check_context.js",
+    "bytes": 9009,
+    "sha256": "e8467f2ddc0985e3e79c108f4d717acf2ff45effba2c0d12b5eaf1f64373fcdd"
+  },
+  {
+    "path": "check_inquiry.js",
+    "bytes": 20304,
+    "sha256": "2fc7a3264a70f52cd585b157516bf59ed8ecbc07113659536ecce00d790ba954"
+  },
+  {
+    "path": "check_site.py",
+    "bytes": 10745,
+    "sha256": "f5584d1809f36c6938c3c93b25cbcb446f4aec45c2198146bb7be7ed52417d9b"
+  },
+  {
+    "path": "check_tracker.js",
+    "bytes": 11268,
+    "sha256": "6ea78ab6882da4b69c7b1628f89d8755888e285842c69aa1e1df824429347f4d"
+  },
+  {
+    "path": "contact.html",
+    "bytes": 1452,
+    "sha256": "1812ecc1010fb7be4aeebfad326bd290b7d2ae09a810b74a2a4b84c09daac2b6"
+  },
+  {
+    "path": "content.py",
+    "bytes": 23135,
+    "sha256": "8e736b51d18d4db13f6b3a2e4dd577bc832494624ad25fc9bb0d346f274cb007"
+  },
+  {
+    "path": "data-centers.html",
+    "bytes": 1524,
+    "sha256": "2e19a52ec381ade84ab9e29b51b163cfdebd92caae7e11371c5bf9bc06c5c470"
+  },
+  {
+    "path": "delivery.html",
+    "bytes": 6687,
+    "sha256": "a4c0d14ac5d432332b553f5ef32757a810f58e01de8cc5aa444aebe325730bbd"
+  },
+  {
+    "path": "distribution-transformers.html",
+    "bytes": 1516,
+    "sha256": "6e7036033e233a9975389987c64a287c895844c96bb74d03fb1f8bdeba52f426"
+  },
+  {
+    "path": "favicon.svg",
+    "bytes": 314,
+    "sha256": "d439b36b4242f34739f25fd38cc744b50fa5e98a5216580ad6d00af6d9405224"
+  },
+  {
+    "path": "index.html",
+    "bytes": 11897,
+    "sha256": "86ec8ede7bc17be5d926bf660f83513281921fcd965b14127815f4ce2244a59c"
+  },
+  {
+    "path": "inquiry.js",
+    "bytes": 16094,
+    "sha256": "01195971d60692bf5000f78a60d65682afd35c6ee07551a43f7ff4cd7615453a"
+  },
+  {
+    "path": "inquiry.py",
+    "bytes": 11491,
+    "sha256": "ce9446d4024b2cda467d52f05fd0a460ab3d4cb27b2526142d0e87bd92760183"
+  },
+  {
+    "path": "manufacturing.html",
+    "bytes": 6700,
+    "sha256": "7055626a2a2f9883722efdd8501d5361cff8c49341d285ecd60a72a05e2cdcb1"
+  },
+  {
+    "path": "markets.html",
+    "bytes": 1480,
+    "sha256": "8b8d102ca23eaa6e3f1faba88305cbb9301a0f6b3c043db8b44699a7d28bad86"
+  },
+  {
+    "path": "power-transformers.html",
+    "bytes": 1488,
+    "sha256": "f64ba8f4f807dd2d13da5bf67ee225e2890c8befd392de75702203a0066be188"
+  },
+  {
+    "path": "privacy.html",
+    "bytes": 5418,
+    "sha256": "30a0cf857be0825161b53dd54625b9b0d92c14a34945e16a353e806115dc9d4a"
+  },
+  {
+    "path": "products.html",
+    "bytes": 13279,
+    "sha256": "6eead51a1d0558b4e581dcf607d11a34bf9af7a8fc5446b770d147b80c6f207c"
+  },
+  {
+    "path": "quality.html",
+    "bytes": 12700,
+    "sha256": "9e0452cd5e41236c3d435cf024a8e4157f13ec828ef28f52f71d33e438ecf6b4"
+  },
+  {
+    "path": "quote.html",
+    "bytes": 14614,
+    "sha256": "90841bd5c4c3ff572eac1de663d13fe2dc0fcc24adba1dd0ec0a22aaf902f6fd"
+  },
+  {
+    "path": "robots.txt",
+    "bytes": 71,
+    "sha256": "caded6a873136a85199bba4117c7aef7394e713c40f147d06f04b9dae703b017"
+  },
+  {
+    "path": "site.js",
+    "bytes": 4951,
+    "sha256": "42820f51a582050a8df0dc54ecb5c49b05614ef60d90868103f51965d9680759"
+  },
+  {
+    "path": "sitemap.xml",
+    "bytes": 693,
+    "sha256": "c46c57e9ed0826b534dd9fe3635275f63e70bb03259642623c2e3ee0ad722998"
+  },
+  {
+    "path": "social-card.png",
+    "bytes": 32233,
+    "sha256": "3fa27a4f16ed3e1f210db34ecf539fb8e10a133bbcae04732652874fde589805"
+  },
+  {
+    "path": "solar-storage.html",
+    "bytes": 1504,
+    "sha256": "fd0d6566939a41e0d70087d3bfd62ca7f8014a79f3a9b974df8777209c8b0ead"
+  },
+  {
+    "path": "style.css",
+    "bytes": 11144,
+    "sha256": "9010c9b2da782eb4c12e4a9f2e30bb3415b27ff296611ba71515355d4035f32c"
+  },
+  {
+    "path": "thanks.html",
+    "bytes": 4628,
+    "sha256": "7e0639b1b865eb8d79b33d3ec1357035cd2907f4580dbeb6b4b1b6784f63564f"
+  },
+  {
+    "path": "tracker.js",
+    "bytes": 14533,
+    "sha256": "95b58c93489d57cbcbbeb1efeff296b628ece1852dfb6807bd99f269bf8012b7"
+  }
+]

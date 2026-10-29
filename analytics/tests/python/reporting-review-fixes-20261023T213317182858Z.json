@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "reporting_review_fixes_local_tests",
+  "recorded_at": "2026-10-23T21:33:17.182858+00:00",
+  "command": "PYTHONPATH=analytics/python python3 -m unittest discover -s analytics/tests/python -v",
+  "result": "PASS",
+  "tests": 42,
+  "prior_tests": 32,
+  "extension_tests": 10,
+  "independent_review": "RE_REVIEW_PENDING",
+  "findings_addressed": [
+    "REPORT-REVIEW-01: preserve full accepted datetime precision and select latest using parsed datetimes",
+    "REPORT-REVIEW-02: stable classification_id tie-break for equivalent equal-time classifications"
+  ],
+  "golden_oracle_changed": false,
+  "source_hashes": {
+    "analytics/python/farpoint_analytics/analysis.py": "ca76d220b474b8fe820eb116863a6caa2b8901192b3215b421662f79ceed2b9b",
+    "analytics/python/farpoint_analytics/reporting.py": "63036f2749756039bec09c0b80225a92e6403513cba2d994d245dcf0a9a93e38",
+    "analytics/python/farpoint_analytics/__main__.py": "298c7be6df3cb86684dc1247f8e8f5e352a028c22a3f0585812b8cc3c39075f2",
+    "analytics/python/README.md": "4a52fdaafb853aecf3718f1611a0fae0aa9098630cf2b271bf806c425f249cd0",
+    "analytics/tests/python/test_reporting.py": "4ed057fe4b3f8273ae7c9e3fdce3a1c44bb58078282a22a1154f0486ba0d3bb7",
+    "analytics/tests/python/fixtures/golden-expected.json": "79f489c1133d82f42da9f356f4519a1dcb2dbbed31b76b60ae7351d614f97d9b"
+  },
+  "limits": [
+    "Local synthetic tests only",
+    "No network/provider calls",
+    "No hosted provenance, archive or production readiness claim"
+  ]
+}
