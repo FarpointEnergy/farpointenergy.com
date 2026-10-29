@@ -16,6 +16,7 @@ const preparedHref = PREPARED_PATH.replaceAll('&','&amp;');
 const banner = `<aside aria-label="Synthetic test site" style="padding:12px 20px;background:#fff2ce;color:#182b3a;border-bottom:2px solid #a85b14;font:600 15px/1.5 system-ui;text-align:center">${bannerText} <a href="${preparedHref}" style="color:inherit;text-decoration:underline">Open synthetic form test</a></aside>`;
 const helper = `<section aria-labelledby="preview-test-heading" style="margin-bottom:20px;padding:18px;border:2px solid #a85b14;background:#fff9e9;color:#182b3a"><h2 id="preview-test-heading" style="font-size:20px">Synthetic form test</h2><p>No real customer or project details. This uses the normal quotation form and sends a test message to quotes@farpointenergy.com only when you choose Send request.</p><p><a href="${preparedHref}">Open prepared test link</a> · <button id="preview-fill" type="button" class="btn">Fill synthetic test details</button></p><p id="preview-fill-status" role="status" aria-live="polite">The button fills a clearly marked fixture; it does not submit the form. Optional technical details stay collapsed for your review.</p></section>`;
 const privacyOld = 'This static website is hosted on GitHub Pages and uses Google Fonts. Those services receive technical request information when your browser loads their resources. This website does not currently send inquiry analytics to a tracking service.';
+const privacyEnabled = 'This static website is hosted on GitHub Pages and uses Google Fonts. Those services receive technical request information when your browser loads their resources. Farpoint uses first-party website analytics to understand visits, product interest, quotation steps and technical errors. Random browser and session identifiers use browser storage; permitted campaign codes and broad referring-source categories describe how a visit arrived. The tracker does not collect typed form contents, names, email addresses, specification text or attachments. Technical request records include available IP metadata; network information may indicate an organization but does not identify a person or establish their employer. Collection is processed through Cloudflare Workers and private Cloudflare R2 object storage. Private raw records and report versions are retained without automatic expiry, with archives and analysis through ChatGPT Work and Google Drive. Unacknowledged events may remain in your browser until successfully received; browser blocking or cleared storage can leave gaps. Inquiry identifiers connect observed website activity to requests actually received by Farpoint.';
 const privacyNew = 'This synthetic test copy is hosted on Cloudflare Workers and uses Google Fonts. Those services receive technical request information when your browser loads their resources. Test analytics are enabled on this copy only. Browser-generated events are marked synthetic and sent to a collector on this same hostname, then retained in Farpoint’s private Cloudflare R2 storage. The collector does not assert a verified visitor IP address or identify an employer. It preserves admitted request bytes, including malformed test records, without a deletion schedule. Browser identifiers, session identifiers, allowlisted campaign codes and form-stage events support test correlation. Analytics events do not include your form answers. Browser storage holds these identifiers and pending events. When you submit, the normal form includes source and correlation identifiers with the synthetic business fields and sends them through FormSubmit to the Farpoint inbox. Use synthetic details only.';
 
 export async function buildPreview() {
@@ -28,7 +29,8 @@ export async function buildPreview() {
   const builder = await readFile(fileURLToPath(import.meta.url),'utf8');
   const configRaw = await readFile(resolve(root,'analytics-config.json'),'utf8');
   const config = JSON.parse(configRaw);
-  if (config.enabled !== false) throw new Error('Preview source must have production tracking disabled');
+  if (typeof config.enabled !== 'boolean' || (config.enabled && config.privacy_disclosure_version !== '1')) throw new Error('Invalid production analytics source configuration');
+  const sourcePrivacy = config.enabled ? privacyEnabled : privacyOld;
   const previewConfig = {...config,enabled:true,synthetic:true,endpoint:PREVIEW_ORIGIN+'/v1/events',privacy_disclosure_version:'1',campaign_registry:{source:['website'],medium:['referral'],campaign:['power']}};
   function add(name, raw, sourceHash=null) {
     const bytes = Buffer.from(raw);
@@ -51,8 +53,8 @@ export async function buildPreview() {
         html = html.replace('<form id="quote-form"', helper+'<form id="quote-form"');
       }
       if (name === 'privacy.html') {
-        if (!html.includes(privacyOld)) throw new Error('Privacy source changed; review disclosure before building');
-        html = html.replace(privacyOld, privacyNew);
+        if (!html.includes(sourcePrivacy)) throw new Error('Privacy source changed; review disclosure before building');
+        html = html.replace(sourcePrivacy, privacyNew);
       }
       raw = Buffer.from(html);
     } else if (name === 'analytics-config.js') {
