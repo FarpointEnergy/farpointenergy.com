@@ -15,6 +15,16 @@ bridge = importlib.util.module_from_spec(spec); spec.loader.exec_module(bridge)
 
 
 class BridgeTests(unittest.TestCase):
+    def test_replay_rejects_outside_invocation_and_symlinks(self):
+        root=Path(__file__).resolve().parent/'.evidence'/str(uuid.uuid4()); root.mkdir(parents=True)
+        outside=root.parent/str(uuid.uuid4()); outside.mkdir()
+        for archive in [str(outside), str(root/'..'/outside.name), 'relative/archive']:
+            with self.assertRaisesRegex(ValueError,'invalid_replay_archive_path'):
+                bridge.replay_restored_analysis({'archive':archive,'source_commit':'a'*40},root)
+        (root/'redirect').symlink_to(outside,target_is_directory=True)
+        with self.assertRaisesRegex(ValueError,'invalid_replay_archive_path'):
+            bridge.replay_restored_analysis({'archive':str(root/'redirect'),'source_commit':'a'*40},root)
+
     def test_large_reference_verifies_locally_and_retains_mismatched_download(self):
         root=Path(__file__).parent/'.evidence'/str(uuid.uuid4()); root.mkdir(parents=True)
         data=b'private-synthetic-download'*10000
