@@ -152,7 +152,11 @@ def verify_reference(request, root):
 def replay_restored_analysis(request, root):
     from farpoint_analytics.archive import read_verified_archive
     archive = pathlib.Path(request['archive'])
-    if not archive.is_absolute() or not str(archive).startswith('/workspace/'):
+    # Replay only an archive restored beneath this invocation's private root.
+    # The trust boundary is the invocation, not a cloud-only filesystem prefix.
+    if (not archive.is_absolute()
+            or any(p.is_symlink() for p in [archive, *archive.parents])
+            or not archive.resolve().is_relative_to(root.resolve())):
         raise ValueError('invalid_replay_archive_path')
     snapshot = read_verified_archive(archive)
     if snapshot['manifest']['metadata'].get('code_commit') != request['source_commit']:
