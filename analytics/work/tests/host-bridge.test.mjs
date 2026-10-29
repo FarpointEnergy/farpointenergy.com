@@ -32,3 +32,51 @@ test('createMany checks every returned byte proof and preserves a failed verifie
   failure=false;bad=true;await assert.rejects(()=>bridge.createMany(files),/invalid_local_batch_confirmation/);
   const before=calls;await assert.rejects(()=>bridge.createMany(Array.from({length:65},()=>files[0])),/local_batch_limit/);await assert.rejects(()=>bridge.createMany([{path:'large',bytes:new Uint8Array(256*1024+1)}]),/local_batch_limit/);assert.equal(calls,before);
 });
+
+
+test('host waits for a live private bridge to finish starting before sending the request',async()=>{
+  let polls=0,requestCount=0;
+  const tools={exec_command:async()=>({session_id:7,output:'starting\n'}),write_stdin:async({session_id,chars})=>{
+    assert.equal(session_id,7);
+    if(chars===''){polls++;return polls===1?{session_id:7,output:'loading\n'}:{session_id:7,output:'READY\n'};}
+    requestCount++;
+    const q=JSON.parse(chars);assert.equal(q.op,'create');assert.equal(q.stream_results,true);
+    return {output:JSON.stringify({status:'ok',path:'/private/test/event.json'}),exit_code:0};
+  }};
+  const bridge=createWorkHostBridge({tools,privateRoot:'/private/test',repositoryRoot:'/repo'});
+  assert.equal(await bridge.create('event.json',new Uint8Array([1,2,3])),'/private/test/event.json');
+  assert.equal(polls,2);assert.equal(requestCount,1);
+});
+
+test('host does not send a request when the bridge exits before readiness',async()=>{
+  let requestCount=0;
+  const tools={exec_command:async()=>({session_id:8,output:''}),write_stdin:async({chars})=>{
+    if(chars==='')return {output:'ModuleNotFoundError\n',exit_code:1};
+    if(chars.startsWith('{'))requestCount++;return {output:'{}',exit_code:0};
+  }};
+  const bridge=createWorkHostBridge({tools,privateRoot:'/private/test',repositoryRoot:'/repo',startupTimeoutMs:100});
+  await assert.rejects(()=>bridge.create('event.json',new Uint8Array([1])),/private_bridge_exited_before_ready/);
+  assert.equal(requestCount,0);
+});
+
+test('host fails closed after a bounded readiness timeout',async()=>{
+  let requestCount=0;
+  const tools={exec_command:async()=>({session_id:9,output:''}),write_stdin:async({chars})=>{
+    if(chars==='')return {session_id:9,output:''};
+    if(chars.startsWith('{'))requestCount++;return {output:'{}',exit_code:0};
+  }};
+  const bridge=createWorkHostBridge({tools,privateRoot:'/private/test',repositoryRoot:'/repo',startupTimeoutMs:1});
+  await assert.rejects(()=>bridge.create('event.json',new Uint8Array([1])),/private_bridge_start_timeout/);
+  assert.equal(requestCount,0);
+});
+
+
+test('host reports a missing process session without sending a request',async()=>{
+  let requestCount=0;
+  const tools={exec_command:async()=>({output:'python3 unavailable\\n',exit_code:127}),write_stdin:async()=>{
+    requestCount++;return {output:'{}',exit_code:0};
+  }};
+  const bridge=createWorkHostBridge({tools,privateRoot:'/private/test',repositoryRoot:'/repo'});
+  await assert.rejects(()=>bridge.create('event.json',new Uint8Array([1])),/private_bridge_launch_failed/);
+  assert.equal(requestCount,0);
+});
