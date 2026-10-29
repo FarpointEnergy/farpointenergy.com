@@ -53,11 +53,24 @@ test('opt-in small-object batch preserves exact Unicode and empty bodies with fe
   for(let n=0;n<10;n++)f.source.set(key(n),n?JSON.stringify({n,payload:'café 🧪'}):'');
   const page=await f.adapter.list({namespace:'receipts'});
   for(const item of page.items){const part=await f.adapter.chunk({key:item.key});assert.equal(part.object_complete,true);assert.deepEqual(Buffer.from(part.body_base64,'base64'),Buffer.from(f.source.get(item.key)));}
-  assert.equal(f.toolCalls.length,3,'one list plus two bounded batch calls');
+  assert.equal(f.toolCalls.length,3,'one list plus two independently bounded batch calls');
   assert.equal(f.calls.filter(x=>!x.query).length,10,'every listed object still receives an authenticated GET');
   const batches=[...f.evidence.values()].map(b=>JSON.parse(Buffer.from(b))).filter(x=>x.operation==='batch');
-  assert.deepEqual(batches.map(x=>x.args.keys.length),[8,2]);
+  assert.deepEqual(batches.map(x=>x.args.keys.length).sort((a,b)=>b-a),[8,2]);
   assert(batches.every(x=>x.response.content[0].text.length<=60000));
+});
+
+test('twenty-four small receipts stay within response, code and concurrency budgets',async()=>{
+  let active=0,peak=0;
+  const f=fixture({batchSmallObjects:true,providerPage:40,changeProvider:async(v,r)=>{if(!r.query){active++;peak=Math.max(peak,active);await new Promise(resolve=>setTimeout(resolve,1));active--;}return v;}});
+  f.source.clear();for(let n=0;n<40;n++)f.source.set(key(n),'x'.repeat(944));
+  const page=await f.adapter.list({namespace:'receipts'});
+  for(const item of page.items)await f.adapter.chunk({key:item.key});
+  const batches=[...f.evidence.values()].map(b=>JSON.parse(Buffer.from(b))).filter(x=>x.operation==='batch');
+  assert.deepEqual(batches.map(x=>x.args.keys.length),[8,8,8,8,8]);
+  assert(peak<=4);assert.equal(f.calls.filter(x=>!x.query).length,40);
+  assert(batches.every(x=>x.response.content[0].text.length<24000));
+  assert(f.toolCalls.every(x=>x.code.length<64000));
 });
 
 test('small-object batches enforce raw byte budget and use legacy chunks for large records',async()=>{
@@ -66,7 +79,7 @@ test('small-object batches enforce raw byte budget and use legacy chunks for lar
   const page=await f.adapter.list({namespace:'receipts'});
   for(const item of page.items){let at=0;do{const p=await f.adapter.chunk({key:item.key,offset:at});at=p.next_offset;}while(at<item.size);}
   const evidence=[...f.evidence.values()].map(b=>JSON.parse(Buffer.from(b)));
-  assert.deepEqual(evidence.filter(x=>x.operation==='batch').map(x=>x.args.keys.length),[3,3]);
+  assert.deepEqual(evidence.filter(x=>x.operation==='batch').map(x=>x.args.keys.length),[1,1,1,1,1,1]);
   assert.equal(evidence.filter(x=>x.operation==='chunk').length,2);
   assert(evidence.every(x=>(x.response?.content?.[0]?.text?.length??0)<=60000));
 });

@@ -76,10 +76,10 @@ function cfListCode(scope, args) {
   }`;
 }
 
-function cfChunkCode(scope, args) {
-  return `async () => {
+function cfChunkCode(scope, args = null) {
+  return `async (${args === null ? 'args' : ''}) => {
     const scope = ${JSON.stringify(scope)};
-    const args = ${JSON.stringify(args)};
+    ${args === null ? '' : `const args = ${JSON.stringify(args)};`}
     const response = await cloudflare.request({method:'GET',path:'/accounts/'+scope.accountId+'/r2/buckets/'+scope.bucketName+'/objects/'+args.key});
     const result=response.result;
     const plain=result!==null&&typeof result==='object'&&!Array.isArray(result)&&(Object.getPrototypeOf(result)===Object.prototype||Object.getPrototypeOf(result)===null);
@@ -191,16 +191,38 @@ export function createCloudflareCollectorAdapter({tools,accountId,bucketName,rec
     const requested=inventory.get(key),namespace=key.split('/')[0];
     const rows=[requested];let total=requested.size;
     for(const item of inventory.values()){
-      if(rows.length===8)break;
+      if(rows.length===24)break;
       if(item.key<=key||!listedThisScan.has(item.key)||!item.key.startsWith(namespace+'/')||item.size>8192||prefetched.has(item.key)||total+item.size>24576)continue;
       rows.push(item);total+=item.size;
     }
     // Each generated operation remains the same fixed authenticated GET and
     // exact size/hash reconstruction. At most four provider reads run together;
     // total raw payload is <=24 KiB, within the existing 60,000-character envelope.
-    const operations=rows.map(item=>`async()=>{try{return {key:${JSON.stringify(item.key)},chunk:await (${cfChunkCode(scope,{key:item.key,offset:0,max_bytes:8192,expected_size:item.size,expected_sha256:item.sha256})})()};}catch{return {key:${JSON.stringify(item.key)},chunk:{adapter_format:'farpoint_cf_chunk_failure_v1',reason:'cloudflare_object_read_failed'}};}}`);
-    const code=`async()=>{const operations=[${operations.join(',')}],items=[];for(let i=0;i<operations.length;i+=4)items.push(...await Promise.all(operations.slice(i,i+4).map(f=>f())));return {adapter_format:'farpoint_cf_batch_v1',items};}`;
-    const value=await execute('batch',{keys:rows.map(x=>x.key),max_raw_bytes:24576,max_concurrency:4},code);
+    // The connector trims results at 24,000 characters. Keep each independent
+    // response below a conservative 20,000-character estimate and eight rows.
+    // Run at most four calls together, each with serial provider GETs.
+    const groups=[];let group=[],estimated=100;
+    for(const item of rows){
+      const estimate=Math.ceil(item.size/3)*4+1024+2*item.key.length;
+      if(group.length&&(group.length===8||estimated+estimate>20000)){groups.push(group);group=[];estimated=100;}
+      group.push(item);estimated+=estimate;
+    }
+    if(group.length)groups.push(group);
+    const items=[];
+    for(let offset=0;offset<groups.length;offset+=4){
+      const wave=groups.slice(offset,offset+4);
+      const settled=await Promise.allSettled(wave.map(async batch=>{
+        const requests=batch.map(item=>({key:item.key,offset:0,max_bytes:8192,expected_size:item.size,expected_sha256:item.sha256}));
+        const code=`async()=>{const read=${cfChunkCode(scope)},requests=${JSON.stringify(requests)},items=[];for(const args of requests){try{items.push({key:args.key,chunk:await read(args)});}catch{items.push({key:args.key,chunk:{adapter_format:'farpoint_cf_chunk_failure_v1',reason:'cloudflare_object_read_failed'}});}}return {adapter_format:'farpoint_cf_batch_v1',items};}`;
+        const value=await execute('batch',{keys:batch.map(x=>x.key),max_raw_bytes:24576,max_concurrency:1,max_response_estimate:20000},code);
+        cfRequire(cfOnlyKeys(value,['adapter_format','items'])&&value.adapter_format==='farpoint_cf_batch_v1'&&Array.isArray(value.items)&&value.items.length===batch.length,'invalid_cloudflare_batch');
+        return value.items;
+      }));
+      const failure=settled.find(x=>x.status==='rejected');
+      if(failure)throw failure.reason;
+      for(const result of settled)items.push(...result.value);
+    }
+    const value={adapter_format:'farpoint_cf_batch_v1',items};
     cfRequire(cfOnlyKeys(value,['adapter_format','items'])&&value.adapter_format==='farpoint_cf_batch_v1'&&Array.isArray(value.items)&&value.items.length===rows.length,'invalid_cloudflare_batch');
     for(let i=0;i<rows.length;i++)cfRequire(cfOnlyKeys(value.items[i],['key','chunk'])&&value.items[i].key===rows[i].key&&value.items[i].chunk&&typeof value.items[i].chunk==='object','invalid_cloudflare_batch');
     // The entire response was retained before this validation. Successful
