@@ -227,7 +227,7 @@ async function scenario(browser,name,mobile=false){
 }
 
 async function nativeScenario(browser, name) {
-  const ctx = await browser.newContext({javaScriptEnabled:false, serviceWorkers:'block'});
+  const ctx = await browser.newContext({javaScriptEnabled:false, serviceWorkers:'block', reducedMotion:'reduce'});
   const submissions = [];
   await ctx.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
@@ -236,10 +236,8 @@ async function nativeScenario(browser, name) {
       assert.equal(request.method(), 'POST');
       assert.match(request.headers()['content-type'] || '', /^application\/x-www-form-urlencoded(?:;|$)/i);
       submissions.push(Object.fromEntries(new URLSearchParams(request.postData() || '')));
-      await route.fulfill({status:303, headers:{Location:'https://web3forms.com/success'}});
-      return;
-    }
-    if (url.href === 'https://web3forms.com/success') {
+      // WebKit interception cannot fulfill redirects. This fixture proves the
+      // native POST and rendered provider response; live QA verifies redirects.
       await route.fulfill({status:200, contentType:'text/html', body:'<h1>Synthetic provider confirmation</h1>'});
       return;
     }
@@ -257,7 +255,8 @@ async function nativeScenario(browser, name) {
     };
     for (const [selector, value] of Object.entries(fields)) await page.locator(selector).fill(value);
     await page.locator('#quote-submit').click();
-    await page.waitForURL('https://web3forms.com/success');
+    await page.waitForURL('https://api.web3forms.com/submit');
+    assert.equal(await page.locator('h1').textContent(), 'Synthetic provider confirmation');
     assert.equal(submissions.length, 1);
     const payload = submissions[0];
     assert.equal(payload.Name, fields['#f-name']);
@@ -268,7 +267,7 @@ async function nativeScenario(browser, name) {
     assert.equal(payload.redirect, 'https://web3forms.com/success');
     assert.equal(payload.subject, 'Quotation request — farpointenergy.com');
     assert.equal(Object.hasOwn(payload,'botcheck'), false);
-    const result = {scenario:name,status:'PASS',mock_form_attempts:1,checks:['native required validation','URL-encoded fields preserve symbols','unchecked honeypot omitted','provider confirmation redirect without JavaScript']};
+    const result = {scenario:name,status:'PASS',mock_form_attempts:1,checks:['native required validation','URL-encoded fields preserve symbols','unchecked honeypot omitted','provider response rendered without JavaScript'],live_provider_redirect_verified:false};
     await writeFile(resolve(evidence,name+'-results.json'),JSON.stringify(result,null,2));
     return result;
   } finally { await ctx.close(); }
