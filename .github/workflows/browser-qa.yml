@@ -2,7 +2,7 @@ name: Browser QA
 
 on:
   push:
-    branches: [codex/lead-intelligence-design-v1]
+    branches: [codex/lead-intelligence-design-v1, codex/repair-quotation-delivery-20261106]
     paths:
       - '.github/workflows/browser-qa.yml'
       - 'check_browser.mjs'

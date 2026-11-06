@@ -164,7 +164,11 @@ def main():
     check({o.get('value') for o in reference_options} == expected_references | {''}, 'Reference selector and product lineup differ')
     required = {a.get('name') for _, a in form.tags if 'required' in a}
     check(required == {'Name', 'Company', 'email', 'Requirement or specification link'}, f'Required form fields changed: {required}')
-    check(bool(form.find('form', method='POST', action='https://formsubmit.co/quotes@farpointenergy.com')), 'Native form fallback missing')
+    check(bool(form.find('form', method='POST', action='https://api.web3forms.com/submit')), 'Native form fallback missing')
+    form_keys = form.find('input', type='hidden', name='access_key')
+    check(len(form_keys) == 1 and bool(re.fullmatch(r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}', form_keys[0].get('value', ''))), 'Web3Forms access key is not configured; do not deploy')
+    check(bool(form.find('input', type='hidden', name='redirect', value='https://web3forms.com/success')), 'Native provider confirmation missing')
+    check(bool(form.find('input', type='checkbox', name='botcheck')), 'Provider honeypot missing')
     labels = {a.get('for') for a in form.find('label')}
     for tag, attrs in form.tags:
         if tag in {'input', 'textarea', 'select'} and attrs.get('type') != 'hidden':

@@ -1,4 +1,4 @@
-/* Preview browser integration. All FormSubmit traffic is intercepted; no RFQ is sent. */
+/* Preview browser integration. All Web3Forms traffic is intercepted; no RFQ is sent. */
 import assert from 'node:assert/strict';
 import {mkdir,writeFile,readFile,appendFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
@@ -19,7 +19,7 @@ const digest=x=>createHash('sha256').update(x).digest('hex');
 const byteEvidence=value=>{const body=Buffer.from(value);return {body_base64:body.toString('base64'),body_bytes:body.length,sha256:digest(body)};};
 const sourceFiles={};
 for(const name of Object.keys(built.manifest.source_files))sourceFiles[name]=digest(await readFile(new URL('../../../'+name,import.meta.url)));
-const report={scope:'local browser execution of generated synthetic review Worker; FormSubmit fully mocked; no real RFQ or external collector requests',real_inbox_delivery_verified:false,cloudflare_deployment_verified:false,worker_sha256:built.manifest.worker_sha256,engines:[]};
+const report={scope:'local browser execution of generated synthetic review Worker; Web3Forms fully mocked; no real RFQ or external collector requests',real_inbox_delivery_verified:false,cloudflare_deployment_verified:false,worker_sha256:built.manifest.worker_sha256,engines:[]};
 async function bounded(promise,ms,label){
   let timer;
   try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' timed out')),ms);})]);}
@@ -27,6 +27,7 @@ async function bounded(promise,ms,label){
 }
 const expectedKeys=['Name','Company','email','Requirement or specification link','Transformer category','Application','Power-transformer reference configuration','Quantity','Rating value','Rating unit','Primary voltage value','Primary voltage unit','Secondary voltage value','Secondary voltage unit','Required delivery to site','Target energization','Project location','Project or package reference','Phone','Additional information','Source','Campaign','Farpoint inquiry ID','Farpoint browser ID','Farpoint session ID','Farpoint campaign source','Farpoint campaign medium','Farpoint campaign code'].sort();
 const expectedBusinessKeys=expectedKeys.filter(key=>!key.startsWith('Farpoint ')&&!['Source','Campaign'].includes(key));
+const providerFields=['access_key','subject','from_name','redirect','botcheck'];
 class Bucket {
   records=[];
   constructor(observe){this.observe=observe;}
@@ -77,13 +78,13 @@ async function scenario(engine,mobile){
         const response=await worker.fetch(new Request(req.url(),{method,headers,...(needsBody?{body:raw}: {})}),{BUCKET:bucket});
         await respond(response.status,Object.fromEntries(response.headers),Buffer.from(await response.arrayBuffer()),url.pathname==='/v1/events'?'collector':'static');return;
       }
-      if(req.url()==='https://formsubmit.co/ajax/quotes@farpointenergy.com'){
+      if(req.url()==='https://api.web3forms.com/submit'){
         if(method==='OPTIONS'){
           await respond(204,{'Access-Control-Allow-Origin':PREVIEW_ORIGIN,'Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'content-type, accept'},Buffer.alloc(0),'mock_provider_preflight');return;
         }
         assert.equal(method,'POST');
         payloads.push(JSON.parse(raw.toString('utf8')));
-        await respond(200,{'Content-Type':'application/json','Access-Control-Allow-Origin':PREVIEW_ORIGIN},Buffer.from(JSON.stringify({success:providerMode==='accepted'?'true':'false',message:'Synthetic intercepted response only'})),'mock_provider');return;
+        await respond(providerMode==='accepted'?200:400,{'Content-Type':'application/json','Access-Control-Allow-Origin':PREVIEW_ORIGIN},Buffer.from(JSON.stringify({success:providerMode==='accepted',message:'Synthetic intercepted response only'})),'mock_provider');return;
       }
       denied.push({origin:url.origin,method});
       await observe('request_aborted',{request_id:requestId,reason:'unrelated_external_request'});
@@ -115,7 +116,8 @@ async function scenario(engine,mobile){
     assert.equal(await page.inputValue('#f-product'),'power');
     assert.equal(await page.inputValue('#f-configuration'),'FP-MPT-138-50');
     assert.equal(await page.locator('details.optional-fields').getAttribute('open'),null);
-    const snapshot=await page.evaluate(()=>Object.fromEntries([...new FormData(document.getElementById('quote-form'))].filter(([key])=>!key.startsWith('_')&&!key.startsWith('Farpoint '))));
+    const expectedAccessKey=await page.locator('input[name="access_key"]').inputValue();
+    const snapshot=await page.evaluate(excluded=>Object.fromEntries([...new FormData(document.getElementById('quote-form'))].filter(([key])=>!key.startsWith('_')&&!key.startsWith('Farpoint ')&&!excluded.includes(key))),providerFields);
     await observe('filled_form_snapshot',{values:snapshot,...byteEvidence(JSON.stringify(snapshot))});
     const businessKeys=Object.keys(snapshot).filter(key=>!['Source','Campaign'].includes(key)).sort();
     assert.deepEqual(businessKeys,expectedBusinessKeys);
@@ -128,13 +130,19 @@ async function scenario(engine,mobile){
     await page.waitForFunction(()=>document.getElementById('quote-status')?.dataset.state==='failed');
     assert.equal(payloads.length,1);
     const payload=payloads[0];
-    assert.deepEqual(Object.keys(payload).filter(x=>!x.startsWith('_')).sort(),expectedKeys);
+    assert.deepEqual(Object.keys(payload).filter(x=>!x.startsWith('_')&&!providerFields.includes(x)).sort(),expectedKeys);
+    assert.equal(payload.access_key,expectedAccessKey);
+    assert.match(payload.access_key,/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i);
+    assert.equal(payload.subject,'Quotation request — '+snapshot['Project or package reference']);
+    assert.equal(payload.from_name,'Farpoint Energy website');
+    assert.equal(Object.hasOwn(payload,'redirect'),false);
+    assert.equal(Object.hasOwn(payload,'botcheck'),false);
     for(const [key,value] of Object.entries(snapshot))assert.equal(payload[key],value,'Submitted value changed: '+key);
     assert.equal(payload.Source,'website');assert.equal(payload.Campaign,'power');
     assert.equal(payload['Farpoint campaign source'],'website');assert.equal(payload['Farpoint campaign medium'],'referral');assert.equal(payload['Farpoint campaign code'],'power');
     for(const key of ['Farpoint inquiry ID','Farpoint browser ID','Farpoint session ID'])assert.match(payload[key],/^[0-9a-f-]{36}$/i);
     assert.match(payload['Project or package reference'],/^FP-SYNTHETIC-REVIEW-/);
-    const retainedSnapshot=await page.evaluate(()=>Object.fromEntries([...new FormData(document.getElementById('quote-form'))].filter(([key])=>!key.startsWith('_')&&!key.startsWith('Farpoint '))));
+    const retainedSnapshot=await page.evaluate(excluded=>Object.fromEntries([...new FormData(document.getElementById('quote-form'))].filter(([key])=>!key.startsWith('_')&&!key.startsWith('Farpoint ')&&!excluded.includes(key))),providerFields);
     await observe('failed_form_retained_snapshot',{values:retainedSnapshot,...byteEvidence(JSON.stringify(retainedSnapshot))});
     assert.deepEqual(retainedSnapshot,snapshot);
     assert.match(await page.locator('#quote-status').textContent(),/quotes@farpointenergy\.com/);
@@ -157,11 +165,12 @@ async function scenario(engine,mobile){
     assert(events.every(e=>e.synthetic===true));
     assert(!JSON.stringify(events).includes('karan@farpointenergy.com'));
     assert(!JSON.stringify(events).includes('SYNTHETIC WEBSITE TEST'));
+    assert(!JSON.stringify(events).includes(expectedAccessKey));
     const names=new Set(events.map(e=>e.event_name));
     for(const event of events)assert.equal(typeof event.event_name,'string');
     for(const expected of ['quotation_attempt','quotation_provider_accepted'])assert(names.has(expected),expected+' not retained');
     assert(bucket.records.every(r=>JSON.parse(Buffer.from(r.body_base64,'base64')).source_ip.status==='unavailable'));
-    result.passed=true;result.mocked_provider_attempts=payloads.length;result.final_nonprovider_fields=Object.keys(payload).filter(x=>!x.startsWith('_')).length;result.synthetic_event_count=events.length;result.local_receipt_count=bucket.records.length;result.horizontal_overflow=false;result.page_errors=errors;
+    result.passed=true;result.mocked_provider_attempts=payloads.length;result.final_nonprovider_fields=Object.keys(payload).filter(x=>!x.startsWith('_')&&!providerFields.includes(x)).length;result.synthetic_event_count=events.length;result.local_receipt_count=bucket.records.length;result.horizontal_overflow=false;result.page_errors=errors;
   }catch(error){result.passed=false;result.error=error.message;result.diagnostic=await page.evaluate(()=>({readyState:document.readyState,trackerPresent:Boolean(window.farpointTracker),trackerEnabled:window.farpointTracker?.enabled,config:window.farpointAnalyticsConfig,bodyText:document.body.innerText.slice(0,500)})).catch(()=>({unavailable:true}));throw error;}
   finally{
     await observe('scenario_result',{result});

@@ -46,17 +46,19 @@ def render_form(site, product_categories=None, applications=None):
     """Render a native POST form with optional progressive enhancement."""
     email = escape(site["email"], quote=True)
     action = escape(site["form_action"], quote=True)
-    ajax_action = escape(site["form_action"].replace("https://formsubmit.co/", "https://formsubmit.co/ajax/", 1), quote=True)
+    ajax_action = action
+    access_key = escape(site["form_access_key"], quote=True)
     mailto = f'mailto:{email}?subject={quote("Transformer specification")}'
     products = _options(PRODUCT_OPTIONS if product_categories is None else product_categories, PRODUCT_VALUES - {"unsure"}, "")
     apps = _options(APPLICATION_OPTIONS if applications is None else applications, APPLICATION_VALUES, "")
     references = _options(REFERENCE_OPTIONS, {item["value"] for item in REFERENCE_OPTIONS}, "")
     return f'''<div class="formbox">
 <form id="quote-form" class="q" action="{action}" method="POST" data-ajax-action="{ajax_action}" data-thanks="thanks.html">
-<input type="hidden" name="_subject" value="Quotation request — farpointenergy.com">
-<input type="hidden" name="_template" value="table">
-<input type="hidden" name="_captcha" value="false">
-<div hidden aria-hidden="true"><label for="f-honey">Leave this field empty</label><input id="f-honey" type="text" name="_honey" tabindex="-1" autocomplete="off"></div>
+<input type="hidden" name="access_key" value="{access_key}">
+<input type="hidden" name="subject" value="Quotation request — farpointenergy.com">
+<input type="hidden" name="from_name" value="Farpoint Energy website">
+<input type="hidden" name="redirect" value="https://web3forms.com/success">
+<div hidden aria-hidden="true"><label for="f-honey">Leave this field unchecked</label><input id="f-honey" type="checkbox" name="botcheck" value="true" tabindex="-1" autocomplete="off"></div>
 <input type="hidden" id="f-source" name="Source" value="" disabled>
 <input type="hidden" id="f-campaign" name="Campaign" value="" disabled>
 <input type="hidden" id="f-analytics-inquiry" name="Farpoint inquiry ID" value="" disabled>

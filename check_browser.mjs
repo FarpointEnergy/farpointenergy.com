@@ -96,7 +96,7 @@ async function scenario(browser,name,mobile=false){
     if(req.url()===collector){
       await route.continue();return;
     }
-    if(url.hostname==='formsubmit.co'){
+    if(url.hostname==='api.web3forms.com'){
       if(req.method()==='OPTIONS') {await route.fulfill({status:204,headers:{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Accept'}});return;}
       const requestId=randomUUID();
       await observe('form_request',{request_id:requestId,...bytesEvidence(req.postDataBuffer()||'')});
@@ -135,6 +135,13 @@ async function scenario(browser,name,mobile=false){
   assert.equal(await page.locator('#f-configuration').inputValue(),'FP-MPT-138-50');
   assert.equal(await page.locator('details.optional-fields').evaluate(e=>e.open),false);
   assert.equal(await page.locator('details.optional-fields [required]').count(),0);
+  assert.equal(await page.locator('#quote-form [required]').count(),4);
+  await page.locator('#quote-submit').click();
+  assert.equal(payloads.length,0,'Empty required fields never submit');
+  assert.equal(await page.locator('#quote-form').getAttribute('action'),'https://api.web3forms.com/submit');
+  assert.equal(await page.locator('input[name="redirect"]').inputValue(),'https://web3forms.com/success');
+  assert.equal(await page.locator('input[name="botcheck"]').isChecked(),false);
+  assert.equal(await page.locator('input[name="botcheck"]').isVisible(),false);
   const mail=page.locator('header a[href^="mailto:quotes@farpointenergy.com"]');
   assert.equal(await mail.count(),1);
   assert.equal(await mail.evaluate(e=>Boolean(e.compareDocumentPosition(document.querySelector('#quote-form'))&Node.DOCUMENT_POSITION_FOLLOWING)),true);
@@ -173,6 +180,10 @@ async function scenario(browser,name,mobile=false){
   const first=payloads.at(-1);assert.ok(first['Farpoint inquiry ID']);assert.ok(first['Farpoint session ID']);
   assert.equal(first['Power-transformer reference configuration'],'FP-MPT-115-100');
   assert.equal(first['Rating value'],'50');assert.equal(first['Requirement or specification link'],sentinel);
+  assert.equal(first.subject,'Quotation request — SYNTHETIC-BROWSER-QA');
+  assert.equal(first.from_name,'Farpoint Energy website');assert.ok(first.access_key);
+  assert.equal(Object.hasOwn(first,'redirect'),false);assert.equal(Object.hasOwn(first,'botcheck'),false);
+  assert.equal(batches.some(raw=>raw.includes(first.access_key)),false,'Form access key must stay out of analytics');
   mode='malformed';await page.locator('#quote-submit').click();await page.locator('#quote-status[data-state="uncertain"]').waitFor();
   assert.equal(payloads.at(-1)['Farpoint inquiry ID'],first['Farpoint inquiry ID']);
   assert.equal(await page.locator('#f-requirement').inputValue(),sentinel);
@@ -215,6 +226,53 @@ async function scenario(browser,name,mobile=false){
   }
 }
 
+async function nativeScenario(browser, name) {
+  const ctx = await browser.newContext({javaScriptEnabled:false, serviceWorkers:'block', reducedMotion:'reduce'});
+  const submissions = [];
+  await ctx.route('**/*', async route => {
+    const request = route.request(), url = new URL(request.url());
+    if (url.origin === origin) { await route.continue(); return; }
+    if (url.hostname === 'api.web3forms.com' && url.pathname === '/submit') {
+      assert.equal(request.method(), 'POST');
+      assert.match(request.headers()['content-type'] || '', /^application\/x-www-form-urlencoded(?:;|$)/i);
+      submissions.push(Object.fromEntries(new URLSearchParams(request.postData() || '')));
+      // WebKit interception cannot fulfill redirects. This fixture proves the
+      // native POST and rendered provider response; live QA verifies redirects.
+      await route.fulfill({status:200, contentType:'text/html', body:'<h1>Synthetic provider confirmation</h1>'});
+      return;
+    }
+    await route.abort('blockedbyclient');
+  });
+  try {
+    const page = await ctx.newPage();
+    await page.goto(origin + '/quote.html');
+    await page.locator('#quote-submit').click();
+    assert.equal(submissions.length, 0, 'Native required validation prevents an empty request');
+    const fields = {
+      '#f-name':'Synthetic native test', '#f-company':'Synthetic & Co',
+      '#f-email':'synthetic+native@example.test',
+      '#f-requirement':'NATIVE TEST ONLY — specification?one=1&two=2+3\n100% ✓'
+    };
+    for (const [selector, value] of Object.entries(fields)) await page.locator(selector).fill(value);
+    await page.locator('#quote-submit').click();
+    await page.waitForURL('https://api.web3forms.com/submit');
+    assert.equal(await page.locator('h1').textContent(), 'Synthetic provider confirmation');
+    assert.equal(submissions.length, 1);
+    const payload = submissions[0];
+    assert.equal(payload.Name, fields['#f-name']);
+    assert.equal(payload.Company, fields['#f-company']);
+    assert.equal(payload.email, fields['#f-email']);
+    assert.equal(payload['Requirement or specification link'], fields['#f-requirement'].replaceAll('\n','\r\n'));
+    assert.ok(payload.access_key);
+    assert.equal(payload.redirect, 'https://web3forms.com/success');
+    assert.equal(payload.subject, 'Quotation request — farpointenergy.com');
+    assert.equal(Object.hasOwn(payload,'botcheck'), false);
+    const result = {scenario:name,status:'PASS',mock_form_attempts:1,checks:['native required validation','URL-encoded fields preserve symbols','unchecked honeypot omitted','provider response rendered without JavaScript'],live_provider_redirect_verified:false};
+    await writeFile(resolve(evidence,name+'-results.json'),JSON.stringify(result,null,2));
+    return result;
+  } finally { await ctx.close(); }
+}
+
 try{
   const names=(process.env.FARPOINT_BROWSER_ENGINES||'chromium,webkit,firefox').split(',');
   for(const name of names){
@@ -224,7 +282,7 @@ try{
     catch(err){report.engines.push({engine:name,status:'BLOCKED',reason:String(err.message)});console.log(name,'BLOCKED');continue;}
     try{
       const desktop=await scenario(browser,name+'-desktop');
-      const scenarios=[desktop];
+      const scenarios=[desktop, await nativeScenario(browser,name+'-native')];
       if(name==='webkit'||name==='chromium')scenarios.push(await scenario(browser,name+'-mobile',true));
       report.engines.push({engine:name,version:browser.version(),status:'PASS',scenarios});
     }catch(err){
