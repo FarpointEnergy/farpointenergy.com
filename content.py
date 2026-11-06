@@ -3,7 +3,10 @@ SITE = dict(
     name="Farpoint Energy", domain="https://farpointenergy.com",
     email="quotes@farpointenergy.com", founder_email="karan@farpointenergy.com",
     phone="+1 (217) 417-9345", phone_raw="+12174179345", city="New York, NY",
-    form_action="https://formsubmit.co/quotes@farpointenergy.com",
+    form_action="https://api.web3forms.com/submit",
+    # Public form identifier, supplied only after the quotes inbox is verified.
+    # This review placeholder must be replaced before publishing.
+    form_access_key="WEB3FORMS_ACCESS_KEY_PENDING_VERIFICATION_DO_NOT_DEPLOY",
 )
 
 HERO = dict(

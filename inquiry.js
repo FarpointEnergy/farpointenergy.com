@@ -14,6 +14,7 @@
   const productSections = { "#power": "power", "#distribution": "distribution" };
   const applicationSections = { "#datacenter": "data-center", "#solar": "solar", "#storage": "storage", "#utilities": "utility", "#industrial": "industrial", "#hybrid": "hybrid", "#wind": "other", "#replacement": "other" };
   const eventNames = new Set(["product_path_view", "rfq_start", "rfq_submit_success", "email_click"]);
+  const formServiceFields = new Set(["access_key", "subject", "from_name", "redirect", "botcheck"]);
 
   function context() {
     const product = form ? form.elements["Transformer category"].value : document.body.dataset.product || productPages[path] || (path === "products.html" && productSections[location.hash]);
@@ -43,7 +44,7 @@
 
   function correlate(payload) {
     // Compare business intent only in page memory. Never persist or track this text.
-    const business = Object.fromEntries(Object.entries(payload).filter(([key]) => !key.startsWith("_") && !key.startsWith("Farpoint ") && !["Source", "Campaign"].includes(key)).sort(([a],[b]) => a < b ? -1 : a > b ? 1 : 0));
+    const business = Object.fromEntries(Object.entries(payload).filter(([key]) => !key.startsWith("_") && !key.startsWith("Farpoint ") && !formServiceFields.has(key) && !["Source", "Campaign"].includes(key)).sort(([a],[b]) => a < b ? -1 : a > b ? 1 : 0));
     const snapshot = JSON.stringify(business);
     if (!inquiryId || submittedBusiness !== snapshot) {
       inquiryId = null;
@@ -238,12 +239,15 @@
     form.setAttribute("aria-busy", "true");
     setStatus("Sending your request. Please keep this page open.", "sending");
     const payload = Object.fromEntries(new FormData(form).entries());
+    // Native submissions use the provider's confirmation page. AJAX must receive
+    // the JSON acceptance result before displaying our own confirmation.
+    delete payload.redirect;
     // Unit-only values do not represent a supplied electrical requirement.
     for (const [valueKey, unitKey] of [["Rating value", "Rating unit"], ["Primary voltage value", "Primary voltage unit"], ["Secondary voltage value", "Secondary voltage unit"]]) {
       if (!payload[valueKey]) delete payload[unitKey];
     }
     const reference = document.getElementById("f-reference").value.trim().replace(/[\r\n]/g, " ").slice(0, 160);
-    if (reference) payload._subject = `Quotation request — ${reference}`;
+    if (reference) payload.subject = `Quotation request — ${reference}`;
     try { correlate(payload); } catch (_) { /* Correlation must never prevent a request. */ }
     track("quotation_attempt", {location_code:"quotation"});
     // Freeze only after taking the payload snapshot, so a successful response
